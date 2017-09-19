@@ -225,7 +225,7 @@ void BaseSolver::print(std::ostream &os)
     //Print the vertex positions
     size_t dimension = T_->vertex(0).numPosition(); // was vertexData_[0].size();
     os << Nv << " " << dimension << std::endl;
-    for( size_t i=0 ; i<Nv ; ++i ) {
+        for( size_t i=0 ; i<Nv ; ++i ) {
       for( size_t d=0 ; d<dimension ; ++d )
 	os << vertexData_[i][d] << " ";
       os << std::endl;
