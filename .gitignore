@@ -5,8 +5,10 @@
 *.o
 bin/*
 
+# Some standard directories
 doc/html/*
 doc/latex/*
+results/*
 
 tools/plot/doc/html/*
 tools/plot/doc/latex/*
@@ -16,3 +18,4 @@ tools/auto/auto
 # Editor files
 *.swp
 src/tags
+*~
