@@ -2635,20 +2635,12 @@ derivs(Tissue &T,
  
 
   
-  //Do the update for each cell
   size_t dimension = 3;
   assert (dimension==vertexData[0].size());
   size_t numCells = T.numCell();
-  //HJ: removed due to unused variable warning
-  //size_t numVertices = T.numVertex();
   size_t wallLengthIndex = variableIndex(0,0);
   size_t comIndex = variableIndex(1,0);
   size_t lengthInternalIndex = comIndex+dimension;
-
-  //HJ: removed due to unused variable warning
-  //double neighborweight=parameter(5);
-  //double strainEpcilon =0.000001;
-  //double stressEpcilon =0.000001;    
 
   // double TotalVolume=0;
   // double deltaVolume=0;
@@ -2667,24 +2659,16 @@ derivs(Tissue &T,
   size_t anisoEnergyIndex  =variableIndex(0,6);	
   size_t youngLIndex       =variableIndex(0,7);	
    
-
   double youngMatrix= parameter(0);    
   double youngFiber = parameter(1); 
   double poissonL   = parameter(2);    
   double poissonT   = parameter(3);
   double TETA       = parameter(8);  
   
-  // static double tTotal=0, tDiag=0;
-  // static double tRest=0, tRest2=0, tRest3=0, tRest4=0;
-
-  // clock_t cpuTime0 ,cpuTimef, cpuTime1 ,cpuTime2, cpuTime3 ,cpuTime4;
-  // cpuTime0=clock();
-
+  //Do the update for each cell
   for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) {
     size_t numWalls = T.cell(cellIndex).numWall();
     
-  
-
     if(  T.cell(cellIndex).numVertex()!= numWalls ) {
      
       std::cerr << "VertexFromTRBScenterTriangulationMT::derivs() same number of vertices and walls."
@@ -2693,20 +2677,14 @@ derivs(Tissue &T,
 		<< std::endl;
       exit(-1);
     }
-    
-  
- 
+
     // ad-hoc for regional loosening
     // if ( std::sqrt(cellData[cellIndex][comIndex  ]*cellData[cellIndex][comIndex  ]
     //                +cellData[cellIndex][comIndex+1]*cellData[cellIndex][comIndex+1])<30)
     //   cellData[cellIndex][youngLIndex]=20;
     // else
     //   cellData[cellIndex][youngLIndex]=200;
-
- 
-
-   
-
+    
     double youngL=1;
     double youngT=1;
     
@@ -2803,8 +2781,6 @@ derivs(Tissue &T,
             
         //   }
         // }
-        
-
 
       }
       
@@ -2945,7 +2921,6 @@ derivs(Tissue &T,
       
     }
 
-
     // ad-hoc for 3d marcus
     
     // if(cellData[cellIndex][25]==-3){  // sidewalls (anticlinals)
@@ -2978,14 +2953,6 @@ derivs(Tissue &T,
     //   youngL = 0.8*youngL;
     //   youngT = 0.8*youngT; 
     // }
-  
-    
-
-
-
-
-
-
 
     // if(cellData[cellIndex][25]==-3 && cellData[cellIndex][29]==1){  // L1 anticlinals
     //   youngL = sEpi*youngL;
@@ -3556,8 +3523,11 @@ derivs(Tissue &T,
          StrainAlmansi[1][1] != StrainAlmansi[1][1] ||
          StrainAlmansi[0][1] != StrainAlmansi[0][1] ||
          StrainAlmansi[1][0] != StrainAlmansi[1][0] ) 
-        std::cerr<<std::endl<<" strain is wrong "<<StrainAlmansi[0][0]<<StrainAlmansi[0][0]
-                 <<StrainAlmansi[0][0] << StrainAlmansi[0][0] <<"   Q "<<restingLength[0]<<" "<<restingLength[1]<<" "<<restingLength[2]<<"    P "<<Pa<<" "<<Pb<<" "<<Pc<<std::endl;
+        std::cerr << std::endl << "VertexFromTRBScenterTriangulationMT::derivs() WARNING!" << std::endl
+		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
+		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
+		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
+		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
       double atEa=AnisoRestLocal[0]*AnisoRestLocal[0]*Egreen[0][0]
         +AnisoRestLocal[0]*AnisoRestLocal[1]*(Egreen[0][1]+Egreen[1][0])
         +AnisoRestLocal[1]*AnisoRestLocal[1]*Egreen[1][1];
@@ -4600,19 +4570,20 @@ update(Tissue &T,
       if(StrainAlmansi[0][0] != StrainAlmansi[0][0] ||
          StrainAlmansi[1][1] != StrainAlmansi[1][1] ||
          StrainAlmansi[0][1] != StrainAlmansi[0][1] ||
-         StrainAlmansi[1][0] != StrainAlmansi[1][0] ) 
-        std::cerr<<std::endl<<" strain is wrong "<<StrainAlmansi[0][0]<<StrainAlmansi[0][0]
-                 <<StrainAlmansi[0][0] << StrainAlmansi[0][0] <<"   Q "<<restingLength[0]<<" "<<restingLength[1]<<" "<<restingLength[2]<<"    P "<<Pa<<" "<<Pb<<" "<<Pc<<std::endl;
+         StrainAlmansi[1][0] != StrainAlmansi[1][0] ) {
+        std::cerr << std::endl << "VertexFromTRBScenterTriangulationMT::update() WARNING!" << std::endl
+		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
+		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
+		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
+		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
+      }
+
       double atEa=AnisoRestLocal[0]*AnisoRestLocal[0]*Egreen[0][0]
         +AnisoRestLocal[0]*AnisoRestLocal[1]*(Egreen[0][1]+Egreen[1][0])
         +AnisoRestLocal[1]*AnisoRestLocal[1]*Egreen[1][1];
 
       double I4=atEa;
-
       
-    
-
-  
       double Eaa[2][2]=
         { { Egreen[0][0]*directAniso[0][0]+Egreen[0][1]*directAniso[1][0],
             Egreen[0][0]*directAniso[0][1]+Egreen[0][1]*directAniso[1][1]
@@ -7636,10 +7607,13 @@ double StRot[2][2]=
       if(StrainAlmansi[0][0] != StrainAlmansi[0][0] ||
          StrainAlmansi[1][1] != StrainAlmansi[1][1] ||
          StrainAlmansi[0][1] != StrainAlmansi[0][1] ||
-         StrainAlmansi[1][0] != StrainAlmansi[1][0] ) 
-        std::cerr<<std::endl<<" strain is wrong "<<StrainAlmansi[0][0]<<StrainAlmansi[0][0]
-                 <<StrainAlmansi[0][0] << StrainAlmansi[0][0] <<"   Q "<<restingLength[0]<<" "<<restingLength[1]<<" "<<restingLength[2]<<"    P "<<Pa<<" "<<Pb<<" "<<Pc<<std::endl;
-      
+         StrainAlmansi[1][0] != StrainAlmansi[1][0] ) {
+        std::cerr << std::endl << "VertexFromTRLScenterTriangulationMT::derivs() WARNING!" << std::endl
+		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
+		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
+		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
+		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
+      }
       //HJ: removed due to unused variable warning
       //double areaFactor=restingArea/Area; // 1/detF
       
