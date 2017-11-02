@@ -1401,8 +1401,9 @@ VertexFromEpidermalWallSpring(std::vector<double> &paraValue,
 					std::vector< std::vector<size_t> > 
 					&indValue ) {
   
-  //Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
+  // Do some checks on the parameters and variable indeces
+  //
   if( paraValue.size()!=2 ) {
     std::cerr << "VertexFromEpidermalWallSpring::"
 	      << "VertexFromEpidermalWallSpring() "
@@ -1414,28 +1415,27 @@ VertexFromEpidermalWallSpring(std::vector<double> &paraValue,
 			|| indValue[0].size() != 1 
 			|| (indValue.size()==2 && indValue[1].size() != 1) ) {
     std::cerr << "VertexFromEpidermalWallSpring::"
-							<< "VertexFromEpidermalWallSpring() "
-							<< "Wall length index given in first level,"
-							<< " and optionally wall variable save index in second.\n";
+	      << "VertexFromEpidermalWallSpring() "
+	      << "Wall length index given in first level,"
+	      << " and optionally wall variable save index in second.\n";
     exit(0);
   }
-  //Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
+  // Set the variable values
+  //
   setId("VertexFromEpidermalWallSpring");
   setParameter(paraValue);  
   setVariableIndex(indValue);
-  
-  //Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+
+  //
+  // Set the parameter identities
+  //
   std::vector<std::string> tmp( numParameter() );
   tmp[0] = "K_force";
   tmp[1] = "frac_adh";
   setParameterId( tmp );
 }
 
-//! Derivative contribution for asymmetric wall springs on vertices
-/*! 
-*/
 void VertexFromEpidermalWallSpring::
 derivs(Tissue &T,
        DataMatrix &cellData,
@@ -1489,34 +1489,37 @@ derivs(Tissue &T,
 
 VertexFromEpidermalCellWallSpring::
 VertexFromEpidermalCellWallSpring(std::vector<double> &paraValue, 
-																						std::vector< std::vector<size_t> > 
-																						&indValue ) 
+				  std::vector< std::vector<size_t> > 
+				  &indValue ) 
 {  
-  //Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
+  // Do some checks on the parameters and variable indeces
+  //
   if( paraValue.size()!=2 ) {
     std::cerr << "VertexFromEpidermalCellWallSpring::"
-							<< "VertexFromEpidermalCellWallSpring() "
-							<< "Uses two parameters K_force frac_adhesion.\n";
+	      << "VertexFromEpidermalCellWallSpring() "
+	      << "Uses two parameters K_force frac_adhesion.\n";
     exit(0);
   }
   if( indValue.size() < 1 || indValue.size() > 2 
-			|| indValue[0].size() != 1 
-			|| (indValue.size()==2 && indValue[1].size() != 1) ) {
+      || indValue[0].size() != 1 
+      || (indValue.size()==2 && indValue[1].size() != 1) ) {
     std::cerr << "VertexFromEpidermalCellWallSpring::"
-							<< "VertexFromEpidermalCellWallSpring() "
-							<< "Wall length index given in first level,"
-							<< " and optionally wall variable save index in second.\n";
+	      << "VertexFromEpidermalCellWallSpring() "
+	      << "Wall length index given in first level,"
+	      << " and optionally wall variable save index in second.\n";
     exit(0);
   }
+  //
   //Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
   setId("VertexFromEpidermalCellWallSpring");
   setParameter(paraValue);  
   setVariableIndex(indValue);
   
+  //
   //Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<std::string> tmp( numParameter() );
   tmp[0] = "K_force";
   tmp[1] = "frac_adh";
@@ -1549,31 +1552,31 @@ derivs(Tissue &T,
       //Calculate shared factors
       double distance=0.0;
       for( size_t d=0 ; d<dimension ; d++ )
-				distance += (vertexData[v1][d]-vertexData[v2][d])*
-					(vertexData[v1][d]-vertexData[v2][d]);
+	distance += (vertexData[v1][d]-vertexData[v2][d])*
+	  (vertexData[v1][d]-vertexData[v2][d]);
       distance = std::sqrt(distance);
       double wallLength=wallData[i][wallLengthIndex];
       double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
       if( distance <= 0.0 && wallLength <=0.0 ) {
-				//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-				coeff = 0.0;
+	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	coeff = 0.0;
       }
       if( distance>wallLength )
-				coeff *=parameter(1);
+	coeff *=parameter(1);
       
-			//Save force in wall variable if appropriate
-			if( numVariableIndexLevel()>1 )
-				wallData[i][variableIndex(1,0)] = coeff*distance;
-			
+      //Save force in wall variable if appropriate
+      if( numVariableIndexLevel()>1 )
+	wallData[i][variableIndex(1,0)] = coeff*distance;
+      
       //Update both vertices for each dimension
       for(size_t d=0 ; d<dimension ; d++ ) {
-				double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-				vertexDerivs[v1][d] -= div;
-				vertexDerivs[v2][d] += div;
+	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	vertexDerivs[v1][d] -= div;
+	vertexDerivs[v2][d] += div;
       }
     }
-		else if( numVariableIndexLevel()>1 )
-			wallData[i][variableIndex(1,0)] = 0.0;
+    else if( numVariableIndexLevel()>1 )
+      wallData[i][variableIndex(1,0)] = 0.0;
   }
 }
 
