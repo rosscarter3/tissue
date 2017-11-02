@@ -76,28 +76,6 @@ namespace WallMechanics {
   }
   
   void Spring::
-  initiate(Tissue &T,
-	   DataMatrix &cellData,
-	   DataMatrix &wallData,
-	   DataMatrix &vertexData,
-	   DataMatrix &cellDerivs,
-	   DataMatrix &wallDerivs,
-	   DataMatrix &vertexDerivs ){
-    size_t wallLengthIndex = variableIndex(0,0);
-    size_t numWalls = T.numWall();
-    if(numParameter()==4 && parameter(3)==1){ // double resting length
-      std::cerr<< "WallMechanics::Spring::"
-	       << "initiate() "
-	       << "When double resting length is applied this reaction uses "
-	       << "the second component of wallVector as resting length."
-	       << " It should exist and not be used for anything else!"
-	       << std::endl;
-      for( size_t i=0 ; i<numWalls ; ++i ) 
-	wallData[i][wallLengthIndex+1]=wallData[i][wallLengthIndex];
-    }
-  }
-
-  void Spring::
   derivs(Tissue &T,
 	 DataMatrix &cellData,
 	 DataMatrix &wallData,

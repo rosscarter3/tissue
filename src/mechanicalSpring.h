@@ -40,7 +40,7 @@ namespace WallMechanics {
   /// K_force K_adh
   /// L_ij-index
   ///
-  /// or, when the force is saved:
+  /// or, when the force is saved in wall variable:
   ///
   /// WallMechanics::Spring 2 2 1 1
   /// K_force K_adh
@@ -78,15 +78,7 @@ namespace WallMechanics {
     Spring(std::vector<double> &paraValue, 
 			 std::vector< std::vector<size_t> > 
 			 &indValue );
-    
-    void initiate(Tissue &T,
-		  DataMatrix &cellData,
-		  DataMatrix &wallData,
-		  DataMatrix &vertexData,
-		  DataMatrix &cellDerivs,
-		  DataMatrix &wallDerivs,
-		  DataMatrix &vertexDerivs );
-    
+        
     ///
     /// @brief Derivative function for this reaction class
     ///
