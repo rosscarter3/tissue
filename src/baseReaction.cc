@@ -125,10 +125,10 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromWallSpringMTSpatial(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTHistory")
     return new VertexFromWallSpringMTHistory(paraValue,indValue);
-  else if(idValue=="VertexFromEpidermalWallSpring")
-    return new VertexFromEpidermalWallSpring(paraValue,indValue);
-  else if(idValue=="VertexFromEpidermalCellWallSpring")
-    return new VertexFromEpidermalCellWallSpring(paraValue,indValue);
+  else if(idValue=="VertexFromEpidermalWallSpring" || idValue=="WallMechanics::SpringEpidermal")
+    return new WallMechanics::SpringEpidermal(paraValue,indValue);
+  else if(idValue=="VertexFromEpidermalCellWallSpring" || idValue=="WallMechanics::SpringEpidermalCell")
+    return new WallMechanics::SpringEpidermalCell(paraValue,indValue);
   else if (idValue == "VertexFromWallSpringExperimental")
     return new VertexFromWallSpringExperimental(paraValue, indValue);
   else if(idValue=="VertexFromWallSpringMTConcentrationHill")

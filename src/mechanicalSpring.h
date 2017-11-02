@@ -105,7 +105,92 @@ namespace WallMechanics {
     
   };
 
+  ///
+  /// @brief Updates vertices of epidermal walls from an asymmetric wall spring potential
+  ///
+  /// Mechanical spring with possibility to have stronger repressive spring constants compared to
+  /// attractive.
+  /// Same as WallMechanics::Spring (basic version), except that only walls connected to the tissue
+  /// boundary/background are updated.
+  ///
+  /// @see WallMechanics::Spring
+  ///
+  class SpringEpidermal : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SpringEpidermal(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
+  ///
+  /// @brief Updates vertices of epidermal cells from an asymmetric wall spring potential
+  ///
+  /// Mechanical spring with possibility to have stronger repressive spring constants compared to
+  /// attractive.
+  /// Same as WallMechanics::Spring (basic version), except that only walls connected to epidermal
+  /// cells are updated. Epidermal cells are defined to be neighbor with the tissue boundary/background.
+  ///
+  /// @see WallMechanics::Spring
+  ///
+  class SpringEpidermalCell : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SpringEpidermalCell(std::vector<double> &paraValue, 
+			std::vector< std::vector<size_t> > 
+			&indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///  
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
 } // end namespace WallMechanics
+
 ///
 /// @brief Updates vertices from an asymmetric wall spring potential
 ///
@@ -508,72 +593,6 @@ class VertexFromWallSpringMTHistory : public BaseReaction {
 		DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from an asymmetric epidermal wall spring potential
-class VertexFromEpidermalWallSpring : public BaseReaction {
-  
- public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromEpidermalWallSpring(std::vector<double> &paraValue, 
-				std::vector< std::vector<size_t> > 
-				&indValue );
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Tissue &T,...)
-  ///    
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from an asymmetric epidermal wall spring potential
-class VertexFromEpidermalCellWallSpring : public BaseReaction {
-  
- public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromEpidermalCellWallSpring(std::vector<double> &paraValue, 
-				    std::vector< std::vector<size_t> > 
-				    &indValue );
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Tissue &T,...)
-  ///  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
 };
 
 class VertexFromWallSpringExperimental : public BaseReaction

@@ -141,6 +141,183 @@ namespace WallMechanics {
 		DataMatrix &sdydtVertex ){
     derivs(T,cellData,wallData,vertexData,cellDerivs,wallDerivs,vertexDerivs);
   }
+
+  SpringEpidermal::
+  SpringEpidermal(std::vector<double> &paraValue, 
+		  std::vector< std::vector<size_t> > 
+		  &indValue ) {
+    
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=2 ) {
+      std::cerr << "WallMechanics::SpringEpidermal::"
+		<< "SpringEpidermal() "
+		<< "Uses two parameters K_force frac_adhesion." << std::endl;
+      exit(EXIT_FAILURE);
+    }    
+    if( indValue.size() < 1 || indValue.size() > 2 
+	|| indValue[0].size() != 1 
+	|| (indValue.size()==2 && indValue[1].size() != 1) ) {
+      std::cerr << "WallMechanics::SpringEpidermal::"
+		<< "SpringEpidermal() "
+		<< "Wall length index given in first level,"
+		<< " and optionally wall variable index to save the force in second level."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("WallMechanics::SpringEpidermal");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "K_force";
+    tmp[1] = "frac_adh";
+    setParameterId( tmp );
+  }
+
+  void SpringEpidermal::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each epidermal wall
+    size_t numWalls = T.numWall();
+    size_t wallLengthIndex = variableIndex(0,0);
+    
+    for( size_t i=0 ; i<numWalls ; ++i ) {
+      //only for edges connected to background
+      if( !( T.wall(i).cell1() != T.background() &&
+	     T.wall(i).cell2() != T.background() ) ) {
+	size_t v1 = T.wall(i).vertex1()->index();
+	size_t v2 = T.wall(i).vertex2()->index();
+	size_t dimension = vertexData[v1].size();
+	assert( vertexData[v2].size()==dimension );
+	//Calculate shared factors
+	double distance=0.0;
+	for( size_t d=0 ; d<dimension ; d++ )
+	  distance += (vertexData[v1][d]-vertexData[v2][d])*
+	    (vertexData[v1][d]-vertexData[v2][d]);
+	distance = std::sqrt(distance);
+	double wallLength=wallData[i][wallLengthIndex];
+	double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
+	if( distance <= 0.0 && wallLength <=0.0 ) {
+	  //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	  coeff = 0.0;
+	}
+	if( distance>wallLength )
+	  coeff *=parameter(1);
+	
+	//Save force in wall variable if appropriate
+	if( numVariableIndexLevel()>1 )
+	  wallData[i][variableIndex(1,0)] = coeff*distance;
+	
+	//Update both vertices for each dimension
+	for(size_t d=0 ; d<dimension ; d++ ) {
+	  double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	  vertexDerivs[v1][d] -= div;
+	  vertexDerivs[v2][d] += div;
+	}
+      }
+      else if( numVariableIndexLevel()>1 )
+	wallData[i][variableIndex(1,0)] = 0.0;
+    }
+  }
+  
+  SpringEpidermalCell::
+  SpringEpidermalCell(std::vector<double> &paraValue, 
+		      std::vector< std::vector<size_t> > 
+		      &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=2 ) {
+      std::cerr << "WallMechanics::SpringEpidermalCell::"
+		<< "SpringEpidermalCell() "
+		<< "Uses two parameters K_force frac_adhesion." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() < 1 || indValue.size() > 2 
+	|| indValue[0].size() != 1 
+	|| (indValue.size()==2 && indValue[1].size() != 1) ) {
+      std::cerr << "WallMechanics::SpringEpidermalCell::"
+		<< "SpringEpidermalCell() "
+		<< "Wall length index given in first level,"
+		<< " and optionally wall variable save index in second."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    //Set the variable values
+    setId("WallMechanics::SpringEpidermalCell");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    //Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "K_force";
+    tmp[1] = "frac_adh";
+    setParameterId( tmp );
+  }
+  
+  void SpringEpidermalCell::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {
+    
+    //Do the update for each wall
+    size_t numWalls = T.numWall();
+    size_t wallLengthIndex = variableIndex(0,0);
+    
+    for( size_t i=0 ; i<numWalls ; ++i ) {
+      if( T.wall(i).cell1() == T.background() ||
+	  T.wall(i).cell1()->isNeighbor(T.background()) ||
+	  T.wall(i).cell2() == T.background() || 
+	  T.wall(i).cell2()->isNeighbor(T.background()) ) {
+	size_t v1 = T.wall(i).vertex1()->index();
+	size_t v2 = T.wall(i).vertex2()->index();
+	size_t dimension = vertexData[v1].size();
+	assert( vertexData[v2].size()==dimension );
+	//Calculate shared factors
+	double distance=0.0;
+	for( size_t d=0 ; d<dimension ; d++ )
+	  distance += (vertexData[v1][d]-vertexData[v2][d])*
+	    (vertexData[v1][d]-vertexData[v2][d]);
+	distance = std::sqrt(distance);
+	double wallLength=wallData[i][wallLengthIndex];
+	double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
+	if( distance <= 0.0 && wallLength <=0.0 ) {
+	  //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	  coeff = 0.0;
+	}
+	if( distance>wallLength )
+	  coeff *=parameter(1);
+	
+	//Save force in wall variable if appropriate
+	if( numVariableIndexLevel()>1 )
+	  wallData[i][variableIndex(1,0)] = coeff*distance;
+	
+	//Update both vertices for each dimension
+	for(size_t d=0 ; d<dimension ; d++ ) {
+	  double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	  vertexDerivs[v1][d] -= div;
+	  vertexDerivs[v2][d] += div;
+	}
+      }
+      else if( numVariableIndexLevel()>1 )
+	wallData[i][variableIndex(1,0)] = 0.0;
+    }
+  }
 } // end namespace WallMechanics
 
 VertexFromWallSpringMTnew::
@@ -1183,191 +1360,6 @@ initiate(Tissue &T,
     
     wallData[i][variableIndex(1,0)] = parameter(0)+parameter(1) *
       (2.0-c1Fac-c2Fac);
-  }
-}
-
-VertexFromEpidermalWallSpring::
-VertexFromEpidermalWallSpring(std::vector<double> &paraValue, 
-					std::vector< std::vector<size_t> > 
-					&indValue ) {
-  
-  //
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=2 ) {
-    std::cerr << "VertexFromEpidermalWallSpring::"
-	      << "VertexFromEpidermalWallSpring() "
-	      << "Uses two parameters K_force frac_adhesion.\n";
-    exit(0);
-  }
-
-  if( indValue.size() < 1 || indValue.size() > 2 
-			|| indValue[0].size() != 1 
-			|| (indValue.size()==2 && indValue[1].size() != 1) ) {
-    std::cerr << "VertexFromEpidermalWallSpring::"
-	      << "VertexFromEpidermalWallSpring() "
-	      << "Wall length index given in first level,"
-	      << " and optionally wall variable index to save the force in second.\n";
-    exit(0);
-  }
-  //
-  // Set the variable values
-  //
-  setId("VertexFromEpidermalWallSpring");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-
-  //
-  // Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "K_force";
-  tmp[1] = "frac_adh";
-  setParameterId( tmp );
-}
-
-void VertexFromEpidermalWallSpring::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each epidermal wall
-  size_t numWalls = T.numWall();
-  size_t wallLengthIndex = variableIndex(0,0);
-  
-  for( size_t i=0 ; i<numWalls ; ++i ) {
-    //only for edges connected to background
-    if( !( T.wall(i).cell1() != T.background() &&
-	   T.wall(i).cell2() != T.background() ) ) {
-      size_t v1 = T.wall(i).vertex1()->index();
-      size_t v2 = T.wall(i).vertex2()->index();
-      size_t dimension = vertexData[v1].size();
-      assert( vertexData[v2].size()==dimension );
-      //Calculate shared factors
-      double distance=0.0;
-      for( size_t d=0 ; d<dimension ; d++ )
-	distance += (vertexData[v1][d]-vertexData[v2][d])*
-	  (vertexData[v1][d]-vertexData[v2][d]);
-      distance = std::sqrt(distance);
-      double wallLength=wallData[i][wallLengthIndex];
-      double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
-      if( distance <= 0.0 && wallLength <=0.0 ) {
-	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-	coeff = 0.0;
-      }
-      if( distance>wallLength )
-	coeff *=parameter(1);
-      
-      //Save force in wall variable if appropriate
-      if( numVariableIndexLevel()>1 )
-	wallData[i][variableIndex(1,0)] = coeff*distance;
-      
-      //Update both vertices for each dimension
-      for(size_t d=0 ; d<dimension ; d++ ) {
-	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-	vertexDerivs[v1][d] -= div;
-	vertexDerivs[v2][d] += div;
-      }
-    }
-    else if( numVariableIndexLevel()>1 )
-      wallData[i][variableIndex(1,0)] = 0.0;
-  }
-}
-
-VertexFromEpidermalCellWallSpring::
-VertexFromEpidermalCellWallSpring(std::vector<double> &paraValue, 
-				  std::vector< std::vector<size_t> > 
-				  &indValue ) 
-{  
-  //
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=2 ) {
-    std::cerr << "VertexFromEpidermalCellWallSpring::"
-	      << "VertexFromEpidermalCellWallSpring() "
-	      << "Uses two parameters K_force frac_adhesion.\n";
-    exit(0);
-  }
-  if( indValue.size() < 1 || indValue.size() > 2 
-      || indValue[0].size() != 1 
-      || (indValue.size()==2 && indValue[1].size() != 1) ) {
-    std::cerr << "VertexFromEpidermalCellWallSpring::"
-	      << "VertexFromEpidermalCellWallSpring() "
-	      << "Wall length index given in first level,"
-	      << " and optionally wall variable save index in second.\n";
-    exit(0);
-  }
-  //
-  //Set the variable values
-  //
-  setId("VertexFromEpidermalCellWallSpring");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  //
-  //Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "K_force";
-  tmp[1] = "frac_adh";
-  setParameterId( tmp );
-}
-
-void VertexFromEpidermalCellWallSpring::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{
-  
-  //Do the update for each wall
-  size_t numWalls = T.numWall();
-  size_t wallLengthIndex = variableIndex(0,0);
-  
-  for( size_t i=0 ; i<numWalls ; ++i ) {
-    if( T.wall(i).cell1() == T.background() ||
-				T.wall(i).cell1()->isNeighbor(T.background()) ||
-				T.wall(i).cell2() == T.background() || 
-				T.wall(i).cell2()->isNeighbor(T.background()) ) {
-      size_t v1 = T.wall(i).vertex1()->index();
-      size_t v2 = T.wall(i).vertex2()->index();
-      size_t dimension = vertexData[v1].size();
-      assert( vertexData[v2].size()==dimension );
-      //Calculate shared factors
-      double distance=0.0;
-      for( size_t d=0 ; d<dimension ; d++ )
-	distance += (vertexData[v1][d]-vertexData[v2][d])*
-	  (vertexData[v1][d]-vertexData[v2][d]);
-      distance = std::sqrt(distance);
-      double wallLength=wallData[i][wallLengthIndex];
-      double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
-      if( distance <= 0.0 && wallLength <=0.0 ) {
-	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-	coeff = 0.0;
-      }
-      if( distance>wallLength )
-	coeff *=parameter(1);
-      
-      //Save force in wall variable if appropriate
-      if( numVariableIndexLevel()>1 )
-	wallData[i][variableIndex(1,0)] = coeff*distance;
-      
-      //Update both vertices for each dimension
-      for(size_t d=0 ; d<dimension ; d++ ) {
-	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-	vertexDerivs[v1][d] -= div;
-	vertexDerivs[v2][d] += div;
-      }
-    }
-    else if( numVariableIndexLevel()>1 )
-      wallData[i][variableIndex(1,0)] = 0.0;
   }
 }
 
