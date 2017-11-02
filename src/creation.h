@@ -371,8 +371,8 @@ class CreationSpatialCoordinate: public BaseReaction {
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
-/// creationSpatialPlane 4 2 1 1
-/// V X SIGN
+/// creationSpatialPlane 3 2 1 1
+/// V X 
 /// c_index
 /// x_index
 /// @endverbatim

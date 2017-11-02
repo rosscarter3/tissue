@@ -466,7 +466,7 @@ CreationSpatialPlane(std::vector<double> &paraValue,
   // Do some checks on the parameters and variable indeces
   if( paraValue.size()!=3 ) {
     std::cerr << "CreationSpatialPlane::CreationSpatialPlane() "
-	      << "Uses four parameters V_max X(K_Hill) and X_sign\n";
+	      << "Uses three parameters V_max X(K_Hill) and X_sign\n";
     exit(0);
   }
   if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
