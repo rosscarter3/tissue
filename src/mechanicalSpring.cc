@@ -15,343 +15,155 @@
 #include <iostream>
 #include <sstream>
 
-VertexFromWallSpring::
-VertexFromWallSpring(std::vector<double> &paraValue, 
-		     std::vector< std::vector<size_t> > 
-		     &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=2 && paraValue.size()!=3  && paraValue.size()!=4 ) {
-    std::cerr << "VertexFromWallSpring::"
-	      << "VertexFromWallSpring() "
-	      << "Uses two parameters K_force frac_adhesion.\n"
-	      << "or \n"
-	      << "Uses three parameters K_force1,frac_adhesion, K_force2."
-              << "The fourth parameter(optional) is used as a flag for double resting length(1). "
-              <<std::endl;
-    exit(0);
-  }
+namespace WallMechanics {
   
-  if( (indValue.size() !=1  &&  indValue.size() !=2  && 
-       (indValue.size()!=3 ||  indValue[2].size() != 1 ||( indValue[1].size() != 0  &&  indValue[1].size() != 1 )) 
-       ) 
-      || (indValue[0].size() != 1 && indValue[0].size() != 2))  {
-    std::cerr << "VertexFromWallSpring::"
-     	      << "VertexFromWallSpring() "
-     	      << "Wall length index given in first level. "
-     	      << "If two levels given, force save index given in second level. "
-	      << "If three levels given (optional) force save index given in second level "
-	      << "and wall_type_index given in third level. \n";
-    exit(0);
-  }
- 
-  // Set the variable values
-  setId("VertexFromWallSpring");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
+  Spring::
+  Spring(std::vector<double> &paraValue, 
+	 std::vector< std::vector<size_t> > 
+	 &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=2 && paraValue.size()!=3 ) {
+      std::cerr << "WallMechanics::Spring::"
+		<< "Spring() "
+		<< "Uses two parameters K_force frac_adhesion." << std::endl
+		<< "or " << std::endl
+		<< "three parameters K_force1, frac_adhesion, K_force2."
+		<<std::endl;
+      exit(EXIT_FAILURE);
+    }
   
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  if(numParameter()==2 ){
+    if( (indValue.size() !=1 && indValue.size() !=2  && 
+	 (indValue.size()!=3 || indValue[2].size() != 1 ||
+	  ( indValue[1].size() != 0  &&  indValue[1].size() != 1 )) 
+	 ) 
+	|| (indValue[0].size() != 1 && indValue[0].size() != 2))  {
+      std::cerr << "WallMechanics::Spring::"
+		<< "Spring() "
+		<< "Wall length index given in first level. "
+		<< "If two levels are given, wall index for saving force is in second level. "
+		<< "If three levels are given, (optional) wall force save index is given in second level "
+		<< "and wall_type_index given in third level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    // Set the variable values
+    setId("WallMechanics::Spring");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
     tmp[0] = "K_force";
     tmp[1] = "frac_adh";
-  }
-  if(numParameter()==3 ){
-    tmp[0] = "K_force1";
-    tmp[1] = "frac_adh";
-    tmp[2] = "K_force2";
-  }
-  if(numParameter()==4 ){
-    tmp[0] = "K_force1";
-    tmp[1] = "frac_adh";
-    tmp[2] = "K_force2";
-    tmp[3] = "DoubleLengthFlag";
-  }
+    if(numParameter()>2 ){
+      tmp[2] = "K_force2";
+    }
+    if(numParameter()>3 ){
+      tmp[3] = "DoubleLengthFlag";
+    }
+    setParameterId( tmp );
 
-  setParameterId( tmp );
-
-  if(paraValue.size()==4 && parameter(3)==1 && indValue[0].size() != 2) {
-    std::cerr << "VertexFromWallSpring::"
-	      << "VertexFromWallSpring() "
-	      << "When double resting length is used cellvector size is needed. "
-              << "The firt index at the fisrt level is wall length index  and "
-              << "second index at the first level is cell vector size. "
-              <<std::endl;
-    exit(0);
+    if(paraValue.size()==4 && parameter(3)==1 && indValue[0].size() != 2) {
+      std::cerr << "WallMechanics::Spring::"
+		<< "Spring() "
+		<< "When double resting length is used, cellvector size is needed. "
+		<< "The first index at the first level is wall length index and "
+		<< "second index at the first level is cell vector size. "
+		<<std::endl;
+      exit(EXIT_FAILURE);
+    }
   }
   
-}
-void VertexFromWallSpring::
-initiate(Tissue &T,
-         DataMatrix &cellData,
-         DataMatrix &wallData,
-         DataMatrix &vertexData,
-         DataMatrix &cellDerivs,
-         DataMatrix &wallDerivs,
-         DataMatrix &vertexDerivs ){
-  size_t wallLengthIndex = variableIndex(0,0);
-  size_t numWalls = T.numWall();
-  if(numParameter()==4 && parameter(3)==1){ // double resting length
-    std::cerr<< "VertexFromWallSpring::"
-             << "initiate()"
-             << "When double resting length is applied this reaction uses "
-             << "the second component of wallVector as resting length."
-             << " It should exist and not used for anything else!!"
-             << std::endl;
-    for( size_t i=0 ; i<numWalls ; ++i ) 
-      wallData[i][wallLengthIndex+1]=wallData[i][wallLengthIndex];
-  }
-
-}
-
-
-
-void VertexFromWallSpring::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each wall
-  size_t numWalls = T.numWall();
-  size_t wallLengthIndex = variableIndex(0,0);
-  //size_t InternalCellIndex = variableIndex(0,1);
-  
-  // internal wall indices aorta templates
-  // std::cerr<<".............begin................"<<std::endl;
-  // for( size_t i=0 ; i<numWalls ; ++i ) {
-  //   size_t v1 = T.wall(i).vertex1()->index();
-  //   size_t v2 = T.wall(i).vertex2()->index();
-  //   size_t dimension = vertexData[v1].size();
-  //   assert( vertexData[v2].size()==dimension );
-  //   double distance1=0.0;
-  //   double distance2=0.0;
-  //   for( size_t d=0 ; d<dimension ; d++ ){
-  //     distance1 += vertexData[v1][d]*vertexData[v1][d];
-  //     distance2 += vertexData[v2][d]*vertexData[v2][d];
-  //   }
-  //   if (distance1<.98 || distance2<.98) std::cerr<< i <<std::endl;
-  // }
-
-  // std::cerr<<".............end ................."<<std::endl;
-
-
-  for( size_t i=0 ; i<numWalls ; ++i ) {
-    size_t v1 = T.wall(i).vertex1()->index();
-    size_t v2 = T.wall(i).vertex2()->index();
-    size_t dimension = vertexData[v1].size();
-    assert( vertexData[v2].size()==dimension );
-    //Calculate shared factors
-    double distance=0.0;
-    for( size_t d=0 ; d<dimension ; d++ )
-      distance += (vertexData[v1][d]-vertexData[v2][d])*
-	(vertexData[v1][d]-vertexData[v2][d]);
-    distance = std::sqrt(distance);
-    double wallLength=wallData[i][wallLengthIndex];
-    //double wl1,wl2;
-
-    double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
-    // if(wallData[i][3]==1)
-    //   coeff = 0.1*parameter(0)*((1.0/wallLength)-(1.0/distance));
+  void Spring::
+  initiate(Tissue &T,
+	   DataMatrix &cellData,
+	   DataMatrix &wallData,
+	   DataMatrix &vertexData,
+	   DataMatrix &cellDerivs,
+	   DataMatrix &wallDerivs,
+	   DataMatrix &vertexDerivs ){
+    size_t wallLengthIndex = variableIndex(0,0);
+    size_t numWalls = T.numWall();
     if(numParameter()==4 && parameter(3)==1){ // double resting length
-
-      wallLength=wallData[i][wallLengthIndex+1];
-
-      // if(T.wall(i).cell1()==T.background()){
-        
-      //   size_t c2=T.wall(i).cell2() -> index();
-      //   size_t c2i;
-      //   for(size_t n=0;n<T.cell(c2).numWall();n++)
-      //     if(T.cell(c2).wall(n) -> index() ==i)
-      //       c2i=n;
-      //   wl2=cellData[c2][InternalCellIndex+dimension+2*T.cell(c2).numWall()+c2i];
-      //   wl1=wl2;
-      // }
-      // else if(T.wall(i).cell2()==T.background()){
-
-      //   size_t c1=T.wall(i).cell1() -> index();
-      //   size_t c1i,c2i;
-      //   for(size_t n=0;n<T.cell(c1).numWall();n++)
-      //     if(T.cell(c1).wall(n) -> index() ==i)
-      //       c1i=n;
-      //   wl1=cellData[c1][InternalCellIndex+dimension+2*T.cell(c1).numWall()+c1i];
-      //   wl2=wl1;
-      // }
-      // else{
-
-      // size_t c1=T.wall(i).cell1() -> index();
-      // size_t c2=T.wall(i).cell2() -> index();
-      
-      // size_t c1i,c2i;
-      // for(size_t n=0;n<T.cell(c1).numWall();n++)
-      //   if(T.cell(c1).wall(n) -> index() ==i)
-      //     c1i=n;
-      // for(size_t n=0;n<T.cell(c2).numWall();n++)
-      //   if(T.cell(c2).wall(n) -> index() ==i)
-      //     c2i=n;
-      
-      // wl1=cellData[c1][InternalCellIndex+dimension+2*T.cell(c1).numWall()+c1i];
-      // wl2=cellData[c2][InternalCellIndex+dimension+2*T.cell(c2).numWall()+c2i];
-      // std::cerr<<wl1<<"     "<<wl2<<std::endl;
-      // }
-      // double coeff = 0.5*parameter(0)*
-      //   ((1.0/(wallLength+wl1))-(1.0/distance)+
-      //    (1.0/(wallLength+wl2))-(1.0/distance));
+      std::cerr<< "WallMechanics::Spring::"
+	       << "initiate() "
+	       << "When double resting length is applied this reaction uses "
+	       << "the second component of wallVector as resting length."
+	       << " It should exist and not be used for anything else!"
+	       << std::endl;
+      for( size_t i=0 ; i<numWalls ; ++i ) 
+	wallData[i][wallLengthIndex+1]=wallData[i][wallLengthIndex];
     }
+  }
 
-    //double coeff = parameter(0)*(distance-wallLength)*(distance-wallLength)*(distance-wallLength)/(distance*wallLength);
-    // Use different spring elasticity if wall type is provided in wall vector
-    if(numParameter()==3 && wallData[i][variableIndex(2,0)] ==1 ){
-      coeff = parameter(2)*((1.0/wallLength)-(1.0/distance));
-    }
-      
-    if( distance <= 0.0 && wallLength <=0.0 ) {
-      //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-      coeff = 0.0;
-    }
-    if( distance>wallLength )
-      coeff *=parameter(1);
+  void Spring::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
     
-    //Save force in wall variable if appropriate
-    if( numVariableIndexLevel()==2 ||(numParameter()==3 && numVariableIndex(1)==1) ) 
+    //Do the update for each wall
+    size_t numWalls = T.numWall();
+    size_t wallLengthIndex = variableIndex(0,0);
+    
+    for( size_t i=0 ; i<numWalls ; ++i ) {
+      size_t v1 = T.wall(i).vertex1()->index();
+      size_t v2 = T.wall(i).vertex2()->index();
+      size_t dimension = vertexData[v1].size();
+      assert( vertexData[v2].size()==dimension );
+      //Calculate shared factors
+      double distance=0.0;
+      for( size_t d=0 ; d<dimension ; d++ )
+	distance += (vertexData[v1][d]-vertexData[v2][d])*
+	  (vertexData[v1][d]-vertexData[v2][d]);
+      distance = std::sqrt(distance);
+      double wallLength=wallData[i][wallLengthIndex];
+      
+      double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
+
+      // Use different spring elasticity if wall type is provided in wall vector
+      if(numParameter()==3 && wallData[i][variableIndex(2,0)] ==1 ){
+	coeff = parameter(2)*((1.0/wallLength)-(1.0/distance));
+      }
+      if( distance <= 0.0 && wallLength <=0.0 ) {
+	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	coeff = 0.0;
+      }
+      if( distance>wallLength )
+	coeff *= parameter(1);
+      
+      //Save force in wall variable if appropriate
+      if( (numVariableIndexLevel()==2 && numVariableIndex(1)>0) ||
+	  (numParameter()==3 && numVariableIndex(1)>0) ) 
         wallData[i][variableIndex(1,0)] = coeff*distance;
     
-    //Update both vertices for each dimension
-    for(size_t d=0 ; d<dimension ; d++ ) {
-      double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-      vertexDerivs[v1][d] -= div;
-      vertexDerivs[v2][d] += div;
+      //Update both vertices for each dimension
+      for(size_t d=0 ; d<dimension ; d++ ) {
+	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	vertexDerivs[v1][d] -= div;
+	vertexDerivs[v2][d] += div;
+      }
     }
   }
-}
 
-
-void VertexFromWallSpring::
-derivsWithAbs(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &wallData,
-        DataMatrix &vertexData,
-        DataMatrix &cellDerivs,
-        DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs,
-        DataMatrix &sdydtCell,
-        DataMatrix &sdydtWall,
-        DataMatrix &sdydtVertex ){
-  
-  //Do the update for each wall
-  size_t numWalls = T.numWall();
-  size_t wallLengthIndex = variableIndex(0,0);
-  //size_t InternalCellIndex = variableIndex(0,1);
-  
-  // internal wall indices aorta templates
-  // std::cerr<<".............begin................"<<std::endl;
-  // for( size_t i=0 ; i<numWalls ; ++i ) {
-  //   size_t v1 = T.wall(i).vertex1()->index();
-  //   size_t v2 = T.wall(i).vertex2()->index();
-  //   size_t dimension = vertexData[v1].size();
-  //   assert( vertexData[v2].size()==dimension );
-  //   double distance1=0.0;
-  //   double distance2=0.0;
-  //   for( size_t d=0 ; d<dimension ; d++ ){
-  //     distance1 += vertexData[v1][d]*vertexData[v1][d];
-  //     distance2 += vertexData[v2][d]*vertexData[v2][d];
-  //   }
-  //   if (distance1<.98 || distance2<.98) std::cerr<< i <<std::endl;
-  // }
-
-  // std::cerr<<".............end ................."<<std::endl;
-
-
-  for( size_t i=0 ; i<numWalls ; ++i ) {
-    size_t v1 = T.wall(i).vertex1()->index();
-    size_t v2 = T.wall(i).vertex2()->index();
-    size_t dimension = vertexData[v1].size();
-    assert( vertexData[v2].size()==dimension );
-    //Calculate shared factors
-    double distance=0.0;
-    for( size_t d=0 ; d<dimension ; d++ )
-      distance += (vertexData[v1][d]-vertexData[v2][d])*
-  (vertexData[v1][d]-vertexData[v2][d]);
-    distance = std::sqrt(distance);
-    double wallLength=wallData[i][wallLengthIndex];
-    //double wl1,wl2;
-
-    double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
-    
-    if(numParameter()==4 && parameter(3)==1){ // double resting length
-
-      wallLength=wallData[i][wallLengthIndex+1];
-
-      // if(T.wall(i).cell1()==T.background()){
-        
-      //   size_t c2=T.wall(i).cell2() -> index();
-      //   size_t c2i;
-      //   for(size_t n=0;n<T.cell(c2).numWall();n++)
-      //     if(T.cell(c2).wall(n) -> index() ==i)
-      //       c2i=n;
-      //   wl2=cellData[c2][InternalCellIndex+dimension+2*T.cell(c2).numWall()+c2i];
-      //   wl1=wl2;
-      // }
-      // else if(T.wall(i).cell2()==T.background()){
-
-      //   size_t c1=T.wall(i).cell1() -> index();
-      //   size_t c1i,c2i;
-      //   for(size_t n=0;n<T.cell(c1).numWall();n++)
-      //     if(T.cell(c1).wall(n) -> index() ==i)
-      //       c1i=n;
-      //   wl1=cellData[c1][InternalCellIndex+dimension+2*T.cell(c1).numWall()+c1i];
-      //   wl2=wl1;
-      // }
-      // else{
-
-      // size_t c1=T.wall(i).cell1() -> index();
-      // size_t c2=T.wall(i).cell2() -> index();
-      
-      // size_t c1i,c2i;
-      // for(size_t n=0;n<T.cell(c1).numWall();n++)
-      //   if(T.cell(c1).wall(n) -> index() ==i)
-      //     c1i=n;
-      // for(size_t n=0;n<T.cell(c2).numWall();n++)
-      //   if(T.cell(c2).wall(n) -> index() ==i)
-      //     c2i=n;
-      
-      // wl1=cellData[c1][InternalCellIndex+dimension+2*T.cell(c1).numWall()+c1i];
-      // wl2=cellData[c2][InternalCellIndex+dimension+2*T.cell(c2).numWall()+c2i];
-      // std::cerr<<wl1<<"     "<<wl2<<std::endl;
-      // }
-      // double coeff = 0.5*parameter(0)*
-      //   ((1.0/(wallLength+wl1))-(1.0/distance)+
-      //    (1.0/(wallLength+wl2))-(1.0/distance));
-    }
-
-    //double coeff = parameter(0)*(distance-wallLength)*(distance-wallLength)*(distance-wallLength)/(distance*wallLength);
-    // Use different spring elasticity if wall type is provided in wall vector
-    if(numParameter()==3 && wallData[i][variableIndex(2,0)] ==1 ){
-      coeff = parameter(2)*((1.0/wallLength)-(1.0/distance));
-    }
-      
-    if( distance <= 0.0 && wallLength <=0.0 ) {
-      //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-      coeff = 0.0;
-    }
-    if( distance>wallLength )
-      coeff *=parameter(1);
-    
-    //Save force in wall variable if appropriate
-    if( numVariableIndexLevel()==2 ||(numParameter()==3 && numVariableIndex(1)==1) ) 
-        wallData[i][variableIndex(1,0)] = coeff*distance;
-    
-    //Update both vertices for each dimension
-    for(size_t d=0 ; d<dimension ; d++ ) {
-      double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-      vertexDerivs[v1][d] -= div;
-      vertexDerivs[v2][d] += div;
-    }
+  void Spring::
+  derivsWithAbs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs,
+		DataMatrix &sdydtCell,
+		DataMatrix &sdydtWall,
+		DataMatrix &sdydtVertex ){
+    derivs(T,cellData,wallData,vertexData,cellDerivs,wallDerivs,vertexDerivs);
   }
-}
+} // end namespace WallMechanics
 
 VertexFromWallSpringMTnew::
 VertexFromWallSpringMTnew(std::vector<double> &paraValue, 
@@ -1417,7 +1229,7 @@ VertexFromEpidermalWallSpring(std::vector<double> &paraValue,
     std::cerr << "VertexFromEpidermalWallSpring::"
 	      << "VertexFromEpidermalWallSpring() "
 	      << "Wall length index given in first level,"
-	      << " and optionally wall variable save index in second.\n";
+	      << " and optionally wall variable index to save the force in second.\n";
     exit(0);
   }
   //
@@ -1445,13 +1257,14 @@ derivs(Tissue &T,
        DataMatrix &wallDerivs,
        DataMatrix &vertexDerivs ) {
   
-  //Do the update for each wall
+  //Do the update for each epidermal wall
   size_t numWalls = T.numWall();
   size_t wallLengthIndex = variableIndex(0,0);
   
   for( size_t i=0 ; i<numWalls ; ++i ) {
+    //only for edges connected to background
     if( !( T.wall(i).cell1() != T.background() &&
-					 T.wall(i).cell2() != T.background() ) ) {
+	   T.wall(i).cell2() != T.background() ) ) {
       size_t v1 = T.wall(i).vertex1()->index();
       size_t v2 = T.wall(i).vertex2()->index();
       size_t dimension = vertexData[v1].size();
@@ -1459,31 +1272,31 @@ derivs(Tissue &T,
       //Calculate shared factors
       double distance=0.0;
       for( size_t d=0 ; d<dimension ; d++ )
-				distance += (vertexData[v1][d]-vertexData[v2][d])*
-					(vertexData[v1][d]-vertexData[v2][d]);
+	distance += (vertexData[v1][d]-vertexData[v2][d])*
+	  (vertexData[v1][d]-vertexData[v2][d]);
       distance = std::sqrt(distance);
       double wallLength=wallData[i][wallLengthIndex];
       double coeff = parameter(0)*((1.0/wallLength)-(1.0/distance));
       if( distance <= 0.0 && wallLength <=0.0 ) {
-				//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-				coeff = 0.0;
+	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	coeff = 0.0;
       }
       if( distance>wallLength )
-				coeff *=parameter(1);
-
-			//Save force in wall variable if appropriate
-			if( numVariableIndexLevel()>1 )
-				wallData[i][variableIndex(1,0)] = coeff*distance;
+	coeff *=parameter(1);
+      
+      //Save force in wall variable if appropriate
+      if( numVariableIndexLevel()>1 )
+	wallData[i][variableIndex(1,0)] = coeff*distance;
       
       //Update both vertices for each dimension
       for(size_t d=0 ; d<dimension ; d++ ) {
-				double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-				vertexDerivs[v1][d] -= div;
-				vertexDerivs[v2][d] += div;
+	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	vertexDerivs[v1][d] -= div;
+	vertexDerivs[v2][d] += div;
       }
     }
-		else if( numVariableIndexLevel()>1 )
-			wallData[i][variableIndex(1,0)] = 0.0;
+    else if( numVariableIndexLevel()>1 )
+      wallData[i][variableIndex(1,0)] = 0.0;
   }
 }
 

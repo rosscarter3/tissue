@@ -12,105 +12,108 @@
 #include"baseReaction.h"
 #include<cmath>
 
-///
-/// @brief Updates vertices from an asymmetric wall spring potential
-///
-/// The update (in all dimensions) are given by
-///
-/// @f[ \frac{dx_i}{dt} = (x_{i}-x_{j}) \frac{K_{force}}{L_{ij}}(1-\frac{L_{ij}}{d}) @f]
-///
-/// where @f$ d @f$ = distance between vertices,
-/// where @f$ x_i,x_j @f$ = vertex position in specific dimension,
-/// @f$ L_{ij} @f$ = variable for the resting length of the wall.
-///
-/// The parameters are @f$ K_{force} @f$ (parameter(0)), which sets the strength
-/// of the spring (spring constant), and @f$ K_{adh} @f$ (parameter(1)), which
-/// sets the relative strength of adhesive forces compared to repressive
-/// forces (when adhesive forces, the two parameters are multiplied 
-/// (@f$ K=K_{force}K_{adhFrac} @f$). 
-/// The update needs the index of the wall length variable at the 
-/// first level (variableIndex(0,0)), and 
-/// optionally a variable for storing the total wall Force (variableIndex(1,0)). 
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// VertexFromWallSpring 2 1 1
-/// K_force K_adh
-/// L_ij-index
-///
-/// or
-///
-/// VertexFromWallSpring 2 2 1 1
-/// K_force K_adh
-/// L_ij-index
-/// Forcesave-index
-///
-/// or
-///
-/// VertexFromWallSpring 3 3 1 1/0 1
-/// K_force K_adh
-/// L_ij-index
-/// [Forcesave-index]
-/// wall_type_index
-/// @endverbatim
-///
-/// Alternatively if no force save index is supplied the first line
-/// can be replaced by 'VertexFromWallSpring 2 1 1'.
-///
-class VertexFromWallSpring : public BaseReaction {
-  
- public:
+namespace WallMechanics {
   ///
-  /// @brief Main constructor
+  /// @brief Updates vertices from an asymmetric wall spring potential
   ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
+  /// The update (in all dimensions) are given by
   ///
-  /// @param paraValue vector with parameters
+  /// @f[ \frac{dx_i}{dt} = (x_{i}-x_{j}) \frac{K_{force}}{L_{ij}}(1-\frac{L_{ij}}{d}) @f]
   ///
-  /// @param indValue vector of vectors with variable indices
+  /// where @f$ d @f$ = distance between vertices,
+  /// where @f$ x_i,x_j @f$ = vertex position in specific dimension,
+  /// @f$ L_{ij} @f$ = variable for the resting length of the wall.
   ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  /// The parameters are @f$ K_{force} @f$ (parameter(0)), which sets the strength
+  /// of the spring (spring constant), and @f$ K_{adh} @f$ (parameter(1)), which
+  /// sets the relative strength of attractive forces compared to repressive
+  /// forces (when attractive forces, the two parameters are multiplied 
+  /// (@f$ K=K_{force}K_{adhFrac} @f$). 
+  /// The update needs the index of the wall length variable at the 
+  /// first level (variableIndex(0,0)), and 
+  /// optionally a wall variable index for storing the total wall Force (variableIndex(1,0)). 
   ///
-  VertexFromWallSpring(std::vector<double> &paraValue, 
-		       std::vector< std::vector<size_t> > 
-		       &indValue );
-
-  void initiate(Tissue &T,
+  /// In a model file the reaction is defined as:
+  ///
+  /// @verbatim
+  /// WallMechanics::Spring 2 1 1
+  /// K_force K_adh
+  /// L_ij-index
+  ///
+  /// or, when the force is saved:
+  ///
+  /// WallMechanics::Spring 2 2 1 1
+  /// K_force K_adh
+  /// L_ij-index
+  /// Forcesave-index
+  ///
+  /// A third alternative is available for setting a different spring constant ( @f$ K_{force2} @f$
+  /// , parameter(2)) for walls where a wall variable is set exactly to 1, and then the third index-layer
+  /// holds the index of the 'flag' variable.
+  ///
+  /// WallMechanics::Spring 3 3 1 1/0 1
+  /// K_force K_adh K_force2
+  /// L_ij-index
+  /// [Forcesave-index]
+  /// wall_type_index
+  /// @endverbatim
+  ///
+  /// @note This reaction used to be called VertexFromWallSpring
+  ///
+  class Spring : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Spring(std::vector<double> &paraValue, 
+			 std::vector< std::vector<size_t> > 
+			 &indValue );
+    
+    void initiate(Tissue &T,
+		  DataMatrix &cellData,
+		  DataMatrix &wallData,
+		  DataMatrix &vertexData,
+		  DataMatrix &cellDerivs,
+		  DataMatrix &wallDerivs,
+		  DataMatrix &vertexDerivs );
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
 		DataMatrix &cellData,
 		DataMatrix &wallData,
 		DataMatrix &vertexData,
 		DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs );
-  
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Tissue &T,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    
+    void derivsWithAbs(Tissue &T,
+		       DataMatrix &cellData,
+		       DataMatrix &wallData,
+		       DataMatrix &vertexData,
+		       DataMatrix &cellDerivs,
+		       DataMatrix &wallDerivs,
+		       DataMatrix &vertexDerivs,
+		       DataMatrix &sdydtCell,
+		       DataMatrix &sdydtWall,
+		       DataMatrix &sdydtVertex );
+    
+  };
 
-  void derivsWithAbs(Tissue &T,
-         DataMatrix &cellData,
-         DataMatrix &wallData,
-         DataMatrix &vertexData,
-         DataMatrix &cellDerivs,
-         DataMatrix &wallDerivs,
-         DataMatrix &vertexDerivs,
-         DataMatrix &sdydtCell,
-         DataMatrix &sdydtWall,
-         DataMatrix &sdydtVertex );
-
-};
-
+} // end namespace WallMechanics
 ///
 /// @brief Updates vertices from an asymmetric wall spring potential
 ///
@@ -182,7 +185,9 @@ class VertexFromWallSpringMTnew : public BaseReaction {
 ///
 /// @brief Updates vertices from an asymmetric wall spring potential
 ///
-/// Similar to VertexFromWallSpring bt only acts on the boundary walls.
+/// Similar to VertexFromWallSpring but only acts on the boundary walls,
+/// where boundary is defined as the wall being connected to the
+/// outside/background of the tissue.
 ///
 /// @endverbatim
 ///

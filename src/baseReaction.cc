@@ -105,8 +105,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   
   //Mechanical interactions between vertices
   //mechanicalSpring.h,mechanicalSpring.cc
-  else if(idValue=="VertexFromWallSpring")
-    return new VertexFromWallSpring(paraValue,indValue);
+  else if(idValue=="VertexFromWallSpring" || idValue=="WallMechanics::Spring")
+    return new WallMechanics::Spring(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTnew")
     return new VertexFromWallSpringMTnew(paraValue,indValue);
   else if(idValue=="VertexFromWallBoundarySpring")
