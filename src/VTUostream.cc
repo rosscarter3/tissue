@@ -344,8 +344,8 @@ void VTUostream::write_cells2 ( Tissue const& t )
         write_cell_geometry2 ( t, VTUostream::POLYGON );
     write_cell_data_header ( "Scalars=\"cell variable 4\" Vectors=\"cell vector\"" );
   
-    //  write_cell_data ( t );
-    write_cell_data3V ( t );
+    write_cell_data ( t );
+    //write_cell_data3V ( t );
     
     write_cell_data_footer();
     write_piece_footer();
@@ -399,7 +399,12 @@ void VTUostream::write_cell_point_geometry2 ( Tissue const& t )
 {
     typedef std::vector<Cell>::const_iterator CellIter;
     std::vector<Cell> const& cells = t.cell();
-
+    size_t dim = t.numDimension();
+    if( dim != 2 && dim != 3 ) {
+      std::cerr << "VTUostream::write_cell_point_geometry2(): Failed to recognise Tissue dimension."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }    
     *m_os << "<Points>\n"
           << "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\">\n";
     CellIter cit, cend;
@@ -419,9 +424,14 @@ void VTUostream::write_cell_point_geometry2 ( Tissue const& t )
         CVIter cviter, cvend;
         for ( cviter = verts.begin(), cvend = verts.end(); cviter != cvend; ++cviter )
         {
-            Point p = Point ( **cviter ).displace_towards ( center, D );
-            *m_os << p.x << " " << p.y << " " << p.z << "\n";
-        }
+	  Point p = Point ( **cviter ).displace_towards ( center, D );
+	  if( dim==2 ) {
+	    *m_os << p.x << " " << p.y << " " << "0.0" << "\n";
+	  }
+	  else if( dim==3 ) {
+	    *m_os << p.x << " " << p.y << " " << p.z << "\n";
+	  }
+	}
     }
     *m_os << "</DataArray>\n"
           << "</Points>\n";
@@ -472,6 +482,12 @@ void VTUostream::write_wall_point_geometry2 ( Tissue const& t, std::vector<Verte
     //write all the vertices first in the order of their indices
     typedef std::vector<Vertex>::const_iterator VertexIter;
     std::vector<Vertex> const& vertices = t.vertex();
+    size_t dim = t.numDimension();
+    if( dim != 2 && dim != 3 ) {
+      std::cerr << "VTUostream::write_wall_point_geometry2(): Failed to recognise Tissue dimension."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }    
 
     VertexIter viter, vend;
     *m_os << "<Points>\n"
@@ -568,8 +584,13 @@ void VTUostream::write_wall_point_geometry2 ( Tissue const& t, std::vector<Verte
 
         {
             Point p = Point ( **vpit++ ).displace_towards ( center, D );
-            *m_os << p.x << " " << p.y << " " << p.z << "\n";
-        }
+	    if( dim==3 ) {
+	      *m_os << p.x << " " << p.y << " " << p.z << "\n";
+	    }
+	    else if( dim==2) {
+	      *m_os << p.x << " " << p.y << " " << "0.0" << "\n";
+	    }
+	}
     }
     *m_os << "</DataArray>\n"
           << "</Points>\n";
