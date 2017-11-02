@@ -503,7 +503,7 @@ class Tissue {
   /// first vertex in the tissue (which is the same for all vertices). 
   /// The number of spatial dimensions for the tissue has to be 2 or 3.
   ///
-  inline size_t numDimension();
+  inline size_t numDimension() const;
   ///
   /// @brief Adds a vertex to the tissue at the end of the vector.
   /// 
@@ -1019,7 +1019,7 @@ inline Vertex & Tissue::vertex(size_t i) { return vertex_[i]; }
 
 inline Vertex * Tissue::vertexP(size_t i) { return &vertex_[i]; }
 
-inline size_t Tissue::numDimension() 
+inline size_t Tissue::numDimension() const 
 {
   return vertex(0).numPosition();
 }
