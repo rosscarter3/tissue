@@ -318,6 +318,104 @@ namespace WallMechanics {
 	wallData[i][variableIndex(1,0)] = 0.0;
     }
   }
+
+  SpringConcentrationHill::
+  SpringConcentrationHill(std::vector<double> &paraValue, 
+			  std::vector< std::vector<size_t> > 
+			  &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=5 ) {
+      std::cerr << "WallMechanics::SpringConcentrationHill::"
+		<< "SpringConcentrationHill() "
+		<< "Uses five parameters K_min, K_max, K_Hill, n_Hill and frac_adhesion.\n";
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() < 1 || indValue.size() > 2 
+	|| indValue[0].size() != 2 
+	|| (indValue.size()==2 && indValue[1].size() != 1) ) {
+      std::cerr << "WallMechanics::SpringConcentrationHill::"
+		<< "SpringConcentrationHill() "
+		<< "Wall length index and cell concentration index given in first level,"
+		<< " and optionally wall force save index in second.\n";
+      exit(EXIT_FAILURE);
+    }
+  
+    // Set the variable values
+    setId("WallMechanics::SpringConcentrationHill");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "K_min";
+    tmp[1] = "K_max";
+    tmp[2] = "K_Hill";
+    tmp[3] = "n_Hill";
+    tmp[4] = "frac_adh";
+    setParameterId( tmp );
+  }
+
+  void SpringConcentrationHill::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each wall
+    size_t numWalls = T.numWall();
+    size_t wallLengthIndex = variableIndex(0,0);
+    size_t concentrationIndex = variableIndex(0,1);
+    size_t dimension = vertexData[0].size();
+    
+    for( size_t i=0 ; i<numWalls ; ++i ) {
+      size_t v1 = T.wall(i).vertex1()->index();
+      size_t v2 = T.wall(i).vertex2()->index();
+      assert( vertexData[v2].size()==dimension );
+      //Calculate shared factors
+      double distance=0.0;
+      std::vector<double> n_w(dimension),n_c1(dimension),n_c2(dimension);
+      for( size_t d=0 ; d<dimension ; d++ ) {
+	n_w[d] = vertexData[v2][d]-vertexData[v1][d];
+	distance += n_w[d]*n_w[d];
+      }
+      distance = std::sqrt( distance );
+      double c1Fac=0.0,c2Fac=0.0,KPow = std::pow(parameter(2),parameter(3));
+      if( T.wall(i).cell1() != T.background() ) {
+	double conc = cellData[T.wall(i).cell1()->index()][concentrationIndex];
+	c1Fac = KPow/(KPow+std::pow(conc,parameter(3)));
+      }
+      if( T.wall(i).cell2() != T.background() ) {
+	double conc = cellData[T.wall(i).cell2()->index()][concentrationIndex];
+	c2Fac = KPow/(KPow+std::pow(conc,parameter(3)));
+      }
+      
+      double wallLength=wallData[i][wallLengthIndex];
+      double coeff = (parameter(0)+parameter(1)*(c1Fac+c2Fac))*
+	((1.0/wallLength)-(1.0/distance));
+      if( distance <= 0.0 && wallLength <=0.0 ) {
+	//std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+	coeff = 0.0;
+      }
+      if( distance>wallLength )
+	coeff *=parameter(4);
+      
+      //Save force in wall variable if appropriate
+      if( numVariableIndexLevel()>1 )
+	wallData[i][variableIndex(1,0)] = coeff*distance;
+      
+      //Update both vertices for each dimension
+      for(size_t d=0 ; d<dimension ; d++ ) {
+	double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+	vertexDerivs[v1][d] -= div;
+	vertexDerivs[v2][d] += div;
+      }
+    }
+  }
+
 } // end namespace WallMechanics
 
 VertexFromWallSpringMTnew::
@@ -1427,106 +1525,6 @@ derivs(Tissue &T,
 			wallData[T.wall(i).index()][variableIndex(1, 0)] *= (distance - wallData[T.wall(i).index()][variableIndex(0, 0)]);
 		}
  	}
-}
-
-VertexFromWallSpringConcentrationHill::
-VertexFromWallSpringConcentrationHill(std::vector<double> &paraValue, 
-															 std::vector< std::vector<size_t> > 
-															 &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=5 ) {
-    std::cerr << "VertexFromWallSpringConcentrationHill::"
-	      << "VertexFromWallSpringConcentrationHill() "
-	      << "Uses five parameters K_min, K_max, K_Hill, n_Hill and frac_adhesion.\n";
-    exit(0);
-  }
-  if (indValue.size() < 1 || indValue.size() > 2 
-			|| indValue[0].size() != 2 
-			|| (indValue.size()==2 && indValue[1].size() != 1) ) {
-    std::cerr << "VertexFromWallSpringConcentrationHill::"
-							<< "VertexFromWallSpringConcentrationHill() "
-							<< "Wall length index and cell concentration index given in first level,"
-							<< " and optionally wall force save index in second.\n";
-    exit(0);
-  }
-	
-  // Set the variable values
-  setId("VertexFromWallSpringConcentrationHill");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "K_min";
-  tmp[1] = "K_max";
-  tmp[2] = "K_Hill";
-  tmp[3] = "n_Hill";
-  tmp[4] = "frac_adh";
-  setParameterId( tmp );
-}
-
-//! Derivative contribution for asymmetric wall springs on vertices
-/*! 
-*/
-void VertexFromWallSpringConcentrationHill::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each wall
-  size_t numWalls = T.numWall();
-  size_t wallLengthIndex = variableIndex(0,0);
-  size_t concentrationIndex = variableIndex(0,1);
-  size_t dimension = vertexData[0].size();
-  
-  for( size_t i=0 ; i<numWalls ; ++i ) {
-    size_t v1 = T.wall(i).vertex1()->index();
-    size_t v2 = T.wall(i).vertex2()->index();
-    assert( vertexData[v2].size()==dimension );
-    //Calculate shared factors
-    double distance=0.0;
-    std::vector<double> n_w(dimension),n_c1(dimension),n_c2(dimension);
-    for( size_t d=0 ; d<dimension ; d++ ) {
-      n_w[d] = vertexData[v2][d]-vertexData[v1][d];
-      distance += n_w[d]*n_w[d];
-    }
-    distance = std::sqrt( distance );
-    double c1Fac=0.0,c2Fac=0.0,KPow = std::pow(parameter(2),parameter(3));
-    if( T.wall(i).cell1() != T.background() ) {
-      double conc = cellData[T.wall(i).cell1()->index()][concentrationIndex];
-      c1Fac = KPow/(KPow+std::pow(conc,parameter(3)));
-    }
-    if( T.wall(i).cell2() != T.background() ) {
-      double conc = cellData[T.wall(i).cell2()->index()][concentrationIndex];
-      c2Fac = KPow/(KPow+std::pow(conc,parameter(3)));
-    }
-    
-    double wallLength=wallData[i][wallLengthIndex];
-    double coeff = (parameter(0)+parameter(1)*(c1Fac+c2Fac))*
-      ((1.0/wallLength)-(1.0/distance));
-    if( distance <= 0.0 && wallLength <=0.0 ) {
-      //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
-      coeff = 0.0;
-    }
-    if( distance>wallLength )
-      coeff *=parameter(4);
-    
-    //Save force in wall variable if appropriate
-    if( numVariableIndexLevel()>1 )
-      wallData[i][variableIndex(1,0)] = coeff*distance;
-    
-    //Update both vertices for each dimension
-    for(size_t d=0 ; d<dimension ; d++ ) {
-      double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
-      vertexDerivs[v1][d] -= div;
-      vertexDerivs[v2][d] += div;
-    }
-  }
 }
 
 VertexFromWallSpringMTConcentrationHill::

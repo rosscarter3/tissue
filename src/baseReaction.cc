@@ -117,8 +117,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromDoubleWallSpring(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringSpatial")
     return new VertexFromWallSpringSpatial(paraValue,indValue);
-  else if(idValue=="VertexFromWallSpringConcentrationHill")
-    return new VertexFromWallSpringConcentrationHill(paraValue,indValue);
+  else if(idValue=="VertexFromWallSpringConcentrationHill" || idValue=="WallMechanics::SpringConcentrationHill")
+    return new WallMechanics::SpringConcentrationHill(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMT")
     return new VertexFromWallSpringMT(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTSpatial")

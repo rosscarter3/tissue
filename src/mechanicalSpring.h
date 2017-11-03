@@ -189,6 +189,60 @@ namespace WallMechanics {
 		DataMatrix &vertexDerivs );
   };
 
+  ///
+  /// @brief Updates vertices from an asymmetric wall spring potential depending
+  /// on cell concentrations via a (decreasing) Hill function
+  ///
+  /// Same as basic WallMechanics::Spring, but where the spring constant depends on a cell
+  /// variable in the form (contributions from cells on either side)
+  ///
+  /// @f[ K_{spring} = p_{0} + p_{1} (\frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}} + c_{1}^{p_{3}}} +
+  /// \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+c_{2}^{p_{3}}} @f]
+  ///
+  /// where @f$ p_{0},p_{1} @f$ sets the range of pring constant values, and @f$p_{2},p_{3}@f$
+  /// are the Hill constant and coefficient, respectively.
+  ///
+  /// This function is implemented as stiffness decreasing with the concentration as used for
+  /// e.g. auxin contribution. To be used for increasing stiffness ith concentration, replace
+  /// @f$p_{2} -> -p_{2}, p_{1} -> p_{1}+2p_{2}@f$ (verify before you use).
+  ///
+  /// As for WallMechanics::Spring, an additional parameter (@f$p_{4}@f$) can set a ratio of
+  /// attractive vs repressive force.
+  ///
+  /// @see WallMechanics::Spring for spring force calculation.
+  ///
+  class SpringConcentrationHill : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SpringConcentrationHill(std::vector<double> &paraValue, 
+			    std::vector< std::vector<size_t> > 
+			    &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///  
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+  
 } // end namespace WallMechanics
 
 ///
@@ -624,42 +678,6 @@ class VertexFromWallSpringExperimental : public BaseReaction
 	      DataMatrix &cellDerivs,
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates vertices from an asymmetric wall spring potential depending
-/// on cell concentrations
-///
-class VertexFromWallSpringConcentrationHill : public BaseReaction {
-  
- public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromWallSpringConcentrationHill(std::vector<double> &paraValue, 
-					std::vector< std::vector<size_t> > 
-					&indValue );
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Tissue &T,...)
-  ///  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
 };
 
 class VertexFromWallSpringMTConcentrationHill : public BaseReaction {
