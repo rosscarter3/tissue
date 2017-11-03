@@ -12,6 +12,9 @@
 #include"baseReaction.h"
 #include<cmath>
 
+///
+/// @brief Namespace containing mechanical 'reactions' connected to walls, i.e. 1D edges between 2D cells
+///
 namespace WallMechanics {
   ///
   /// @brief Updates vertices from an asymmetric wall spring potential
