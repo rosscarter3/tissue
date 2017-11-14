@@ -974,15 +974,18 @@ public:
 
 
 ///
-/// @brief scales the template by a factor via Initiate 
-/// copies vectors from one index to another in the cell vector
-/// ( 4 component after the indices will be copied)
+/// @brief Copies vectors from one index to another in the cell vector
+/// at initiation (4 component after the indices will be copied).
 ///
-/// @details In the model file the reaction is defined as:
+/// @details This reaction copies a vector (4 components) from one place to another
+/// at the initiation of the simulation. The start index of the vector to be copied
+/// and where it will be copied to needs to be provided, and then these four values
+/// are copied for all cells.
+///
+/// In the model file the reaction is defined as:
 /// @verbatim
 /// copyCellVector 0 1 2
-/// copy_from_index
-/// copy_to_index
+/// copy_from_index copy_to_index
 /// @endverbatim 
 /// 
 class copyCellVector : public BaseReaction
