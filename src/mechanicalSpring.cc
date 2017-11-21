@@ -506,7 +506,7 @@ namespace WallMechanics {
             cellData[T.wall(i).cell2()->index()][concentrationIndex] : 0;
           // coeff   = (concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
           coeff   = (concOne < parameter(0) ? parameter(1) : parameter(2)) + //(concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
-                    (concTwo < parameter(0) ? parameter(1) : parameter(2))
+                    (concTwo < parameter(0) ? parameter(1) : parameter(2));
         } else {
           concOne = T.wall(i).cell1() != T.background() ? 
             cellData[T.wall(i).cell1()->index()][concentrationIndex] : 0;  
@@ -514,7 +514,7 @@ namespace WallMechanics {
             cellData[T.wall(i).cell2()->index()][concentrationIndex] : 0;
           // coeff   = (concOne + concTwo) / 2.0 < parameter(0) ? parameter(3) : parameter(4);
           coeff   = (concOne < parameter(0) ? parameter(3) : parameter(4)) + //(concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
-                    (concTwo < parameter(0) ? parameter(3) : parameter(4))
+                    (concTwo < parameter(0) ? parameter(3) : parameter(4));
         }
 
         // If we're causing a non-physical mess, don't update.
