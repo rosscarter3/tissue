@@ -757,9 +757,9 @@ VertexFromCellInternalPressure(std::vector<double> &paraValue,
 			       std::vector< std::vector<size_t> > 
 			       &indValue ) {
   
-  //Do some checks on the parameters and variable indeces
+  // Do some checks on the parameters and variable indeces
   //////////////////////////////////////////////////////////////////////
-  if( paraValue.size()!=1 ) {
+  if(paraValue.size()!=1) {
     std::cerr << "VertexFromCellInternalPressure::"
 	      << "VertexFromCellInternalPressure() "
 	      << "Uses one parameter K_force.\n";
@@ -771,96 +771,119 @@ VertexFromCellInternalPressure(std::vector<double> &paraValue,
 	      << "No index given.\n";
     exit(0);
   }
-  //Set the variable values
+  // Set the variable values
   //////////////////////////////////////////////////////////////////////
   setId("VertexFromCellInternalPressure");
   setParameter(paraValue);  
   setVariableIndex(indValue);
   
-  //Set the parameter identities
+  // Set the parameter identities
   //////////////////////////////////////////////////////////////////////
-  std::vector<std::string> tmp( numParameter() );
+  std::vector<std::string> tmp(numParameter());
   tmp[0] = "K_force";
-  setParameterId( tmp );
+  setParameterId(tmp);
 }
 
 void VertexFromCellInternalPressure::
 derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each vertex via each wall in each cell
-  size_t numCells = T.numCell();
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs ) {
+
+  // Do the update for each vertex via each wall in each cell
+  size_t numCells  = T.numCell();
   size_t dimension = T.vertex(0).numPosition(); 
-  
-  //For each cell
-  for( size_t cellI=0 ; cellI<numCells ; ++cellI ) {
+
+  // Update every cell's vertices, according to the internal pressure. Skip the
+  // cells who neighbour the background.
+  for (size_t cellI = 0; cellI < numCells; cellI++) {
+    
     Cell &tmpCell = T.cell(cellI);
-    if( !(tmpCell.isNeighbor(T.background())) ) {
-      //Calculate cell position from vertices
-      std::vector<double> xCenter = tmpCell.positionFromVertex(vertexData);
-      assert( xCenter.size()==dimension );
+    if (!(tmpCell.isNeighbor(T.background()))) {
       
-      //Calculate derivative contributions to vertices from each wall
-      for( size_t k=0 ; k<tmpCell.numWall() ; ++k ) {
-	Wall &tmpWall = tmpCell.wallRef(k);
-	size_t v1I = tmpWall.vertex1()->index();
-	size_t v2I = tmpWall.vertex2()->index();
-	std::vector<double> n(dimension),dx(dimension), x0(dimension);
-	double b=0;
-	for( size_t d=0 ; d<dimension ; ++d ) {
-	  n[d] = vertexData[v2I][d]-vertexData[v1I][d];
-	  b += n[d]*n[d];
-	  x0[d] = 0.5*(vertexData[v1I][d] + vertexData[v2I][d]);
-	  dx[d] = xCenter[d]-x0[d];
-	}
-	assert( b>0.0 );
-	b = std::sqrt(b);
-	for( size_t d=0 ; d<dimension ; ++d )
-	  n[d] /= b;
-	double bInv = 1.0/b;
-	double h = dx[0]*dx[0] + dx[1]*dx[1]
-	  -(n[0]*dx[0]+n[1]*dx[1])*(n[0]*dx[0]+n[1]*dx[1]);
-	assert( h>0.0 );
-	h = std::sqrt(h);
-	double hInv = 1.0/h;
-	double fac = parameter(0)*0.5;
-	
-	vertexDerivs[v1I][0] += fac*( 0.5*b*hInv*
-				      ( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(-n[1]*n[1]*bInv*dx[0]
-					  -0.5*n[0]
-					  +n[0]*n[1]*bInv*dx[1]) ) 
-				      - h*n[0] ); 
-	vertexDerivs[v2I][0] += fac*( 0.5*b*hInv*
-				      ( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(n[1]*n[1]*bInv*dx[0]
-					  -0.5*n[0]
-					  -n[0]*n[1]*bInv*dx[1]) )
-				      + h*n[0] );
-	vertexDerivs[v1I][1] += fac*( 0.5*b*hInv*
-				      ( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(-n[0]*n[0]*bInv*dx[1]
-					  -0.5*n[1]
-					  +n[0]*n[1]*bInv*dx[0]) ) 
-				      - h*n[1] ); 
-	vertexDerivs[v2I][1] += fac*( 0.5*b*hInv*
-				      ( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(n[0]*n[0]*bInv*dx[1]
-					  -0.5*n[1]
-					  -n[0]*n[1]*bInv*dx[0]) )
-				      + h*n[1] );
-	
-	//vertexDerivs[v1I][0] += fac*( b*hInv*(bInv*(n[0]*dx[0]+n[1]*dx[1])*
-	//				    (n[1]*n[1]*dx[0]+b*n[0]-n[0]*n[1]*dx[1]) + dx[0] ) - h*n[0] );
-	//vertexDerivs[v1I][1] += fac*( b*hInv*(bInv*(n[1]*dx[1]+n[0]*dx[0])*
-	//				    (-n[0]*n[0]*dx[1]+b*n[1]+n[1]*n[0]*dx[0]) + dx[1] ) - h*n[1] );
-	//vertexDerivs[v2I][0] += fac*( n[0]*h + n[1]*hInv*(n[0]*dx[0]+n[1]*dx[1])*(n[0]*dx[1]-n[1]*dx[0]) );
-	//vertexDerivs[v2I][1] += fac*( n[1]*h + n[0]*hInv*(n[1]*dx[1]+n[0]*dx[0])*(n[1]*dx[0]-n[0]*dx[1]) );      
+      // Calculate cell position from vertices
+      std::vector<double> xCenter = tmpCell.positionFromVertex(vertexData);
+      assert(xCenter.size() == dimension);
+
+      // Calculate derivative contributions to vertices from each wall
+      for (size_t k = 0; k < tmpCell.numWall(); k++) {
+
+        std::vector<double> n(dimension);
+        std::vector<double> dx(dimension);
+        std::vector<double> x0(dimension);
+        Wall &tmpWall = tmpCell.wallRef(k);
+        size_t v1I    = tmpWall.vertex1()->index();
+        size_t v2I    = tmpWall.vertex2()->index();
+        double b      = 0;
+
+        for (size_t d = 0; d < dimension; d++) {
+          n[d]  = vertexData[v2I][d] - vertexData[v1I][d];
+          b    += n[d] * n[d];
+          x0[d] = 0.5 * (vertexData[v1I][d] + vertexData[v2I][d]);
+          dx[d] = xCenter[d] - x0[d];
+        }
+
+        assert(b > 0.0);
+        b = std::sqrt(b);
+        
+        for (size_t d = 0; d < dimension; ++d) {
+          n[d] /= b;
+        }
+
+        double h = dx[0] * dx[0] + dx[1] * dx[1]
+                 - (n[0] * dx[0] + n[1]  * dx[1]) 
+                 * (n[0] * dx[0] + n[1]  * dx[1]);
+        assert(h > 0.0);
+        
+        // Useful parameters
+        h           = std::sqrt(h);
+        double bInv = 1.0 / b;
+        double hInv = 1.0 / h;
+        double fac  = 0.5 * parameter(0);
+
+        // Update vertices derivatives according to our specified rule
+        vertexDerivs[v1I][0] += fac 
+          * (0.5 * b * hInv 
+            * (-dx[0] 
+              - 2.0 * (n[0] * dx[0] + n[1] * dx[1])
+                * (-n[1] * n[1] * bInv * dx[0]
+                  - 0.5 * n[0]
+                  + n[0] * n[1] * bInv * dx[1])) 
+            - h * n[0]); 
+        vertexDerivs[v2I][0] += fac 
+          * (0.5 * b * hInv 
+            * (-dx[0] 
+              - 2.0 * (n[0] * dx[0] + n[1] * dx[1])
+                * (n[1] * n[1] * bInv * dx[0]
+                  - 0.5 * n[0]
+                  - n[0] * n[1] * bInv * dx[1]))
+            + h * n[0]);
+        vertexDerivs[v1I][1] += fac 
+          * (0.5 * b * hInv 
+            * (-dx[1] 
+              - 2.0 * (n[0] * dx[0] + n[1] * dx[1])
+                * (-n[0] * n[0] * bInv * dx[1]
+                  - 0.5 * n[1]
+                  + n[0] * n[1] * bInv * dx[0])) 
+            - h * n[1]); 
+        vertexDerivs[v2I][1] += fac 
+          * (0.5 * b * hInv 
+            * (-dx[1] 
+              - 2.0 * (n[0] * dx[0] + n[1] * dx[1])
+                * (n[0] * n[0] * bInv * dx[1]
+                  - 0.5 * n[1]
+                  - n[0] * n[1] * bInv * dx[0]))
+            + h * n[1]);
+
+        //vertexDerivs[v1I][0] += fac*( b*hInv*(bInv*(n[0]*dx[0]+n[1]*dx[1])*
+        //				    (n[1]*n[1]*dx[0]+b*n[0]-n[0]*n[1]*dx[1]) + dx[0] ) - h*n[0] );
+        //vertexDerivs[v1I][1] += fac*( b*hInv*(bInv*(n[1]*dx[1]+n[0]*dx[0])*
+        //				    (-n[0]*n[0]*dx[1]+b*n[1]+n[1]*n[0]*dx[0]) + dx[1] ) - h*n[1] );
+        //vertexDerivs[v2I][0] += fac*( n[0]*h + n[1]*hInv*(n[0]*dx[0]+n[1]*dx[1])*(n[0]*dx[1]-n[1]*dx[0]) );
+        //vertexDerivs[v2I][1] += fac*( n[1]*h + n[0]*hInv*(n[1]*dx[1]+n[0]*dx[0])*(n[1]*dx[0]-n[0]*dx[1]) );      
       }
     }
   }
@@ -1502,42 +1525,55 @@ CellVolumeExperimental(std::vector<double> &paraValue,
 
 void CellVolumeExperimental::
 derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs)
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs)
 {
   for (size_t n = 0; n < T.numCell(); ++n) {
     Cell cell = T.cell(n);
-    
-    double P = 0.0;
+
+    double P   = 0.0;
     double sum = 0.0;
+
+    // Go through all the cell walls and calculate the pressure 
     for (size_t i = 0; i < cell.numWall(); ++i) {
       size_t vertex1Index = cell.wall(i)->vertex1()->index();
       size_t vertex2Index = cell.wall(i)->vertex2()->index();
-      size_t dimensions = vertexData[vertex1Index].size();
-      
+      size_t dimensions   = vertexData[vertex1Index].size();
+
+      // Calculate the length of the cell wall, and sum up the cell wall
+      // lengths.
       double distance = 0.0;
       for (size_t d = 0; d < dimensions; ++d) {
-	distance += (vertexData[vertex1Index][d] - vertexData[vertex2Index][d])
-	  * (vertexData[vertex1Index][d] - vertexData[vertex2Index][d]);
+        distance += (vertexData[vertex1Index][d] - vertexData[vertex2Index][d])
+                  * (vertexData[vertex1Index][d] - vertexData[vertex2Index][d]);
       }
       distance = std::sqrt(distance);
+      sum += distance; 
       
-      for (size_t j = 0; j < numVariableIndex(1); ++j)
-	P += wallData[cell.wall(i)->index()][variableIndex(1, j)]/distance;
-      sum += distance;
+      // Retrieve the different forces (?) and divide them by the distance
+      // between the vertices. That is: sum up the forces / wall length applied
+      // on a single wall.
+      for (size_t j = 0; j < numVariableIndex(1); ++j) {
+        P += wallData[cell.wall(i)->index()][variableIndex(1, j)] / distance;
+      }
     }
-    P *= parameter(2);
+    P *= parameter(2); // Multiply by k_pp (what is this?)
+
+    // If we have set to store the pressure in a variable, do this here.
+    if (numVariableIndexLevel() == 3) {
+      cellData[n][variableIndex(2, 0)] = P;
+    }
     
-    if (numVariableIndexLevel()==3)
-      cellData[n][variableIndex(2,0)]=P;
-    
-    if( parameter(3) || parameter(1)-P>0.0 )
+    // If the pressure is smaller than the max pressure (param(1)), or if
+    // we allow for shrinkage, update the volume.
+    if (parameter(3) || parameter(1) - P > 0.0) {
       cellDerivs[cell.index()][variableIndex(0, 1)] += 
-	parameter(0) * (parameter(1) - P) * sum;
+        parameter(0) * (parameter(1) - P) * sum;
+    }
   }
 }
 
