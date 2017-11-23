@@ -326,8 +326,8 @@ namespace WallMechanics {
   SpringConcentrationHill::
     SpringConcentrationHill(std::vector<double> &paraValue, 
         std::vector< std::vector<size_t> > 
-        &indValue ) 
-    {  
+        &indValue ) {
+
       // Do some checks on the parameters and variable indeces
       if( paraValue.size()!=5 ) {
         std::cerr << "WallMechanics::SpringConcentrationHill::"
@@ -367,53 +367,68 @@ namespace WallMechanics {
         DataMatrix &vertexData,
         DataMatrix &cellDerivs,
         DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs ) {
+        DataMatrix &vertexDerivs) {
 
-      //Do the update for each wall
-      size_t numWalls = T.numWall();
-      size_t wallLengthIndex = variableIndex(0,0);
-      size_t concentrationIndex = variableIndex(0,1);
-      size_t dimension = vertexData[0].size();
+      // Do the update for each wall
+      size_t numWalls           = T.numWall();
+      size_t wallLengthIndex    = variableIndex(0, 0);
+      size_t concentrationIndex = variableIndex(0, 1);
+      size_t dimension          = vertexData[0].size();
 
-      for( size_t i=0 ; i<numWalls ; ++i ) {
+      for (size_t i = 0; i < numWalls; ++i) {
         size_t v1 = T.wall(i).vertex1()->index();
         size_t v2 = T.wall(i).vertex2()->index();
-        assert( vertexData[v2].size()==dimension );
-        //Calculate shared factors
-        double distance=0.0;
-        std::vector<double> n_w(dimension),n_c1(dimension),n_c2(dimension);
-        for( size_t d=0 ; d<dimension ; d++ ) {
-          n_w[d] = vertexData[v2][d]-vertexData[v1][d];
-          distance += n_w[d]*n_w[d];
+        assert(vertexData[v2].size() == dimension);
+
+        // Calculate shared factors
+        double distance = 0.0;
+        std::vector<double> n_w(dimension);
+        std::vector<double> n_c1(dimension);
+        std::vector<double> n_c2(dimension);
+
+        for (size_t d = 0; d < dimension; d++) {
+          n_w[d]    = vertexData[v2][d] - vertexData[v1][d];
+          distance += n_w[d] * n_w[d];
         }
-        distance = std::sqrt( distance );
-        double c1Fac=0.0,c2Fac=0.0,KPow = std::pow(parameter(2),parameter(3));
-        if( T.wall(i).cell1() != T.background() ) {
-          double conc = cellData[T.wall(i).cell1()->index()][concentrationIndex];
-          c1Fac = KPow/(KPow+std::pow(conc,parameter(3)));
-        }
-        if( T.wall(i).cell2() != T.background() ) {
-          double conc = cellData[T.wall(i).cell2()->index()][concentrationIndex];
-          c2Fac = KPow/(KPow+std::pow(conc,parameter(3)));
+        distance = std::sqrt(distance);
+
+        // Update cell walls with a hill-like formulae according to whether 
+        // they face the background or not.
+        double c1Fac = 0.0;
+        double c2Fac = 0.0;
+        double conc  = 0.0;
+        double KPow  = std::pow(parameter(2), parameter(3));
+
+        if (T.wall(i).cell1() != T.background()) {
+          conc  = cellData[T.wall(i).cell1()->index()][concentrationIndex];
+          c1Fac = KPow / (KPow + std::pow(conc, parameter(3)));
         }
 
-        double wallLength=wallData[i][wallLengthIndex];
-        double coeff = (parameter(0)+parameter(1)*(c1Fac+c2Fac))*
-          ((1.0/wallLength)-(1.0/distance));
-        if( distance <= 0.0 && wallLength <=0.0 ) {
-          //std::cerr << i << " - " << wallLength << " " << distance << std::endl;
+        if (T.wall(i).cell2() != T.background()) {
+          conc  = cellData[T.wall(i).cell2()->index()][concentrationIndex];
+          c2Fac = KPow / (KPow + std::pow(conc, parameter(3)));
+        }
+        
+        double wallLength = wallData[i][wallLengthIndex];
+        double coeff = (parameter(0) + parameter(1) * (c1Fac + c2Fac))
+          * ((1.0 / wallLength) - (1.0 / distance));
+        
+        if (distance <= 0.0 && wallLength <= 0.0) {
           coeff = 0.0;
         }
-        if( distance>wallLength )
-          coeff *=parameter(4);
 
-        //Save force in wall variable if appropriate
-        if( numVariableIndexLevel()>1 )
-          wallData[i][variableIndex(1,0)] = coeff*distance;
+        if (distance > wallLength) {
+          coeff *= parameter(4); // multiply by frac_adhesion
+        }
 
-        //Update both vertices for each dimension
-        for(size_t d=0 ; d<dimension ; d++ ) {
-          double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+        // Save force in wall variable if appropriate
+        if (numVariableIndexLevel() > 1) {
+          wallData[i][variableIndex(1, 0)] = coeff * distance;
+        }
+
+        // Update both vertices for each dimension
+        for (size_t d = 0; d < dimension; d++) {
+          double div = (vertexData[v1][d] - vertexData[v2][d]) * coeff;
           vertexDerivs[v1][d] -= div;
           vertexDerivs[v2][d] += div;
         }
@@ -423,21 +438,19 @@ namespace WallMechanics {
   // Contact: Henrik Åhl -- henrik.aahl@slcu.cam.ac.uk
   SpringInternalExternalThreshold::
     SpringInternalExternalThreshold(std::vector<double> &paraValue, 
-        std::vector< std::vector<size_t> > 
-        &indValue) 
-    {  
+        std::vector< std::vector<size_t> > &indValue) { 
 
       // Do some checks on the parameters and variable indices
-      if(paraValue.size() != 5) {
+      if (paraValue.size() != 6) {
         std::cerr << "WallMechanics::SpringInternalExternalThreshold::"
           << "SpringInternalExternalThreshold() "
-          << "uses five parameters: threshold, p0, p1, p2, and p3.\n";
+          << "uses six parameters: threshold, p0, p1, p2, p3, and frac_adh.\n";
         exit(EXIT_FAILURE);
       }
 
       if (indValue.size() < 1 || indValue.size() > 2 
           || indValue[0].size() != 2
-          || (indValue.size()==2 && indValue[1].size() != 1) ) {
+          || (indValue.size() == 2 && indValue[1].size() != 1)) {
         std::cerr << "WallMechanics::SpringInternalExternalThreshold::"
           << "SpringInternalExternalThreshold() "
           << "Wall length index and cell concentration index given in first level "
@@ -457,8 +470,8 @@ namespace WallMechanics {
       tmp[2] = "p1";
       tmp[3] = "p2";
       tmp[4] = "p3";
+      tmp[5] = "frac_adh";
       setParameterId(tmp);
-
     }
 
   void SpringInternalExternalThreshold::
@@ -476,18 +489,20 @@ namespace WallMechanics {
       size_t concentrationIndex = variableIndex(0, 1);
       size_t dimension          = vertexData[0].size();
 
-
-      for (size_t i = 0; i < numWalls; ++i) {
-        size_t v1 = T.wall(i).vertex1()->index();
-        size_t v2 = T.wall(i).vertex2()->index();
+      for (size_t ii = 0; ii < numWalls; ++ii) {
+        size_t v1 = T.wall(ii).vertex1()->index();
+        size_t v2 = T.wall(ii).vertex2()->index();
         assert(vertexData[v2].size() == dimension);
 
         // Calculate shared factors
         double distance = 0.0;
-        std::vector<double> n_w(dimension), n_c1(dimension), n_c2(dimension);
-        for (size_t d = 0; d < dimension; d++) {
-          n_w[d]   =  vertexData[v2][d] - vertexData[v1][d];
-          distance =+ n_w[d] * n_w[d];
+        std::vector<double> n_w(dimension);
+        std::vector<double> n_c1(dimension);
+        std::vector<double> n_c2(dimension);
+
+        for (size_t dd = 0; dd < dimension; dd++) {
+          n_w[dd]   =  vertexData[v2][dd] - vertexData[v1][dd];
+          distance =+ n_w[dd] * n_w[dd];
         }
         distance = std::sqrt(distance);
 
@@ -497,44 +512,48 @@ namespace WallMechanics {
         double coeff   = 0.0;
         double concOne = 0.0;
         double concTwo = 0.0;
+        //Cell &cell1 = T.wall(ii).cell1();
+        //Cell &cell2 = T.wall(ii).cell2();
 
-        if(!(T.wall(i).cell1() != T.background() &&
-              T.wall(i).cell2() != T.background())) {
-          concOne = T.wall(i).cell1() != T.background() ? 
-            cellData[T.wall(i).cell1()->index()][concentrationIndex] : 0;  
-          concTwo = T.wall(i).cell2() != T.background() ? 
-            cellData[T.wall(i).cell2()->index()][concentrationIndex] : 0;
-          // coeff   = (concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
-          coeff   = (concOne < parameter(0) ? parameter(1) : parameter(2)) + //(concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
-                    (concTwo < parameter(0) ? parameter(1) : parameter(2));
+        if (!(T.wall(ii).cell1() != T.background() &&
+              T.wall(ii).cell2() != T.background())) {
+          concOne = T.wall(ii).cell1() != T.background() ? 
+            cellData[T.wall(ii).cell1()->index()][concentrationIndex] : 0;  
+          concTwo = T.wall(ii).cell2() != T.background() ? 
+            cellData[T.wall(ii).cell2()->index()][concentrationIndex] : 0;
+          coeff   = (concOne < parameter(0) ? parameter(1) : parameter(2)) + 
+            (concTwo < parameter(0) ? parameter(1) : parameter(2));
         } else {
-          concOne = T.wall(i).cell1() != T.background() ? 
-            cellData[T.wall(i).cell1()->index()][concentrationIndex] : 0;  
-          concTwo = T.wall(i).cell2() != T.background() ? 
-            cellData[T.wall(i).cell2()->index()][concentrationIndex] : 0;
-          // coeff   = (concOne + concTwo) / 2.0 < parameter(0) ? parameter(3) : parameter(4);
-          coeff   = (concOne < parameter(0) ? parameter(3) : parameter(4)) + //(concOne + concTwo) / 2.0 < parameter(0) ? parameter(1) : parameter(2);
-                    (concTwo < parameter(0) ? parameter(3) : parameter(4));
+          concOne = T.wall(ii).cell1() != T.background() ? 
+            cellData[T.wall(ii).cell1()->index()][concentrationIndex] : 0;  
+          concTwo = T.wall(ii).cell2() != T.background() ? 
+            cellData[T.wall(ii).cell2()->index()][concentrationIndex] : 0;
+          coeff   = (concOne < parameter(0) ? parameter(3) : parameter(4)) + 
+            (concTwo < parameter(0) ? parameter(3) : parameter(4));
         }
 
+
+        double wallLength = wallData[ii][wallLengthIndex];
+
         // If we're causing a non-physical mess, don't update.
-        double wallLength = wallData[i][wallLengthIndex];
-        coeff = (distance <= 0.0 && wallLength <= 0.0) ? 0 : coeff;
+        coeff  = (distance <= 0.0 && wallLength <= 0.0) ? 0 : coeff;
+
+        // Multiply by fraction adhesion
+        coeff *= distance > wallLength ? parameter(5) : coeff; 
 
         // Save force in wall variable if appropriate
         if (numVariableIndexLevel() > 1) {
-          wallData[i][variableIndex(1, 0)] = coeff * distance;
+          wallData[ii][variableIndex(1, 0)] = coeff * distance;
         }
 
         // Update both vertices for each dimension
-        for (size_t d = 0; d < dimension; d++) {
-          double div = coeff * (vertexData[v1][d] - vertexData[v2][d]);
-          vertexDerivs[v1][d] -= div;
-          vertexDerivs[v2][d] += div;
+        for (size_t dd = 0; dd < dimension; dd++) {
+          double div = coeff * (vertexData[v1][dd] - vertexData[v2][dd]);
+          vertexDerivs[v1][dd] -= div;
+          vertexDerivs[v2][dd] += div;
         }
       }
     }
-
 } // end namespace WallMechanics
 
 VertexFromWallSpringMTnew::

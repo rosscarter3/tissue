@@ -246,6 +246,42 @@ namespace WallMechanics {
           DataMatrix &vertexDerivs );
   };
 
+  ///
+  /// @brief Updates vertices from a wall spring potential depending on 1)
+  /// the cell concentration, and 2) whether the cell is epidermal or not.
+  ///
+  /// Similar to the basic reactions such as WallMechanics::Spring, but takes
+  /// into account the cell concentration (additive contributions from both 
+  /// sides) and whether the cell is epidermal or not.
+  /// 
+  /// @f[
+  /// K_{spring}=\begin{cases}
+  /// p_{0}&c<threshold~\text{and~cell~epidermal} \\
+  /// p_{1}&c>threshold~\text{and~cell~epidermal} \\
+  /// p_{2}&c<threshold~\text{and~cell~not~epidermal} \\
+  /// p_{3}&c>threshold~\text{and~cell~not~epidermal}
+  /// \end{cases}
+  /// @f]
+  ///
+  /// Here @f$p_i@f$ denotes the spring constant added for every cell
+  /// concentration.
+  /// As for WallMechanics::Spring, a sixth parameter (fraction/adhesion) can set a ratio of
+  /// attractive vs repressive force.
+  ///
+  /// @verbatim
+  ///   SpringInternalExternalThreshold 6 1 2  
+  ///   threshold p0 p1 p2 p3
+  ///   frac_adh
+  ///   wall_length_index
+  ///   species_index
+  /// @endverbatim
+  ///
+  /// @note This process is done additively for both cells connected to a cell
+  /// wall.
+  ///
+  ///
+  /// @see WallMechanics::Spring for spring force calculation.
+  ///
   class SpringInternalExternalThreshold : public BaseReaction {
 
     public:
@@ -303,7 +339,6 @@ namespace WallMechanics {
 /// @endverbatim
 ///
 /// 
-
 class VertexFromWallSpringMTnew : public BaseReaction {
 
   public:
@@ -354,7 +389,6 @@ class VertexFromWallSpringMTnew : public BaseReaction {
 /// where boundary is defined as the wall being connected to the
 /// outside/background of the tissue.
 ///
-/// @endverbatim
 ///
 class VertexFromWallBoundarySpring : public BaseReaction {
 
