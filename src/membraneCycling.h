@@ -64,17 +64,23 @@ class Constant : public BaseReaction {
 /// It uses two compartments for each wall and a single for the cells. p0 gives maximal exocytosis rate, p1 the maximal endocytosis rate.
 /// PIN  molecules are updated according to:
 ///  
+/// @f[ 
+/// \frac{dP_i}{dt} = 
+/// \sum_{j} -p_0 P_i   \frac{P_{ji}^{p_3}}{P_{ji}^{p_3} + {p_2}^{p_3}} + 
+/// \sum_{j} p_1 P_{ij} \frac{P_{ji}^{p_3}}{P_{ji}^{p_3} + {p_2}^{p_3}} 
+/// @f] 
 ///
-/// @f[ \frac{dP_i}{dt} =\sum_{j} -p_0 P_i \frac{P_{ji}^{p_3}}{P_{ji}^{p_3}+p_2^{p_3}}+\sum_{j} p_1 P_{ij} \frac{P_{ji}^{p_3}}{P_{ji}^{p_3}+{p_2}^{p_3}} @f] 
-///  
-/// @f[ \frac{dP_{ij}}{dt} = p_0 P_i \frac{P_{ji}^{p_3}}{P_{ji}^{p_3}+p_2^{p_3}}- p_1 P_{ij} \frac{P_{ji}^{p_3}}{P_{ji}^{p_3}+{p_2}^{p_3}} @f]
-///
+/// @f[ 
+/// \frac{dP_{ij}}{dt} = 
+/// p_0 P_{i}  \frac{P_{ji}^{p_3}}{P_{ji}^{p_3} + {p_2}^{p_3}} - 
+/// p_1 P_{ij} \frac{P_{ji}^{p_3}}{P_{ji}^{p_3} + {p_2}^{p_3}} 
+/// @f]
 ///
 ///  
 /// In the model file the reaction is given by:
 /// @verbatim
 /// MembraneCycling::CrossMembraneNonLinear 4 2 1 1
-/// p_0 ..p_3
+/// p_0 ... p_3
 /// ci_PIN 
 /// wi_PIN 
 /// @endverbatim
@@ -105,7 +111,7 @@ class CrossMembraneNonLinear : public BaseReaction {
 /// It uses two compartments for each wall and a single for the cells. p0 gives maximal exocytosis rate, p1 the maximal endocytosis rate.
 /// PIN  molecules are updated according to:
 ///
-/// @f[ \frac{dP_i}{dt} =\sum_{j} -p_0 P_i P_{ji}+ p_1 P_ij P_{ji} @f] 
+/// @f[ \frac{dP_i}{dt} = \sum_{j} -p_0 P_i P_{ji}+ p_1 P_ij P_{ji} @f] 
 ///  
 /// @f[ \frac{dP_{ij}}{dt} = p_0 P_i P_{ji}- p_1 P_i P_{ji} @f]
 ///
@@ -114,7 +120,7 @@ class CrossMembraneNonLinear : public BaseReaction {
 /// MembraneCycling::CrossMembraneLinear 2 2 1 1
 /// p_0 p_1
 /// ci_PIN 
-///  wi_PIN 
+/// wi_PIN 
 /// @endverbatim
 ///
 class CrossMembraneLinear : public BaseReaction {
@@ -145,7 +151,7 @@ class CrossMembraneLinear : public BaseReaction {
 /// PIN  molecules are updated according to:
 /// @f[ \frac{dP_i}{dt} = \sum_{j}- p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}+ p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f] 
 ///  
-/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}- p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f]  @f]
+/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}- p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f]
 ///
 /// In the model file the reaction is given by:
 /// @verbatim
