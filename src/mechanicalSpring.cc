@@ -484,12 +484,12 @@ namespace WallMechanics {
         DataMatrix &vertexDerivs) {
 
       // Do the update for each wall
-      size_t numWalls           = T.numWall();
-      size_t wallLengthIndex    = variableIndex(0, 0);
-      size_t concentrationIndex = variableIndex(0, 1);
-      size_t dimension          = vertexData[0].size();
+      size_t numWalls        = T.numWall();
+      size_t wallLengthIndex = variableIndex(0, 0);
+      size_t concIndex       = variableIndex(0, 1);
+      size_t dimension       = vertexData[0].size();
 
-      for (size_t ii = 0; ii < numWalls; ++ii) {
+      for (size_t ii = 0; ii < numWalls; ii++) {
         size_t v1 = T.wall(ii).vertex1()->index();
         size_t v2 = T.wall(ii).vertex2()->index();
         assert(vertexData[v2].size() == dimension);
@@ -500,6 +500,7 @@ namespace WallMechanics {
         std::vector<double> n_c1(dimension);
         std::vector<double> n_c2(dimension);
 
+        // Calculate the euclidian distance between the vertices
         for (size_t dd = 0; dd < dimension; dd++) {
           n_w[dd]   =  vertexData[v2][dd] - vertexData[v1][dd];
           distance += n_w[dd] * n_w[dd];
@@ -512,22 +513,21 @@ namespace WallMechanics {
         double coeff   = 0.0;
         double concOne = 0.0;
         double concTwo = 0.0;
+        Cell* cell1    = T.wall(ii).cell1();
+        Cell* cell2    = T.wall(ii).cell2();
+        bool c1IsBg    = cell1 == T.background();
+        bool c2IsBg    = cell2 == T.background();
 
-        if (!(T.wall(ii).cell1() != T.background() &&
-              T.wall(ii).cell2() != T.background())) {
-          concOne = T.wall(ii).cell1() != T.background() ? 
-            cellData[T.wall(ii).cell1()->index()][concentrationIndex] : 0;  
-          concTwo = T.wall(ii).cell2() != T.background() ? 
-            cellData[T.wall(ii).cell2()->index()][concentrationIndex] : 0;
+        if (c1IsBg || c2IsBg) {
+          concOne = c1IsBg ? 0 : cellData[cell1->index()][concIndex];
+          concTwo = c2IsBg ? 0 : cellData[cell2->index()][concIndex];
           coeff   = (concOne < parameter(0) ? parameter(1) : parameter(2)) + 
-            (concTwo < parameter(0) ? parameter(1) : parameter(2));
+                      (concTwo < parameter(0) ? parameter(1) : parameter(2));
         } else {
-          concOne = T.wall(ii).cell1() != T.background() ? 
-            cellData[T.wall(ii).cell1()->index()][concentrationIndex] : 0;  
-          concTwo = T.wall(ii).cell2() != T.background() ? 
-            cellData[T.wall(ii).cell2()->index()][concentrationIndex] : 0;
+          concOne = c1IsBg ? 0 : cellData[cell1->index()][concIndex];  
+          concTwo = c2IsBg ? 0 : cellData[cell2->index()][concIndex];
           coeff   = (concOne < parameter(0) ? parameter(3) : parameter(4)) + 
-            (concTwo < parameter(0) ? parameter(3) : parameter(4));
+                      (concTwo < parameter(0) ? parameter(3) : parameter(4));
         }
 
 
@@ -536,7 +536,7 @@ namespace WallMechanics {
         // If we're causing a non-physical mess, don't update.
         coeff  = (distance <= 0.0 && wallLength <= 0.0) ? 0 : coeff;
 
-        // Multiply by fraction_adhesion
+        // If stretching, multiply by fraction_adhesion
         coeff *= distance > wallLength ? parameter(5) : coeff; 
 
         // Save force in wall variable if appropriate
@@ -545,8 +545,9 @@ namespace WallMechanics {
         }
 
         // Update both vertices for each dimension
+        double div = 0.0;
         for (size_t dd = 0; dd < dimension; dd++) {
-          double div = coeff * (vertexData[v1][dd] - vertexData[v2][dd]);
+          div = coeff * (vertexData[v1][dd] - vertexData[v2][dd]);
           vertexDerivs[v1][dd] -= div;
           vertexDerivs[v2][dd] += div;
         }
@@ -3705,9 +3706,7 @@ derivs(Tissue &T,
           vertexVec[i][j][0]=vertexData[T.cell(list[i]).vertex(j) -> index()][0];
           vertexVec[i][j][1]=vertexData[T.cell(list[i]).vertex(j) -> index()][1];
         }
-
       }
-
     }   
 
   void vertexFromSubstrate::
@@ -3817,14 +3816,3 @@ derivs(Tissue &T,
   //   }
 
   // }
-
-
-
-
-
-
-
-
-
-
-
