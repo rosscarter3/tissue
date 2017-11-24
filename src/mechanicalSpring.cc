@@ -502,7 +502,7 @@ namespace WallMechanics {
 
         for (size_t dd = 0; dd < dimension; dd++) {
           n_w[dd]   =  vertexData[v2][dd] - vertexData[v1][dd];
-          distance =+ n_w[dd] * n_w[dd];
+          distance += n_w[dd] * n_w[dd];
         }
         distance = std::sqrt(distance);
 
@@ -512,8 +512,6 @@ namespace WallMechanics {
         double coeff   = 0.0;
         double concOne = 0.0;
         double concTwo = 0.0;
-        //Cell &cell1 = T.wall(ii).cell1();
-        //Cell &cell2 = T.wall(ii).cell2();
 
         if (!(T.wall(ii).cell1() != T.background() &&
               T.wall(ii).cell2() != T.background())) {
@@ -538,7 +536,7 @@ namespace WallMechanics {
         // If we're causing a non-physical mess, don't update.
         coeff  = (distance <= 0.0 && wallLength <= 0.0) ? 0 : coeff;
 
-        // Multiply by fraction adhesion
+        // Multiply by fraction_adhesion
         coeff *= distance > wallLength ? parameter(5) : coeff; 
 
         // Save force in wall variable if appropriate
