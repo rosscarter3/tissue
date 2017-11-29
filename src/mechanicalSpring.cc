@@ -530,8 +530,9 @@ namespace WallMechanics {
                       (concTwo < parameter(0) ? parameter(3) : parameter(4));
         }
 
-
+        // Account for difference from resting length
         double wallLength = wallData[ii][wallLengthIndex];
+        coeff *= ((1.0 / wallLength) - (1.0 / distance));
 
         // If we're causing a non-physical mess, don't update.
         coeff  = (distance <= 0.0 && wallLength <= 0.0) ? 0 : coeff;
