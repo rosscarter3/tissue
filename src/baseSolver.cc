@@ -30,7 +30,7 @@ BaseSolver::BaseSolver(Tissue *T,std::ifstream &IN)
   //C_=0;
   setTissue(T);
   getInit();
-  
+
   //check debugging status
   std::string debugCheck = myConfig::getValue("debug_output", 0);
   if(!debugCheck.empty()) {
@@ -200,6 +200,7 @@ void BaseSolver::print(std::ostream &os)
   static int tCount=0;
   static int NOld=0,okOld=0,badOld=0;
   static double tOld=0.0;
+  std::string vtkOutputFolder;
   double time=myTimes::getDiffTime();
   std::cerr << tCount << " " << t_ << " " << cellData_.size() << " " 
 	    << wallData_.size() << " " << vertexData_.size() << " "
@@ -211,6 +212,14 @@ void BaseSolver::print(std::ostream &os)
   NOld = cellData_.size();
   okOld = numOk_;
   badOld = numBad_;
+
+  if (!(myConfig::getValue("vtk_output", 0) == "")) {
+    vtkOutputFolder = myConfig::getValue("vtk_output", 0);
+  } else {
+    vtkOutputFolder = "vtk";
+  }
+
+
   //
   // Print vertex, cell, and wall variables
   //
@@ -270,29 +279,37 @@ void BaseSolver::print(std::ostream &os)
   //
   // Print in vtu format assuming a single wall component for variables
   //
-  else if( printFlag_==1 ) {
-    std::string pvdFile = "vtk/tissue.pvd";
-    std::string cellFile = "vtk/VTK_cells.vtu";
-    std::string wallFile = "vtk/VTK_walls.vtu";
+  else if (printFlag_== 1) {
+    system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
+    
+    std::string pvdFile  = vtkOutputFolder + std::string("/tissue.pvd");
+    std::string cellFile = vtkOutputFolder + std::string("/VTK_cells.vtu");
+    std::string wallFile = vtkOutputFolder + std::string("/VTK_walls.vtu");
+    
     static size_t numCellVar = T_->cell(0).numVariable();
     setTissueVariables(numCellVar);
-    if( tCount==0 ) {
+    if (tCount==0) {
       PVD_file::writeFullPvd(pvdFile,cellFile,wallFile,numPrint_);
     }
+
     PVD_file::write(*T_,cellFile,wallFile,tCount);
   }
   //
   // Print in vtu format assuming two wall components for wall variables (except for length)
   //
-  else if( printFlag_==2 ) {
-    std::string pvdFile = "vtk/tissue.pvd";
-    std::string cellFile = "vtk/VTK_cells.vtu";
-    std::string wallFile = "vtk/VTK_walls.vtu";
+  else if (printFlag_ == 2) {
+    system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
+
+    std::string pvdFile  = vtkOutputFolder + std::string("/tissue.pvd");
+    std::string cellFile = vtkOutputFolder + std::string("/VTK_cells.vtu");
+    std::string wallFile = vtkOutputFolder + std::string("/VTK_walls.vtu");
+    
     static size_t numCellVar = T_->cell(0).numVariable();
     setTissueVariables(numCellVar);
-    if( tCount==0 ) {
+    if (tCount == 0) {
         PVD_file::writeFullPvd(pvdFile,cellFile,wallFile,numPrint_);
     }
+
     PVD_file::writeTwoWall(*T_,cellFile,wallFile,tCount);
   }
   //

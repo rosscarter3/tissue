@@ -66,6 +66,7 @@ int main(int argc,char *argv[]) {
   //myConfig::registerOption("wallOutput", 0);
   myConfig::registerOption("verbose", 1);
   myConfig::registerOption("debug_output", 1);
+  myConfig::registerOption("vtk_output", 1);
   
   int verboseFlag=1;
   std::string verboseString;
@@ -103,6 +104,9 @@ int main(int argc,char *argv[]) {
 	      << "silent (0) output mode to stderr." << std::endl; 
     std::cerr << "-debug_output file - Saves the last ten variable"
 	      << " states before exiting." << std::endl;
+    std::cerr << "-vtk_output file - Specifies the directory name when"
+        << " outputting data in vtk-format. Default name is set to \"vtk\"."
+	      << std::endl;
     std::cerr << "-help - Shows this message." << std::endl;
     exit(EXIT_FAILURE);
   } else if (myConfig::argc() != 4 ) {

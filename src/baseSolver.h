@@ -39,6 +39,7 @@ protected:
   int numPrint_;
   unsigned int numOk_, numBad_;
   bool debugFlag_;
+  std::string vtkOutput_;
   //size_t numSimulation_;
   
  public:
