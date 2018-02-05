@@ -15,6 +15,10 @@
 ///
 /// @brief Namespace containing mechanical 'reactions' connected to walls, i.e. 1D edges between 2D cells
 ///
+/// Classes describing updates related to 'spring'-like updates, i.e. the vertex positions connected by an edge are
+/// updated depending on their position, the resting length of the edge and possible other inputs such as molecular
+/// concentration in a cell.
+///
 namespace WallMechanics {
   ///
   /// @brief Updates vertices from an asymmetric wall spring potential
@@ -23,9 +27,9 @@ namespace WallMechanics {
   ///
   /// @f[ \frac{dx_i}{dt} = (x_{i}-x_{j}) \frac{K_{force}}{L_{ij}}(1-\frac{L_{ij}}{d}) @f]
   ///
-  /// where @f$ d @f$ = distance between vertices,
-  /// where @f$ x_i,x_j @f$ = vertex position in specific dimension,
-  /// @f$ L_{ij} @f$ = variable for the resting length of the wall.
+  /// where @f$ d @f$ is the distance between vertices,
+  /// @f$ x_i,x_j @f$ is the vertex position,
+  /// @f$ L_{ij} @f$ is the variable for storing the resting length of the wall.
   ///
   /// The parameters are @f$ K_{force} @f$ (parameter(0)), which sets the strength
   /// of the spring (spring constant), and @f$ K_{adh} @f$ (parameter(1)), which
@@ -42,18 +46,22 @@ namespace WallMechanics {
   /// WallMechanics::Spring 2 1 1
   /// K_force K_adh
   /// L_ij-index
+  /// @endverbatim
   ///
   /// or, when the force is saved in wall variable:
   ///
+  /// @verbatim
   /// WallMechanics::Spring 2 2 1 1
   /// K_force K_adh
   /// L_ij-index
   /// Forcesave-index
+  /// @endverbatim
   ///
   /// A third alternative is available for setting a different spring constant ( @f$ K_{force2} @f$
   /// , parameter(2)) for walls where a wall variable is set exactly to 1, and then the third index-layer
   /// holds the index of the 'flag' variable.
   ///
+  /// @verbatim
   /// WallMechanics::Spring 3 3 1 1/0 1
   /// K_force K_adh K_force2
   /// L_ij-index
