@@ -47,20 +47,16 @@ namespace WallMechanics {
   /// K_force K_adh
   /// L_ij-index
   /// @endverbatim
-  ///
   /// or, when the force is saved in wall variable:
-  ///
   /// @verbatim
   /// WallMechanics::Spring 2 2 1 1
   /// K_force K_adh
   /// L_ij-index
   /// Forcesave-index
   /// @endverbatim
-  ///
   /// A third alternative is available for setting a different spring constant ( @f$ K_{force2} @f$
   /// , parameter(2)) for walls where a wall variable is set exactly to 1, and then the third index-layer
   /// holds the index of the 'flag' variable.
-  ///
   /// @verbatim
   /// WallMechanics::Spring 3 3 1 1/0 1
   /// K_force K_adh K_force2
@@ -68,7 +64,6 @@ namespace WallMechanics {
   /// [Forcesave-index]
   /// wall_type_index
   /// @endverbatim
-  ///
   /// @note This reaction used to be called VertexFromWallSpring
   ///
   class Spring : public BaseReaction {
@@ -208,9 +203,9 @@ namespace WallMechanics {
   /// variable in the form (contributions from cells on either side)
   ///
   /// @f[ K_{spring} = p_{0} + p_{1} (\frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}} + c_{1}^{p_{3}}} +
-  /// \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+c_{2}^{p_{3}}} @f]
+  /// \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+c_{2}^{p_{3}}} ) @f]
   ///
-  /// where @f$ p_{0},p_{1} @f$ sets the range of pring constant values, and @f$p_{2},p_{3}@f$
+  /// where @f$ p_{0},p_{1} @f$ sets the range of spring constant values, and @f$p_{2},p_{3}@f$
   /// are the Hill constant and coefficient, respectively.
   ///
   /// This function is implemented as stiffness decreasing with the concentration as used for
@@ -275,7 +270,6 @@ namespace WallMechanics {
   /// concentration.
   /// As for WallMechanics::Spring, a sixth parameter (fraction/adhesion) can set a ratio of
   /// attractive vs repressive force.
-  ///
   /// @verbatim
   ///   SpringInternalExternalThreshold 6 1 2  
   ///   threshold p0 p1 p2 p3
@@ -283,10 +277,8 @@ namespace WallMechanics {
   ///   wall_length_index
   ///   species_index
   /// @endverbatim
-  ///
   /// @note This process is done additively for both cells connected to a cell
   /// wall.
-  ///
   ///
   /// @see WallMechanics::Spring for spring force calculation.
   ///
