@@ -35,7 +35,8 @@ namespace WallMechanics {
   /// of the spring (spring constant), and @f$ K_{adh} @f$ (parameter(1)), which
   /// sets the relative strength of attractive forces compared to repressive
   /// forces (when attractive forces, the two parameters are multiplied 
-  /// (@f$ K=K_{force}K_{adhFrac} @f$). 
+  /// (@f$ K=K_{force}K_{adhFrac} @f$), and hence @f$K_{adhFrac}@f$ would usually
+  /// be set to one or a lower value to make wall 'shrinkage' less probable. 
   /// The update needs the index of the wall length variable at the 
   /// first level (variableIndex(0,0)), and 
   /// optionally a wall variable index for storing the total wall Force (variableIndex(1,0)). 
@@ -715,37 +716,6 @@ class VertexFromWallSpringMTHistory : public BaseReaction {
         DataMatrix &cellDerivs,
         DataMatrix &wallDerivs,
         DataMatrix &vertexDerivs );
-};
-
-class VertexFromWallSpringExperimental : public BaseReaction
-{
-  public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    VertexFromWallSpringExperimental(std::vector<double> &paraValue,
-        std::vector< std::vector<size_t> > &indValue);
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///  
-    void derivs(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &wallData,
-        DataMatrix &vertexData,
-        DataMatrix &cellDerivs,
-        DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs);
 };
 
 class VertexFromWallSpringMTConcentrationHill : public BaseReaction {

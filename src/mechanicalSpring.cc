@@ -856,114 +856,114 @@ derivs(Tissue &T,
       }
     }
   }
+}
+
+
+
+namespace CenterTriangulation {
+  EdgeSpring::
+  EdgeSpring(std::vector<double> &paraValue, 
+	     std::vector< std::vector<size_t> > 
+	     &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=2 ) {
+      std::cerr << "CenterTriangulation::EdgeSpring"
+		<< "EdgeSpring() "
+		<< "Uses two parameters K_force frac_adhesion.\n";
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) { 
+      std::cerr << "CenterTriangulation::EdgeSpring"
+		<< "EdgeSpring() "
+		<< "Start of additional Cell variable indices (center(x,y,z) "
+		<< "L_1,...,L_n, n=num vertex) is given in first level." 
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    // Set the variable values
+    setId("CenterTriangulation::EdgeSpring");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "K_force";
+    tmp[1] = "frac_adh";
+    setParameterId( tmp );
   }
-
-
-
-  namespace CenterTriangulation {
-    EdgeSpring::
-      EdgeSpring(std::vector<double> &paraValue, 
-          std::vector< std::vector<size_t> > 
-          &indValue ) 
-      {  
-        // Do some checks on the parameters and variable indeces
-        if( paraValue.size()!=2 ) {
-          std::cerr << "CenterTriangulation::EdgeSpring"
-            << "EdgeSpring() "
-            << "Uses two parameters K_force frac_adhesion.\n";
-          exit(EXIT_FAILURE);
-        }
-        if( indValue.size() != 1 || indValue[0].size() != 1 ) { 
-          std::cerr << "CenterTriangulation::EdgeSpring"
-            << "EdgeSpring() "
-            << "Start of additional Cell variable indices (center(x,y,z) "
-            << "L_1,...,L_n, n=num vertex) is given in first level." 
-            << std::endl;
-          exit(EXIT_FAILURE);
-        }
-
-        // Set the variable values
-        setId("CenterTriangulation::EdgeSpring");
-        setParameter(paraValue);  
-        setVariableIndex(indValue);
-
-        // Set the parameter identities
-        std::vector<std::string> tmp( numParameter() );
-        tmp[0] = "K_force";
-        tmp[1] = "frac_adh";
-        setParameterId( tmp );
+  
+  void EdgeSpring::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each internal edge for eache cell
+    size_t numCells = T.numCell();
+    size_t posIndex = variableIndex(0,0);
+    size_t dimension = vertexData[0].size();
+    assert( 3==dimension );//assuming 3D
+    size_t lengthIndex = posIndex+dimension;
+    
+    for (size_t i=0; i<numCells; ++i) {
+      for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
+	size_t v = T.cell(i).vertex(k)->index();
+	
+	//Calculate shared factors
+	double distance=0.0;
+	for( size_t d=0 ; d<dimension ; d++ ) {
+	  distance += (vertexData[v][d]-cellData[i][posIndex+d])*
+	    (vertexData[v][d]-cellData[i][posIndex+d]);
+	}
+	distance = std::sqrt(distance);
+	double edgeLength=cellData[i][lengthIndex+k];
+	double coeff = parameter(0)*((1.0/edgeLength)-(1.0/distance));
+	
+	if( distance <= 0.0 && edgeLength <=0.0 ) {
+	  //std::cerr << i << " " << k << " - " << edgeLength << " " 
+	  //<< distance << std::endl;
+	  coeff = 0.0;
+	}
+	if( distance>edgeLength )
+	  coeff *=parameter(1);
+	
+	// Save force in wall variable if appropriate
+	//if( numVariableIndexLevel()>1 )
+	//wallData[i][variableIndex(1,0)] = coeff*distance;
+	
+	//Update both vertices for each dimension
+	for(size_t d=0 ; d<dimension ; d++ ) {
+	  double div = (vertexData[v][d]-cellData[i][posIndex+d])*coeff;
+	  vertexDerivs[v][d] -= div;
+	  cellDerivs[i][posIndex+d] += div;
+	}
       }
-
-    void EdgeSpring::
-      derivs(Tissue &T,
-          DataMatrix &cellData,
-          DataMatrix &wallData,
-          DataMatrix &vertexData,
-          DataMatrix &cellDerivs,
-          DataMatrix &wallDerivs,
-          DataMatrix &vertexDerivs ) {
-
-        //Do the update for each internal edge for eache cell
-        size_t numCells = T.numCell();
-        size_t posIndex = variableIndex(0,0);
-        size_t dimension = vertexData[0].size();
-        assert( 3==dimension );//assuming 3D
-        size_t lengthIndex = posIndex+dimension;
-
-        for (size_t i=0; i<numCells; ++i) {
-          for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
-            size_t v = T.cell(i).vertex(k)->index();
-
-            //Calculate shared factors
-            double distance=0.0;
-            for( size_t d=0 ; d<dimension ; d++ ) {
-              distance += (vertexData[v][d]-cellData[i][posIndex+d])*
-                (vertexData[v][d]-cellData[i][posIndex+d]);
-            }
-            distance = std::sqrt(distance);
-            double edgeLength=cellData[i][lengthIndex+k];
-            double coeff = parameter(0)*((1.0/edgeLength)-(1.0/distance));
-
-            if( distance <= 0.0 && edgeLength <=0.0 ) {
-              //std::cerr << i << " " << k << " - " << edgeLength << " " 
-              //<< distance << std::endl;
-              coeff = 0.0;
-            }
-            if( distance>edgeLength )
-              coeff *=parameter(1);
-
-            // Save force in wall variable if appropriate
-            //if( numVariableIndexLevel()>1 )
-            //wallData[i][variableIndex(1,0)] = coeff*distance;
-
-            //Update both vertices for each dimension
-            for(size_t d=0 ; d<dimension ; d++ ) {
-              double div = (vertexData[v][d]-cellData[i][posIndex+d])*coeff;
-              vertexDerivs[v][d] -= div;
-              cellDerivs[i][posIndex+d] += div;
-            }
-          }
-        }
-      }
+    }
   }
+} //end namespace CenterTriangulation
 
-  VertexFromDoubleWallSpring::
-    VertexFromDoubleWallSpring(std::vector<double> &paraValue, 
-        std::vector< std::vector<size_t> > 
-        &indValue ) 
-    {  
-      // Do some checks on the parameters and variable indeces
-      if( paraValue.size()!=2 ) {
-        std::cerr << "VertexFromDoubleWallSpring::"
-          << "VertexFromDoubleWallSpring() "
-          << "Uses two parameters K_force frac_adhesion.\n";
-        exit(0);
-      }
-      if( indValue.size() < 2 || indValue.size() > 3 
-          || indValue[0].size() != 1
-          || indValue[1].size() != 2
-          || (indValue.size()==3 && indValue[2].size() != 1) ) {
-        std::cerr << "VertexFromDoubleWallSpring::"
+VertexFromDoubleWallSpring::
+VertexFromDoubleWallSpring(std::vector<double> &paraValue, 
+			   std::vector< std::vector<size_t> > 
+			   &indValue ) 
+{  
+  // Do some checks on the parameters and variable indeces
+  if( paraValue.size()!=2 ) {
+    std::cerr << "VertexFromDoubleWallSpring::"
+	      << "VertexFromDoubleWallSpring() "
+	      << "Uses two parameters K_force frac_adhesion.\n";
+    exit(0);
+  }
+  if( indValue.size() < 2 || indValue.size() > 3 
+      || indValue[0].size() != 1
+      || indValue[1].size() != 2
+      || (indValue.size()==3 && indValue[2].size() != 1) ) {
+    std::cerr << "VertexFromDoubleWallSpring::"
           << "VertexFromDoubleWallSpring() "
           << "Wall length index given in first level,"
           << " the two wall k variable indices in second,"
@@ -1596,72 +1596,6 @@ derivs(Tissue &T,
 
         wallData[i][variableIndex(1,0)] = parameter(0)+parameter(1) *
           (2.0-c1Fac-c2Fac);
-      }
-    }
-
-  VertexFromWallSpringExperimental::
-    VertexFromWallSpringExperimental(std::vector<double> &paraValue,
-        std::vector< std::vector<size_t> > &indValue)
-    {
-      if (paraValue.size() != 1) {
-        std::cerr << "VertexFromWallSpringExperimental::VertexFromWallSpringExperimental() "
-          << "Uses one parameter: k" << std::endl;
-        exit(EXIT_FAILURE);
-      }
-
-      if (indValue.size() == 0 || indValue.size() > 2 || indValue[0].size() != 1) {
-        std::cerr << "VertexFromWallSpringExperimental::VertexFromWallSpringExperimental() "
-          << "Wall length index given.\n";
-        exit(EXIT_FAILURE);
-      }
-
-      if (indValue.size() == 1 && indValue[0].size() != 1) {
-        std::cerr << "VertexFromWallSpringExperimental::VertexFromWallSpringExperimental() -"
-          << "Second level of indices gives index for storage of force.\n";
-        exit(EXIT_FAILURE);
-      }
-
-      setId("VertexFromWallSpringExperimental");
-      setParameter(paraValue);  
-      setVariableIndex(indValue);
-
-      std::vector<std::string> tmp(numParameter());
-      tmp[0] = "k";
-      setParameterId(tmp);
-    }
-
-  void VertexFromWallSpringExperimental::
-    derivs(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &wallData,
-        DataMatrix &vertexData,
-        DataMatrix &cellDerivs,
-        DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs)
-    {
-      for (size_t i = 0; i < T.numWall(); ++i) {
-        size_t vertex1Index = T.wall(i).vertex1()->index();
-        size_t vertex2Index = T.wall(i).vertex2()->index();
-        size_t dimensions = vertexData[vertex1Index].size();
-
-        double distance = 0.0;
-        for (size_t d = 0; d < dimensions; ++d) {
-          distance += (vertexData[vertex1Index][d] - vertexData[vertex2Index][d])
-            * (vertexData[vertex1Index][d] - vertexData[vertex2Index][d]);
-        }
-        distance = std::sqrt(distance);
-
-        for (size_t d = 0; d < dimensions; ++d) {
-          double dx1dt = parameter(0) * (vertexData[vertex2Index][d] - vertexData[vertex1Index][d])
-            * (1.0/wallData[i][variableIndex(0, 0)] - 1.0/distance);
-
-          vertexDerivs[vertex1Index][d] += dx1dt;
-          vertexDerivs[vertex2Index][d] -= dx1dt;
-        }
-        if (numVariableIndexLevel() == 2) {
-          wallData[T.wall(i).index()][variableIndex(1, 0)] = (parameter(0) / wallData[T.wall(i).index()][variableIndex(0, 0)]);
-          wallData[T.wall(i).index()][variableIndex(1, 0)] *= (distance - wallData[T.wall(i).index()][variableIndex(0, 0)]);
-        }
       }
     }
 

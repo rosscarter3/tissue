@@ -131,8 +131,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallMechanics::SpringEpidermal(paraValue,indValue);
   else if(idValue=="VertexFromEpidermalCellWallSpring" || idValue=="WallMechanics::SpringEpidermalCell")
     return new WallMechanics::SpringEpidermalCell(paraValue,indValue);
-  else if (idValue == "VertexFromWallSpringExperimental")
-    return new VertexFromWallSpringExperimental(paraValue, indValue);
   else if(idValue=="VertexFromWallSpringMTConcentrationHill")
     return new VertexFromWallSpringMTConcentrationHill(paraValue,indValue);
   else if(idValue=="VertexFromDoubleWallSpringMTConcentrationHill")
@@ -622,12 +620,20 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue=="MassAction::TwoToOneWall")
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
+  // Obselete reactions
+  else if (idValue == "VertexFromWallSpringExperimental") {
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromWallSpringExperimental not used anymore." << std::endl
+	      << "Use WallMechanics::Spring with parameter(2) set to 1.0 instead." << std::endl;
+    exit(EXIT_FAILURE);
+  }
 
   // Default, if nothing found
   else {
-    std::cerr << "\nBaseReaction::createReaction() WARNING: Reactiontype " 
-	      << idValue << " not known, no reaction created.\n\7";
-    exit(-1);
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reactiontype " 
+	      << idValue << " not known, no reaction created." << std::endl;
+    exit(EXIT_FAILURE);
   }
 }
 
