@@ -158,23 +158,6 @@ namespace Pressure2D {
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs );
   };
-  
-  //!Updates vertices from a cell 'pressure' potential for internal cells
-  class VertexFromCellInternalPressure : public BaseReaction {
-    
-  public:
-    
-    VertexFromCellInternalPressure(std::vector<double> &paraValue, 
-				   std::vector< std::vector<size_t> > &indValue );
-    
-    void derivs(Tissue &T,
-		DataMatrix &cellData,
-		DataMatrix &wallData,
-		DataMatrix &vertexData,
-		DataMatrix &cellDerivs,
-		DataMatrix &wallDerivs,
-		DataMatrix &vertexDerivs );
-  }; 
 } // end namespace Pressure2D
 
 namespace CenterTriangulation {
