@@ -13,42 +13,43 @@
 
 namespace Pressure2D {
 
-  VertexFromCellPressure::
-  VertexFromCellPressure(std::vector<double> &paraValue, 
-			 std::vector< std::vector<size_t> > 
-			 &indValue ) 
+  EdgeForce::
+  EdgeForce(std::vector<double> &paraValue, 
+	    std::vector< std::vector<size_t> > 
+	    &indValue ) 
   {  
     //Do some checks on the parameters and variable indices
     //
     if (paraValue.size() != 2 || (paraValue[1] != 0.0 && paraValue[1] != 1.0)) {
-      std::cerr << "VertexFromCellPressure::"
-		<< "VertexFromCellPressure() "
-		<< "Uses two parameters K_force and normalizeVolumeFlag (= 0 or 1).\n";
-      exit(0);
+      std::cerr << "Pressure2D::EdgeForce::"
+		<< "EdgeForce() "
+		<< "Uses two parameters P_force and normalizeVolumeFlag (= 0 or 1)."
+		<< std::endl;
+      exit(EXIT_FAILURE);
     }
     
     if (indValue.size() != 0) {
-      std::cerr << "VertexFromCellPressure::"
-		<< "VertexFromCellPressure() "
-		<< "No index given.\n";
-      exit(0);
+      std::cerr << "Pressure2D::EdgeForce::"
+		<< "EdgeForce() "
+		<< "No index should be given." << std::endl;
+      exit(EXIT_FAILURE);
     }
     
     //Set the variable values
     //
-    setId("VertexFromCellPressure");
+    setId("Pressure2D::EdgeForce");
     setParameter(paraValue);  
     setVariableIndex(indValue);
     
     //Set the parameter identities
     //
     std::vector<std::string> tmp(numParameter());
-    tmp[0] = "K_force";
+    tmp[0] = "P_force";
     tmp[1] = "f_V_norm";
     setParameterId(tmp);
   }
   
-  void VertexFromCellPressure::
+  void EdgeForce::
   derivs(Tissue &T,
 	 DataMatrix &cellData,
 	 DataMatrix &wallData,

@@ -154,23 +154,26 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  }
   //Mechanical interactions between vertices
   //mechanical.h,mechanical.cc
- else if(idValue=="VertexFromCellPowerdiagram")
-   return new VertexFromCellPowerdiagram(paraValue,indValue);
   // namespace Pressure2D
- else if(idValue=="VertexFromCellPressure")
-   return new Pressure2D::VertexFromCellPressure(paraValue,indValue);
+ else if(idValue=="Pressure2D::EdgeForce")
+   return new Pressure2D::EdgeForce(paraValue,indValue);
  else if(idValue=="VertexFromCellPressureVolumeNormalized")
    return new Pressure2D::VertexFromCellPressureVolumeNormalized(paraValue,indValue);
  else if(idValue=="VertexFromCellPressureThresholdFromMaxPos")
    return new Pressure2D::VertexFromCellPressureThresholdFromMaxPos(paraValue,indValue);
  else if(idValue=="VertexFromCellInternalPressure")
    return new Pressure2D::VertexFromCellInternalPressure(paraValue,indValue);
+  // Pressure forces implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
    return new CenterTriangulation::VertexFromCellPressure(paraValue,indValue);
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
+
+ else if(idValue=="VertexFromCellPowerdiagram")
+   return new VertexFromCellPowerdiagram(paraValue,indValue);  
+  // Forces acting on vertices
  else if(idValue=="VertexForceOrigoFromIndex")
    return new VertexForceOrigoFromIndex(paraValue,indValue); 
  else if(idValue=="CellForceOrigoFromIndex")
@@ -625,6 +628,32 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	      << "Use WallMechanics::Spring with parameter(2) set to 1.0 instead." << std::endl;
     exit(EXIT_FAILURE);
   }
+  else if(idValue=="VertexFromCellPressure") {
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromCellPressure renamed." << std::endl
+	      << "Use Pressure2D::EdgeForce." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+ else if(idValue=="VertexFromCellPressureVolumeNormalized") {
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromCellPressureVolumeNormalized renamed (and reimplemented)." << std::endl
+	      << "Use Pressure2D::AreaPotential with parameter(1) set to 1 instead." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+ else if(idValue=="VertexFromCellPressureThresholdFromMaxPos") {
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromCellPressureThresholdFromMaxPos renamed." << std::endl
+	      << "Use Pressure2D::AreaPotentialSpatialThreshold instead." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+ else if(idValue=="VertexFromCellInternalPressure") {
+    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromCellInternalPressure not used anymore." << std::endl
+	      << "Use Pressure2D::AreaPotential with parameter(2) set to 1 instead." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+
 
   // Default, if nothing found
   else {

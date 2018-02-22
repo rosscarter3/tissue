@@ -35,13 +35,13 @@ namespace Pressure2D {
   ///
   /// In a model file, the reaction is given by:
   /// @verbatim
-  /// VertexFromCellPressure 2 0
+  /// Pressure2D::EdgeForce 2 0
   /// P V_normflag(=0/1)
   /// @endverbatim
   ///
   /// @note Requires two dimensions with vertices sorted.
   ///
-  class VertexFromCellPressure : public BaseReaction {
+  class EdgeForce : public BaseReaction {
     
   public:
   
@@ -57,7 +57,7 @@ namespace Pressure2D {
     ///
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
-    VertexFromCellPressure(std::vector<double> &paraValue, 
+    EdgeForce(std::vector<double> &paraValue, 
 			   std::vector< std::vector<size_t> > &indValue );
     
     ///
