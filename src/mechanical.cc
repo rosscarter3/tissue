@@ -88,39 +88,62 @@ namespace Pressure2D {
     }
   }
   
-  VertexFromCellPressureVolumeNormalized::
-  VertexFromCellPressureVolumeNormalized(std::vector<double> &paraValue, 
-					 std::vector< std::vector<size_t> > 
-					 &indValue ) {
+  AreaPotential::
+  AreaPotential(std::vector<double> &paraValue, 
+		std::vector< std::vector<size_t> > 
+		&indValue ) {
     
-    //Do some checks on the parameters and variable indeces
-    //////////////////////////////////////////////////////////////////////
-    if( paraValue.size()!=1 ) {
-      std::cerr << "VertexFromCellPressureVolumeNormalized::"
-		<< "VertexFromCellPressureVolumeNormalized() "
-		<< "Uses one parameter K_force.\n";
-      exit(0);
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=2 && paraValue.size()!=3 ) {
+      std::cerr << "Pressure2D::AreaPotential::"
+		<< "AreaPotential() "
+		<< "Uses two or three parameters p0=P_force, "
+		<< "p1=flag_Vnorm(=1/0), [p2=flag_internalCellsOnly(=1/0)]."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( paraValue[1]!=0 && paraValue[1]!=1 ) {
+      std::cerr << "Pressure2D::AreaPotential::"
+		<< "AreaPotential() "
+		<< "p1=flag_Vnorm(=1/0), is a flag and needs to be set to 0 or 1."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( paraValue.size()>2 && (paraValue[2]!=0 && paraValue[2]!=1) ) {
+      std::cerr << "Pressure2D::AreaPotential::"
+		<< "AreaPotential() "
+		<< "p2=flag_InternalCellsOnly(=1/0), is a flag and needs to be set to 0 or 1."
+		<< std::endl
+		<< "This parameter is optional."
+		<< std::endl;
+      exit(EXIT_FAILURE);
     }
     if( indValue.size() != 0 ) {
-      std::cerr << "VertexFromCellPressureVolumeNormalized::"
-		<< "VertexFromCellPressureVolumeNormalized() "
-		<< "No index given.\n";
-      exit(0);
+      std::cerr << "Pressure2D::AreaPotential::"
+		<< "AreaPotential() "
+		<< "No index should be given."
+		<< std::endl;
+      exit(EXIT_FAILURE);
     }
-    //Set the variable values
-    //////////////////////////////////////////////////////////////////////
-    setId("VertexFromCellPressureVolumeNormalized");
+    // Set the variable values
+    // 
+    setId("Pressure2D::AreaPotential");
     setParameter(paraValue);  
     setVariableIndex(indValue);
     
-    //Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    // Set the parameter identities
+    //
     std::vector<std::string> tmp( numParameter() );
-    tmp[0] = "K_force";
+    tmp[0] = "P_force";
+    tmp[1] = "f_V_norm";
+    if( numParameter()>2 ) {
+      tmp[2] = "f_internal";
+    }
     setParameterId( tmp );
   }
   
-  void VertexFromCellPressureVolumeNormalized::
+  void AreaPotential::
   derivs(Tissue &T,
 	 DataMatrix &cellData,
 	 DataMatrix &wallData,
@@ -134,63 +157,67 @@ namespace Pressure2D {
     size_t dimension = T.vertex(0).numPosition(); 
     
     //For each cell
-    for( size_t cellI=0 ; cellI<numCells ; ++cellI ) {
-      
+    for( size_t cellI=0 ; cellI<numCells ; ++cellI ) {      
       Cell &tmpCell = T.cell(cellI);
-      //Calculate cell position from vertices
-      std::vector<double> xCenter = tmpCell.positionFromVertex(vertexData);
-      assert( xCenter.size()==dimension );
-      double cellVolume = tmpCell.calculateVolume(vertexData);
-      
-      //Calculate derivative contributions to vertices from each wall
-      for( size_t k=0 ; k<tmpCell.numWall() ; ++k ) {
-	Wall &tmpWall = tmpCell.wallRef(k);
-	size_t v1I = tmpWall.vertex1()->index();
-	size_t v2I = tmpWall.vertex2()->index();
-	std::vector<double> n(dimension),dx(dimension), x0(dimension);
-	double b=0;
-	for( size_t d=0 ; d<dimension ; ++d ) {
-	  n[d] = vertexData[v2I][d]-vertexData[v1I][d];
-	  b += n[d]*n[d];
-	  x0[d] = 0.5*(vertexData[v1I][d] + vertexData[v2I][d]);
-	  dx[d] = xCenter[d]-x0[d];
-	}
-	assert( b>0.0 );
-	b = std::sqrt(b);
-	for( size_t d=0 ; d<dimension ; ++d )
-	  n[d] /= b;
-	double bInv = 1.0/b;
-	double h = dx[0]*dx[0] + dx[1]*dx[1]
-	  -(n[0]*dx[0]+n[1]*dx[1])*(n[0]*dx[0]+n[1]*dx[1]);
-	assert( h>0.0 );
-	h = std::sqrt(h);
-	double hInv = 1.0/h;
-	double fac = parameter(0)*0.5/cellVolume;
+      // If p2 flag is set, this will only be done for internal cells
+      if (numParameter()<3 || parameter(2) != 1 || !(tmpCell.isNeighbor(T.background()))) {
 	
-	vertexDerivs[v1I][0] += fac*( 0.5*b*hInv*
-				      ( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(-n[1]*n[1]*bInv*dx[0]
-					  -0.5*n[0]
-					  +n[0]*n[1]*bInv*dx[1]) ) 
-				      - h*n[0] ); 
-	vertexDerivs[v2I][0] += fac*( 0.5*b*hInv*
-				      ( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(n[1]*n[1]*bInv*dx[0]
-					  -0.5*n[0]
-					  -n[0]*n[1]*bInv*dx[1]) )
-				      + h*n[0] );
-	vertexDerivs[v1I][1] += fac*( 0.5*b*hInv*
-				      ( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(-n[0]*n[0]*bInv*dx[1]
-					  -0.5*n[1]
-					  +n[0]*n[1]*bInv*dx[0]) ) 
-				      - h*n[1] ); 
-	vertexDerivs[v2I][1] += fac*( 0.5*b*hInv*
-				      ( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
-					*(n[0]*n[0]*bInv*dx[1]
-					  -0.5*n[1]
-					  -n[0]*n[1]*bInv*dx[0]) )
-				      + h*n[1] );      
+	// Calculate cell position and size from vertices
+	std::vector<double> xCenter = tmpCell.positionFromVertex(vertexData);
+	assert( xCenter.size()==dimension );
+	double cellVolume = tmpCell.calculateVolume(vertexData);
+	double fac = parameter(0)*0.5;
+	if (parameter(1)==1) {
+	  fac /= cellVolume;
+	}
+	//Calculate derivative contributions to vertices from each wall
+	for( size_t k=0 ; k<tmpCell.numWall() ; ++k ) {
+	  Wall &tmpWall = tmpCell.wallRef(k);
+	  size_t v1I = tmpWall.vertex1()->index();
+	  size_t v2I = tmpWall.vertex2()->index();
+	  std::vector<double> n(dimension),dx(dimension), x0(dimension);
+	  double b=0;
+	  for( size_t d=0 ; d<dimension ; ++d ) {
+	    n[d] = vertexData[v2I][d]-vertexData[v1I][d];
+	    b += n[d]*n[d];
+	    x0[d] = 0.5*(vertexData[v1I][d] + vertexData[v2I][d]);
+	    dx[d] = xCenter[d]-x0[d];
+	  }
+	  assert( b>0.0 );
+	  b = std::sqrt(b);
+	  for( size_t d=0 ; d<dimension ; ++d )
+	    n[d] /= b;
+	  double bInv = 1.0/b;
+	  double h = dx[0]*dx[0] + dx[1]*dx[1]
+	    -(n[0]*dx[0]+n[1]*dx[1])*(n[0]*dx[0]+n[1]*dx[1]);
+	  assert( h>0.0 );
+	  h = std::sqrt(h);
+	  double hInv = 1.0/h;
+	  vertexDerivs[v1I][0] += fac*( 0.5*b*hInv*
+					( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
+					  *(-n[1]*n[1]*bInv*dx[0]
+					    -0.5*n[0]
+					    +n[0]*n[1]*bInv*dx[1]) ) 
+					- h*n[0] ); 
+	  vertexDerivs[v2I][0] += fac*( 0.5*b*hInv*
+					( -dx[0] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
+					  *(n[1]*n[1]*bInv*dx[0]
+					    -0.5*n[0]
+					    -n[0]*n[1]*bInv*dx[1]) )
+					+ h*n[0] );
+	  vertexDerivs[v1I][1] += fac*( 0.5*b*hInv*
+					( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
+					  *(-n[0]*n[0]*bInv*dx[1]
+					    -0.5*n[1]
+					    +n[0]*n[1]*bInv*dx[0]) ) 
+					- h*n[1] ); 
+	  vertexDerivs[v2I][1] += fac*( 0.5*b*hInv*
+					( -dx[1] - 2.0*(n[0]*dx[0]+n[1]*dx[1])
+					  *(n[0]*n[0]*bInv*dx[1]
+					    -0.5*n[1]
+					    -n[0]*n[1]*bInv*dx[0]) )
+					+ h*n[1] );      
+	}
       }
     }
   }

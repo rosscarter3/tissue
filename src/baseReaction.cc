@@ -157,8 +157,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // namespace Pressure2D
  else if(idValue=="Pressure2D::EdgeForce")
    return new Pressure2D::EdgeForce(paraValue,indValue);
- else if(idValue=="VertexFromCellPressureVolumeNormalized")
-   return new Pressure2D::VertexFromCellPressureVolumeNormalized(paraValue,indValue);
+ else if(idValue=="Pressure2D::AreaPotential")
+   return new Pressure2D::AreaPotential(paraValue,indValue);
  else if(idValue=="VertexFromCellPressureThresholdFromMaxPos")
    return new Pressure2D::VertexFromCellPressureThresholdFromMaxPos(paraValue,indValue);
  else if(idValue=="VertexFromCellInternalPressure")
