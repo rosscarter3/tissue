@@ -12,57 +12,119 @@
 #include"baseReaction.h"
 #include<cmath>
 
+/// @namespace Pressure2D
+/// @brief Functions providing updates on vertices based on 2D cell pressure forces.
 ///
-/// @brief Updates vertices from a cell pressure potential, i.e. forces normal to edges
+/// These functions are for generating forces from internal cell pressures, and the
+/// differs between perpendicular to edge forces and potential based on area increase.
 ///
-/// @details A area rule in two dimensions is used to calculate the forces on vertex @$v@$ from a cell is
-///
-/// @f[\frac{dx_v}{dt} = 0.5*p_0 (y_{v_r} - y_{v_l}) @f]
-/// @f[\frac{dy_v}{dt} = 0.5*p_0 (x_{v_l} - x_{v_r}) @f]
-///
-/// where @$v_r,v_l@$ are right and left vertices in the sorted order. @$p_0$ represents the pressure,
-/// and if @$p_1=1@$, the pressure will be divided by the cell volume.
-///
-/// In a model file, the reaction is given by:
-/// @verbatim
-/// VertexFromCellPressure 2 0
-/// P V_normflag(=0/1)
-/// @endverbatim
-///
-/// @note Requires two dimensions with vertices sorted.
-///
-class VertexFromCellPressure : public BaseReaction {
+namespace Pressure2D { 
+
+  ///
+  /// @brief Updates vertices from a cell pressure potential, implemented as forces normal to edges
+  ///
+  /// @details An area rule in two dimensions is used to calculate the forces on vertex @f$v@f$ from a cell is
+  ///
+  /// @f[\frac{dx_v}{dt} = 0.5*p_0 (y_{v_r} - y_{v_l}) @f]
+  /// @f[\frac{dy_v}{dt} = 0.5*p_0 (x_{v_l} - x_{v_r}) @f]
+  ///
+  /// where @f$v_r,v_l@f$ are right and left vertices in the sorted order. @f$p_0@f$ represents the pressure,
+  /// and if @f$p_{1}=1@f$, the pressure will be divided by the cell volume. The Force is in
+  /// the 'outward' normal direction for the two edges connected to the vertices and proportional to the
+  /// length of the edge.
+  ///
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// VertexFromCellPressure 2 0
+  /// P V_normflag(=0/1)
+  /// @endverbatim
+  ///
+  /// @note Requires two dimensions with vertices sorted.
+  ///
+  class VertexFromCellPressure : public BaseReaction {
+    
+  public:
   
- public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    VertexFromCellPressure(std::vector<double> &paraValue, 
+			   std::vector< std::vector<size_t> > &indValue );
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
+  //!Updates vertices from a cell pressure potential
+  class VertexFromCellPressureVolumeNormalized : public BaseReaction {
+    
+  public:
+    
+    VertexFromCellPressureVolumeNormalized(std::vector<double> &paraValue, 
+					   std::vector< std::vector<size_t> > &indValue );
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
   
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromCellPressure(std::vector<double> &paraValue, 
-			 std::vector< std::vector<size_t> > &indValue );
+  //!Updates vertices from a cell pressure potential
+  class VertexFromCellPressureThresholdFromMaxPos : public BaseReaction {
+    
+  public:
+    
+    VertexFromCellPressureThresholdFromMaxPos(std::vector<double> &paraValue, 
+					      std::vector< std::vector<size_t> > &indValue );
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
   
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
+  //!Updates vertices from a cell 'pressure' potential for internal cells
+  class VertexFromCellInternalPressure : public BaseReaction {
+    
+  public:
+    
+    VertexFromCellInternalPressure(std::vector<double> &paraValue, 
+				   std::vector< std::vector<size_t> > &indValue );
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  }; 
+} // end namespace Pressure2D
 
 namespace CenterTriangulation {
   ///
@@ -70,7 +132,7 @@ namespace CenterTriangulation {
   ///
   /// @details This function determines the direction of the pressure force term
   /// from the position of the central mesh cell vertex to the center of the wall. 
-  /// Applies a force proportional to the pressure (parameter(0)) and the 
+  /// Applies a force proportional to a constant pressure (parameter(0)) and the 
   /// size of the wall. parameter(1) equal to 1 normalizes the force with cell volume. 
   /// (0 otherwise).
   ///
@@ -188,56 +250,6 @@ namespace CenterTriangulation {
 } // end namespace CenterTriangulation
 
 
-//!Updates vertices from a cell pressure potential
-class VertexFromCellPressureVolumeNormalized : public BaseReaction {
-  
- public:
-  
-  VertexFromCellPressureVolumeNormalized(std::vector<double> &paraValue, 
-					 std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from a cell pressure potential
-class VertexFromCellPressureThresholdFromMaxPos : public BaseReaction {
-  
- public:
-  
-  VertexFromCellPressureThresholdFromMaxPos(std::vector<double> &paraValue, 
-					    std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from a cell 'pressure' potential for internal cells
-class VertexFromCellInternalPressure : public BaseReaction {
-  
- public:
-  
-  VertexFromCellInternalPressure(std::vector<double> &paraValue, 
-				 std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
 
 //!Updates vertices from cells via a power diagram potential
 class VertexFromCellPowerdiagram : public BaseReaction {

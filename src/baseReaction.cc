@@ -156,20 +156,21 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   //mechanical.h,mechanical.cc
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
+  // namespace Pressure2D
  else if(idValue=="VertexFromCellPressure")
-   return new VertexFromCellPressure(paraValue,indValue);
+   return new Pressure2D::VertexFromCellPressure(paraValue,indValue);
+ else if(idValue=="VertexFromCellPressureVolumeNormalized")
+   return new Pressure2D::VertexFromCellPressureVolumeNormalized(paraValue,indValue);
+ else if(idValue=="VertexFromCellPressureThresholdFromMaxPos")
+   return new Pressure2D::VertexFromCellPressureThresholdFromMaxPos(paraValue,indValue);
+ else if(idValue=="VertexFromCellInternalPressure")
+   return new Pressure2D::VertexFromCellInternalPressure(paraValue,indValue);
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
    return new CenterTriangulation::VertexFromCellPressure(paraValue,indValue);
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
- else if(idValue=="VertexFromCellPressureVolumeNormalized")
-   return new VertexFromCellPressureVolumeNormalized(paraValue,indValue);
- else if(idValue=="VertexFromCellPressureThresholdFromMaxPos")
-   return new VertexFromCellPressureThresholdFromMaxPos(paraValue,indValue);
- else if(idValue=="VertexFromCellInternalPressure")
-   return new VertexFromCellInternalPressure(paraValue,indValue);
  else if(idValue=="VertexForceOrigoFromIndex")
    return new VertexForceOrigoFromIndex(paraValue,indValue); 
  else if(idValue=="CellForceOrigoFromIndex")
@@ -296,8 +297,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new CreationOneGeometric(paraValue,indValue); 
   else if(idValue=="creationSinus")
     return new CreationSinus(paraValue,indValue);
-  
-  
+    
   //degradation.h,degradation.cc
   else if(idValue=="DegradationOne")
     return new DegradationOne(paraValue,indValue); 
@@ -332,8 +332,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Grn(paraValue,indValue); 
   else if(idValue=="Gsrn2")
     return new Gsrn2(paraValue,indValue); 
-
-
 
   //transport.h,transport.cc
   else if(idValue=="MembraneDiffusionSimple")
