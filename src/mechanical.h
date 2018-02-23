@@ -133,22 +133,29 @@ namespace Pressure2D {
   /// This reaction uses for each individual cell the same update as Pressure2D::AreaPotential
   /// and the only difference is an extra parameter setting a threshold in space where
   /// the update is only done if the cell is closer to the maximal position than this given
-  /// threshold. The idea is for example to define a growth zone close to the apex of a tissue.
+  /// threshold variable in the direction given as (only) variable index. The idea is for example
+  /// to define a growth zone close to the apex of a tissue that follows the tip as the tissue is
+  /// growing.
   ///
   /// In a model file, the reaction is given by:
   /// @verbatim
-  /// Pressure2D::AreaPotentialSpatialThreshold XXX
-  /// P V_normFlag(=0/1) Threshold
+  /// Pressure2D::AreaPotentialSpatialThreshold 2 1 1
+  /// P Threshold
+  /// direction_index
   /// @endverbatim
-  /// where ...
+  /// where P=@f$p_{0}@f$ is the constant pressure, Threshold=@f$p_{1}@f$ is the spatial threshold
+  /// for how close to the maximal value a cell needs to be to be updated, and direction_index is the
+  /// spatial direction the max and threshold are calculated in.
   ///
   /// @see Pressure2D::AreaPotential
-  class VertexFromCellPressureThresholdFromMaxPos : public BaseReaction {
+  /// @note Currently, this reaction has not implemented a flag for area normalized forces.
+  ///
+  class AreaPotentialSpatialThreshold : public BaseReaction {
     
   public:
     
-    VertexFromCellPressureThresholdFromMaxPos(std::vector<double> &paraValue, 
-					      std::vector< std::vector<size_t> > &indValue );
+    AreaPotentialSpatialThreshold(std::vector<double> &paraValue, 
+				  std::vector< std::vector<size_t> > &indValue );
     
     void derivs(Tissue &T,
 		DataMatrix &cellData,

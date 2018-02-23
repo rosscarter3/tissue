@@ -222,40 +222,40 @@ namespace Pressure2D {
     }
   }
   
-  VertexFromCellPressureThresholdFromMaxPos::
-  VertexFromCellPressureThresholdFromMaxPos(std::vector<double> &paraValue, 
+  AreaPotentialSpatialThreshold::
+  AreaPotentialSpatialThreshold(std::vector<double> &paraValue, 
 					    std::vector< std::vector<size_t> > 
 					    &indValue ) {
     
-    //Do some checks on the parameters and variable indeces
-    //////////////////////////////////////////////////////////////////////
+    // Do some checks on the parameters and variable indeces
+    //
     if( paraValue.size()!=2 ) {
-      std::cerr << "VertexFromCellPressureThresholdFromMaxPos::"
-		<< "VertexFromCellPressureThresholdFromMaxPos() "
-		<< "Uses two parameters K_force and X_th.\n";
-      exit(0);
+      std::cerr << "Pressure2D::AreaPotentialSpatialThreshold::"
+		<< "AreaPotentialSpatialThreshold() "
+		<< "Uses two parameters P_force and X_th.\n";
+      exit(EXIT_FAILURE);
     }
     if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-      std::cerr << "VertexFromCellPressureThresholdFromMaxPos::"
-		<< "VertexFromCellPressureThresholdFromMaxPos() "
-		<< "One index given (direction).\n";
-      exit(0);
+      std::cerr << "AreaPotentialSpatialThreshold::"
+		<< "AreaPotentialSpatialThreshold() "
+		<< "One index given (direction for threshold).\n";
+      exit(EXIT_FAILURE);
     }
-    //Set the variable values
-    //////////////////////////////////////////////////////////////////////
-    setId("VertexFromCellPressureThresholdFromMaxPos");
+    // Set the variable values
+    //
+    setId("Pressure2D::AreaPotentialSpatialThreshold");
     setParameter(paraValue);  
     setVariableIndex(indValue);
     
-    //Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    // Set the parameter identities
+    //
     std::vector<std::string> tmp( numParameter() );
     tmp[0] = "K_force";
     tmp[1] = "X_th";
     setParameterId( tmp );
   }
   
-  void VertexFromCellPressureThresholdFromMaxPos::
+  void AreaPotentialSpatialThreshold::
   derivs(Tissue &T,
 	 DataMatrix &cellData,
 	 DataMatrix &wallData,
@@ -267,23 +267,23 @@ namespace Pressure2D {
     //Do the update for each vertex via each wall in each cell
     size_t numCells = T.numCell();
     size_t dimension = T.vertex(0).numPosition(); 
+    size_t maxDim = variableIndex(0,0);
+    assert(maxDim<dimension);
     
+    //Find max pos in given direction;
+    double max=vertexData[0][maxDim];
+    for (size_t i=1; i<vertexData.size(); ++i ) {
+      if ( vertexData[i][maxDim]>max )
+	max = vertexData[i][maxDim];
+    }    
     //For each cell
     for( size_t cellI=0 ; cellI<numCells ; ++cellI ) {
-      
       Cell &tmpCell = T.cell(cellI);
       //Calculate cell position from vertices
       std::vector<double> xCenter = tmpCell.positionFromVertex(vertexData);
       assert( xCenter.size()==dimension );
-      assert( variableIndex(0,0)<dimension );
-      //Find max pos in given direction;
-      double max=vertexData[0][variableIndex(0,0)];
-      for (size_t i=1; i<vertexData.size(); ++i ) {
-	if ( vertexData[i][variableIndex(0,0)]>max )
-	  max = vertexData[i][variableIndex(0,0)];
-      }
-      //Only if close to apex
-      if ( max-xCenter[variableIndex(0,0)]<parameter(1) ) {
+      // Only update if close to apex
+      if ( max-xCenter[maxDim]<parameter(1) ) {
 	
 	//Calculate derivative contributions to vertices from each wall
 	for( size_t k=0 ; k<tmpCell.numWall() ; ++k ) {

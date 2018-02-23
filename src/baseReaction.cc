@@ -159,8 +159,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new Pressure2D::EdgeForce(paraValue,indValue);
  else if(idValue=="Pressure2D::AreaPotential")
    return new Pressure2D::AreaPotential(paraValue,indValue);
- else if(idValue=="VertexFromCellPressureThresholdFromMaxPos")
-   return new Pressure2D::VertexFromCellPressureThresholdFromMaxPos(paraValue,indValue);
+ else if(idValue=="Pressure2D::AreaPotentialSpatialThreshold")
+   return new Pressure2D::AreaPotentialSpatialThreshold(paraValue,indValue);
   // Pressure forces implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
