@@ -114,9 +114,26 @@ namespace Pressure2D {
     
   public:
     
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
     AreaPotential(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > &indValue );
     
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
     void derivs(Tissue &T,
 		DataMatrix &cellData,
 		DataMatrix &wallData,
@@ -154,9 +171,26 @@ namespace Pressure2D {
     
   public:
     
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
     AreaPotentialSpatialThreshold(std::vector<double> &paraValue, 
 				  std::vector< std::vector<size_t> > &indValue );
     
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
     void derivs(Tissue &T,
 		DataMatrix &cellData,
 		DataMatrix &wallData,
@@ -200,9 +234,27 @@ namespace Pressure2D {
   class AreaPotentialTargetArea : public BaseReaction
   {  
   public:
+
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
     AreaPotentialTargetArea(std::vector<double> &paraValue, 
 			    std::vector< std::vector<size_t> > &indValue);
     
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
     void derivs(Tissue &T,
 		DataMatrix &cellData,
 		DataMatrix &wallData,
@@ -210,6 +262,9 @@ namespace Pressure2D {
 		DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs);
+    ///
+    /// @brief Calculates the area [should this be replaced with the Cell.calculateVolume(vertexData) ]?
+    ///
     double polygonArea(std::vector< std::pair<double, double> > vertices);
   };
   
