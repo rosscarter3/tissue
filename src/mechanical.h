@@ -12,14 +12,13 @@
 #include"baseReaction.h"
 #include<cmath>
 
-/// @namespace Pressure2D
-/// @brief Functions providing updates on vertices based on 2D cell pressure forces.
+///
+/// @brief Namespace for reactions updating vertices based on 2D cell pressure forces.
 ///
 /// These functions are for generating forces from internal cell pressures, and the
 /// differs between perpendicular to edge forces and potential based on area increase.
 ///
 namespace Pressure2D { 
-
   ///
   /// @brief Updates vertices from a cell pressure potential, implemented as forces normal to
   /// edges
