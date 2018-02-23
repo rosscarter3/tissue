@@ -778,6 +778,96 @@ namespace CenterTriangulation {
 
 }// end namespace CenterTriangulation
 
+TargetAreaFromPressure::
+TargetAreaFromPressure(std::vector<double> &paraValue,
+    std::vector< std::vector<size_t> > &indValue)
+{
+  if (paraValue.size() != 4) {
+    std::cerr << "TargetAreaFromPressure::TargetAreaFromPressure() "
+      << "Uses four parameters: k_p, P_max, k_pp and "
+      << "allowShrink_flag." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+
+  if (indValue.size() < 2 || indValue.size() > 3
+      || indValue[0].size() != 2 
+      || (indValue.size()==3 && indValue[2].size() != 1 ) ) {
+    std::cerr << "TargetAreaFromPressure::TargetAreaFromPressure() "
+      << "Wall length index and cell volume index must be given in "
+      << "first level.\n"
+      << "Force indices must be given in second level. "
+      << "Optionally index for saving the pressure can be"
+      << " given at third level." << std::endl; 		
+    exit(EXIT_FAILURE);
+  }
+
+  setId("TargetAreaFromPressure");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  std::vector<std::string> tmp(numParameter());
+  tmp[0] = "k_p";
+  tmp[1] = "P_max";
+  tmp[2] = "k_pp";
+  tmp[3] = "f_allowShrink";
+
+  setParameterId(tmp);
+}
+
+void TargetAreaFromPressure::
+derivs(Tissue &T,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs)
+{
+  for (size_t n = 0; n < T.numCell(); ++n) {
+    Cell cell = T.cell(n);
+
+    double P   = 0.0;
+    double sum = 0.0;
+
+    // Go through all the cell walls and calculate the pressure 
+    for (size_t i = 0; i < cell.numWall(); ++i) {
+      size_t vertex1Index = cell.wall(i)->vertex1()->index();
+      size_t vertex2Index = cell.wall(i)->vertex2()->index();
+      size_t dimensions   = vertexData[vertex1Index].size();
+
+      // Calculate the length of the cell wall, and sum up the cell wall
+      // lengths.
+      double distance = 0.0;
+      for (size_t d = 0; d < dimensions; ++d) {
+        distance += (vertexData[vertex1Index][d] - vertexData[vertex2Index][d])
+          * (vertexData[vertex1Index][d] - vertexData[vertex2Index][d]);
+      }
+      distance = std::sqrt(distance);
+      sum += distance; 
+
+      // Retrieve the different wall forces and divide them by the distance
+      // between the vertices. That is: sum up the forces / wall length applied
+      // on a single wall.
+      for (size_t j = 0; j < numVariableIndex(1); ++j) {
+        P += wallData[cell.wall(i)->index()][variableIndex(1, j)] / distance;
+      }
+    }
+    P *= parameter(2); // Multiply by k_pp (to 'normalise/rescale' the Forces)
+
+    // If we have set to store the pressure in a variable, do this here.
+    if (numVariableIndexLevel() == 3) {
+      cellData[n][variableIndex(2, 0)] = P;
+    }
+
+    // If the pressure is smaller than the max pressure (param(1)), or if
+    // we allow for shrinkage, update the volume.
+    if (parameter(3) || parameter(1) - P > 0.0) {
+      cellDerivs[cell.index()][variableIndex(0, 1)] += 
+        parameter(0) * (parameter(1) - P) * sum;
+    }
+  }
+}
+
 VertexFromCellPowerdiagram::
 VertexFromCellPowerdiagram(std::vector<double> &paraValue, 
     std::vector< std::vector<size_t> > 
@@ -1377,96 +1467,6 @@ derivs(Tissue &T,
     }		
     if( epidermisFlag ) {
       vertexDerivs[i][posIndex] += parameter(0)*parameter(1);
-    }
-  }
-}
-
-CellVolumeExperimental::
-CellVolumeExperimental(std::vector<double> &paraValue,
-    std::vector< std::vector<size_t> > &indValue)
-{
-  if (paraValue.size() != 4) {
-    std::cerr << "CellVolumeExperimental::CellVolumeExperimental() "
-      << "Uses four parameters: k_p, P_max, k_pp and "
-      << "allowShrink_flag." << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  if (indValue.size() < 2 || indValue.size() > 3
-      || indValue[0].size() != 2 
-      || (indValue.size()==3 && indValue[2].size() != 1 ) ) {
-    std::cerr << "CellVolumeExperimental::CellVolumeExperimental() "
-      << "Wall length index and cell volume index must be given in "
-      << "first level.\n"
-      << "Force indices must be given in second level. "
-      << "Optionally index for saving the pressure can be"
-      << " given at third level." << std::endl; 		
-    exit(EXIT_FAILURE);
-  }
-
-  setId("CellVolumeExperimental");
-  setParameter(paraValue);
-  setVariableIndex(indValue);
-
-  std::vector<std::string> tmp(numParameter());
-  tmp[0] = "k_p";
-  tmp[1] = "P_max";
-  tmp[2] = "k_pp";
-  tmp[3] = "allowShrink_flag";
-
-  setParameterId(tmp);
-}
-
-void CellVolumeExperimental::
-derivs(Tissue &T,
-    DataMatrix &cellData,
-    DataMatrix &wallData,
-    DataMatrix &vertexData,
-    DataMatrix &cellDerivs,
-    DataMatrix &wallDerivs,
-    DataMatrix &vertexDerivs)
-{
-  for (size_t n = 0; n < T.numCell(); ++n) {
-    Cell cell = T.cell(n);
-
-    double P   = 0.0;
-    double sum = 0.0;
-
-    // Go through all the cell walls and calculate the pressure 
-    for (size_t i = 0; i < cell.numWall(); ++i) {
-      size_t vertex1Index = cell.wall(i)->vertex1()->index();
-      size_t vertex2Index = cell.wall(i)->vertex2()->index();
-      size_t dimensions   = vertexData[vertex1Index].size();
-
-      // Calculate the length of the cell wall, and sum up the cell wall
-      // lengths.
-      double distance = 0.0;
-      for (size_t d = 0; d < dimensions; ++d) {
-        distance += (vertexData[vertex1Index][d] - vertexData[vertex2Index][d])
-          * (vertexData[vertex1Index][d] - vertexData[vertex2Index][d]);
-      }
-      distance = std::sqrt(distance);
-      sum += distance; 
-
-      // Retrieve the different forces (?) and divide them by the distance
-      // between the vertices. That is: sum up the forces / wall length applied
-      // on a single wall.
-      for (size_t j = 0; j < numVariableIndex(1); ++j) {
-        P += wallData[cell.wall(i)->index()][variableIndex(1, j)] / distance;
-      }
-    }
-    P *= parameter(2); // Multiply by k_pp (what is this?)
-
-    // If we have set to store the pressure in a variable, do this here.
-    if (numVariableIndexLevel() == 3) {
-      cellData[n][variableIndex(2, 0)] = P;
-    }
-
-    // If the pressure is smaller than the max pressure (param(1)), or if
-    // we allow for shrinkage, update the volume.
-    if (parameter(3) || parameter(1) - P > 0.0) {
-      cellDerivs[cell.index()][variableIndex(0, 1)] += 
-        parameter(0) * (parameter(1) - P) * sum;
     }
   }
 }

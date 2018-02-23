@@ -18,6 +18,9 @@
 /// These functions are for generating forces from internal cell pressures, and the
 /// differs between perpendicular to edge forces and potential based on area increase.
 ///
+/// @note Might be interesting some of the old AreaPotential versions to use the more
+/// straightforward area calculation.
+///
 namespace Pressure2D { 
   ///
   /// @brief Updates vertices from a cell pressure potential, implemented as forces normal to
@@ -39,7 +42,6 @@ namespace Pressure2D {
   /// Pressure2D::EdgeForce 2 0
   /// P V_normflag(=0/1)
   /// @endverbatim
-  ///
   /// @note Requires two dimensions with vertices sorted.
   ///
   class EdgeForce : public BaseReaction {
@@ -218,7 +220,10 @@ namespace Pressure2D {
   /// and the update is multiplied by the factor
   /// @f[ (1-\frac{A}{A_{w}}) @f]
   /// and a flag for if area decrease is allowed is given as a second parameter, i.e. if
-  /// p_{1}=1, there will be no update leading to decreasing cell area. 
+  /// p_{1}=1, there will be no update leading to decreasing cell area. The target area
+  /// can represent an approximation of a water volume the cells try to adapt to, which
+  /// can be estimated from the relation between optimal pressure and current estimate of the pressure
+  /// as in the reaction TargetAreaFromPressure.
   /// In a model file, the reaction is given by:
   /// @verbatim
   /// Pressure2D::AreaPotentialTargetArea 2 1 1
@@ -229,7 +234,8 @@ namespace Pressure2D {
   ///
   /// @note This uses a different version of area calculation compared to the other AreaPotential versions
   /// (possibly better).
-  /// 
+  /// @see TargetAreaFromPressure
+  ///
   class AreaPotentialTargetArea : public BaseReaction
   {  
   public:
@@ -393,6 +399,51 @@ namespace CenterTriangulation {
 } // end namespace CenterTriangulation
 
 
+/// @brief This reaction estimates a 'water volume' change given a target pressure from current pressure estimated from wall tension
+///
+/// @details This reaction updates a cell variable estimating a target area that can be used in combination
+/// with updating vertex positions towards such a target area, e.g. with reaction Pressure2D::AreaPotentialTargetArea. The idea
+/// is to represent a constant target pressure given by @f$P_{target}=p_{1}@f$, and estimate the current pressure, @f$P@f$ from wall
+/// forces (as read from wall variables and calculated elsewhere):
+/// @f[ P = k_{pp} \sum_w \frac{F_{w}}{L_{w}} @f]
+/// where @f$p_{2}=k_{pp}@f$ is a scaling/normalisation factor for the forces, @f$F_{w}@f$ the forces read from the wall variables
+/// and @f$L_{w}@f$ is the wall length. The cell target area variable, @f$A_{c}@f$, is updated by
+/// @f[ \frac{dA_{c}}{dt} = k_{p} (P_{target} - P) \sum_{w} L_{w} @f]
+/// where @f$k_{p}=p_{0}@f$ is the rate of the update. In addition, a flag (@f$p_{3}=1@f$) can be given to disallow the target area
+/// to shrink.
+/// In a model file the reaction is defined as:
+/// @verbatim
+/// TargetAreaFromPressure 4 2 2 n
+/// k_p  P_max  k_pp flag_allowShrink(=0/1)
+/// WallLength_index  targetArea_index
+/// Force indices
+/// @endverbatim
+/// or if The calculated pressure is saved
+/// @verbatim
+/// TargetAreaFromPressure 4 3 2 n 1
+/// k_p  P_max  k_pp flag_allowShrink(=0/1)
+/// WallLength_index  targetArea_index
+/// Force indices
+/// Cell_index_for_saving_the_pressure
+/// @endverbatim
+///
+/// @see Pressure2D::AreaPotentialTargetArea
+/// @note Find reference for the estimate of P and following taget area update.
+///
+class TargetAreaFromPressure : public BaseReaction
+{
+ public:
+  TargetAreaFromPressure(std::vector<double> &paraValue,
+			 std::vector< std::vector<size_t> > &indValue);
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs);
+};
 
 //!Updates vertices from cells via a power diagram potential
 class VertexFromCellPowerdiagram : public BaseReaction {
@@ -544,44 +595,6 @@ class EpidermalVertexForce : public BaseReaction {
 	      DataMatrix &cellDerivs,
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
-};
-
-///
-/// @brief text
-///
-/// @details In a model file the reaction is defined as:
-/// @verbatim
-/// CellVolumeExperimental 4 2 2 n
-///
-/// k_p  P_max  k_pp allowShrink_flag
-///
-/// Wall_length_index  cell_volume_index
-/// Force indices
-///
-/// or
-///
-/// CellVolumeExperimental 4 3 2 n 1
-///
-/// k_p  P_max  k_pp allowShrink_flag
-///
-/// Wall_length_index  cell_volume_index
-/// Force indices
-/// Optionally_index_for_saving_the_pressure
-/// @endverbatim
-///
-class CellVolumeExperimental : public BaseReaction
-{
- public:
-  CellVolumeExperimental(std::vector<double> &paraValue,
-			 std::vector< std::vector<size_t> > &indValue);
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs);
 };
 
 class EpidermalRadialForce : public BaseReaction
