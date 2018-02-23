@@ -79,7 +79,7 @@ namespace Pressure2D {
   ///
   /// @brief Updates vertices from a cell pressure potential described as an area expansion
   ///
-  /// This reaction is a 2D version of a pressure force calculated from a potential given
+  /// @details This reaction is a 2D version of a pressure force calculated from a potential given
   /// as an area expansion
   /// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
   /// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and @f$p_{0}@f$
@@ -88,14 +88,14 @@ namespace Pressure2D {
   /// @f[ \frac{dv_{ix}}{dt} = - \frac{dU}{dv_{ix}}@f]
   /// @f[ \frac{dv_{iy}}{dt} = - \frac{dU}{dv_{iy}}@f]
   /// The area (expansion) is calculated for each triangle described
-  /// by an edge (two vertex positions, @f$v_{1},v_{2}@f$) and the center of mass @f$x_{c}@f,
+  /// by an edge (two vertex positions, @f$v_{1},v_{2}@f$) and the center of mass @f$x_{c}@f$,
   /// of the cell. The Area is given as @f$\frac{1}{2} h n@f$, where n is the length of the edge
   /// (base of triangle) and h is the height. The height 'vector' is extracted by first finding
   /// The vector from the center of the edge, @f$x_{0}@f$, and the center of mass
-  /// $f[ dx = x_{c} - x_{0} @f]
+  /// @f[ dx = x_{c} - x_{0} @f]
   /// then project this down onto the edge vector @f$n@f$ followd by extracting the height
   /// vector @f$h@f$ perpendicular to the edge for the area calculation 
-  /// @f[ h = dx + dx \frac{e}{|e|} @f]
+  /// @f[ h = dx + dx \frac{n}{|n|} @f]
   ///
   /// In a model file, the reaction is given by:
   /// @verbatim
@@ -147,7 +147,7 @@ namespace Pressure2D {
   /// @brief Updates vertices from a cell pressure potential described as an area expansion
   /// if the cell is close enough to the maximal position
   ///
-  /// This reaction uses for each individual cell the same update as Pressure2D::AreaPotential
+  /// @details This reaction uses for each individual cell the same update as Pressure2D::AreaPotential
   /// and the only difference is an extra parameter setting a threshold in space where
   /// the update is only done if the cell is closer to the maximal position than this given
   /// threshold variable in the direction given as (only) variable index. The idea is for example
@@ -161,7 +161,7 @@ namespace Pressure2D {
   /// direction_index
   /// @endverbatim
   /// where P=@f$p_{0}@f$ is the constant pressure, Threshold=@f$p_{1}@f$ is the spatial threshold
-  /// for how close to the maximal value a cell needs to be to be updated, and direction_index is the
+  /// for how close to the maximal position a cell needs to be to be updated, and direction_index is the
   /// spatial direction the max and threshold are calculated in.
   ///
   /// @see Pressure2D::AreaPotential
@@ -204,7 +204,7 @@ namespace Pressure2D {
   /// @brief Updates vertices with forces from a cell pressure potential described by an area expansion and
   /// with an additional aim of a target area
   ///
-  /// This reaction is a 2D version of a pressure force calculated from a potential given
+  /// @details This reaction is a 2D version of a pressure force calculated from a potential given
   /// as an area expansion
   /// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
   /// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and @f$p_{0}@f$
@@ -217,7 +217,7 @@ namespace Pressure2D {
   /// where the vertices is covered in a circular fashion (@f$v_{N}=v_{0}@f$).
   /// In addition, a target area, @f$A_{w}@f$ is given in a cell variable
   /// and the update is multiplied by the factor
-  /// @f[ (1-\frc{A}{A_{w}}) @f]
+  /// @f[ (1-\frac{A}{A_{w}}) @f]
   /// and a flag for if area decrease is allowed is given as a second parameter, i.e. if
   /// p_{1}=1, there will be no update leading to decreasing cell area. 
   /// In a model file, the reaction is given by:
