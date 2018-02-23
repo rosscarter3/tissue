@@ -165,6 +165,54 @@ namespace Pressure2D {
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs );
   };
+
+  ///
+  /// @brief Updates vertices with forces from a cell pressure potential described by an area expansion and
+  /// with an additional aim of a target area
+  ///
+  /// This reaction is a 2D version of a pressure force calculated from a potential given
+  /// as an area expansion
+  /// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
+  /// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and @f$p_{0}@f$
+  /// is a constant pressure. The time derivative of vertex positions are then calculated as
+  /// positional derivative of the potential
+  /// @f[ \frac{dv_{ix}}{dt} = - \frac{dU}{dv_{ix}}@f]
+  /// @f[ \frac{dv_{iy}}{dt} = - \frac{dU}{dv_{iy}}@f]
+  /// The area is calculated by the formula
+  /// @f[ 2A = abs(\sum_{i} v_{ix}v_{(i+1)y} - v_{(i+1)x}v_{iy}) @f]
+  /// where the vertices is covered in a circular fashion (@f$v_{N}=v_{0}@f$).
+  /// In addition, a target area, @f$A_{w}@f$ is given in a cell variable
+  /// and the update is multiplied by the factor
+  /// @f[ (1-\frc{A}{A_{w}}) @f]
+  /// and a flag for if area decrease is allowed is given as a second parameter, i.e. if
+  /// p_{1}=1, there will be no update leading to decreasing cell area. 
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// Pressure2D::AreaPotentialTargetArea 2 1 1
+  /// P flag_AreaDecrease(=0/1)]
+  /// @endverbatim
+  /// where @f$p_{0}=P@f$ is the pressure magnitude, @f$p_{1}@f$ is a flag set to 1 if
+  /// a decrease in area is allowed.
+  ///
+  /// @note This uses a different version of area calculation compared to the other AreaPotential versions
+  /// (possibly better).
+  /// 
+  class AreaPotentialTargetArea : public BaseReaction
+  {  
+  public:
+    AreaPotentialTargetArea(std::vector<double> &paraValue, 
+			    std::vector< std::vector<size_t> > &indValue);
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs);
+    double polygonArea(std::vector< std::pair<double, double> > vertices);
+  };
+  
 } // end namespace Pressure2D
 
 namespace CenterTriangulation {
@@ -443,36 +491,6 @@ class EpidermalVertexForce : public BaseReaction {
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
 };
-
-
-///
-/// @brief text 
-///
-/// @details In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromPressureExperimental
-///
-///  
-/// 
-/// @endverbatim
-///
-///
-class VertexFromPressureExperimental : public BaseReaction
-{  
- public:
-  VertexFromPressureExperimental(std::vector<double> &paraValue, 
-				 std::vector< std::vector<size_t> > &indValue);
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs);
-  double polygonArea(std::vector< std::pair<double, double> > vertices);
-};
-
 
 ///
 /// @brief text

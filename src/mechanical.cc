@@ -344,7 +344,101 @@ namespace Pressure2D {
 	}
       }
     }
-  }  
+  }
+
+  AreaPotentialTargetArea::AreaPotentialTargetArea(std::vector<double> &paraValue, 
+						   std::vector< std::vector<size_t> > &indValue)
+  {
+    if (paraValue.size() != 2) {
+      std::cerr << "AreaPotentialTargetArea::AreaPotentialTargetArea() "
+		<< "Uses two parameter: P no_contraction_flag" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    if (indValue.size() != 1 || indValue[0].size() != 1) {
+      std::cerr << "AreaPotentialTargetArea::AreaPotentialTargetArea() "
+		<< "Target volume index given.\n";
+      exit(EXIT_FAILURE);
+    }
+    
+    setId("Pressure2D::AreaPotentialTargetArea");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "P";
+    tmp[1] = "f_no_contraction";
+    setParameterId(tmp);
+  }
+
+  void AreaPotentialTargetArea::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs)
+  {
+    // This function assume two dimensions (x, y) and that
+    // the vertices are sorted in a clock-wise order.
+    
+    assert(T.vertex(0).numPosition());
+    
+    double area;
+    for (size_t n = 0; n < T.numCell(); ++n) {
+      Cell cell = T.cell(n);
+      std::vector< std::pair<double, double> > vertices;
+      for (size_t i = 0; i < cell.numVertex(); ++i) {
+	std::pair<double, double> vertex;
+	vertex.first = vertexData[cell.vertex(i)->index()][0];
+	vertex.second = vertexData[cell.vertex(i)->index()][1];
+	vertices.push_back(vertex);
+      }
+      area = polygonArea(vertices);
+      double sa = area < 0 ? -1 : +1;
+      area = std::fabs(area);
+      
+      if (parameter(1) != 0.0 && cellData[n][variableIndex(0, 0)] - area < 0) {
+	//Std::cerr << "Lower water volume than volume: " << n << " " 
+	//				<< area << " " << cellData[n][variableIndex(0,0)]
+	//				<< std::endl;
+	continue;
+      }
+      for (size_t i = 1; i < (cell.numVertex() + 1); ++i) {
+	Vertex *vertex = cell.vertex(i % cell.numVertex()); // Current vertex in polygon.
+	Vertex *pvertex = cell.vertex((i - 1) % cell.numVertex()); // Previous vertex in polygon.
+	Vertex *nvertex = cell.vertex((i + 1) % cell.numVertex()); // Next vertex in polygon.
+	
+	double px = vertexData[pvertex->index()][0];
+	double py = vertexData[pvertex->index()][1];
+	
+	double nx = vertexData[nvertex->index()][0];
+	double ny = vertexData[nvertex->index()][1];
+	
+	double dAdx = sa * 0.5 * (-py + ny);
+	double dAdy = sa * 0.5 * (px - nx);
+	
+	
+	vertexDerivs[vertex->index()][0] += parameter(0) * (1 - area / cellData[n][variableIndex(0, 0)]) * dAdx;
+	vertexDerivs[vertex->index()][1] += parameter(0) * (1 - area / cellData[n][variableIndex(0, 0)]) * dAdy;
+	
+      }
+    }
+  }
+
+  double AreaPotentialTargetArea::polygonArea(std::vector< std::pair<double, double> > vertices)
+  {
+    double area = 0.0;
+    size_t N = vertices.size();
+    for (size_t n = 0; n < N; ++n) {
+      area += vertices[n].first * vertices[(n + 1) % N].second;
+      area -= vertices[(n + 1) % N].first * vertices[n].second;
+    }
+    area *= 0.5;
+    return area;
+  }
+  
 } // end namespace Pressure2D
 
 namespace CenterTriangulation {
@@ -1285,99 +1379,6 @@ derivs(Tissue &T,
       vertexDerivs[i][posIndex] += parameter(0)*parameter(1);
     }
   }
-}
-
-VertexFromPressureExperimental::VertexFromPressureExperimental(std::vector<double> &paraValue, 
-    std::vector< std::vector<size_t> > &indValue)
-{
-  if (paraValue.size() != 2) {
-    std::cerr << "VertexFromPressureExperimental::VertexFromPressureExperimental() "
-      << "Uses two parameter: k no_contraction_flag" << std::endl;
-    exit(EXIT_FAILURE);
-  }
-
-  if (indValue.size() != 1 || indValue[0].size() != 1) {
-    std::cerr << "VertexFromPressureExperimental::VertexFromPressureExperimental() "
-      << "Water volume index given.\n";
-    exit(EXIT_FAILURE);
-  }
-
-  setId("VertexFromPressureExperimental");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-
-  std::vector<std::string> tmp(numParameter());
-  tmp[0] = "k";
-  tmp[1] = "no_contraction_flag";
-  setParameterId(tmp);
-}
-
-void VertexFromPressureExperimental::
-derivs(Tissue &T,
-    DataMatrix &cellData,
-    DataMatrix &wallData,
-    DataMatrix &vertexData,
-    DataMatrix &cellDerivs,
-    DataMatrix &wallDerivs,
-    DataMatrix &vertexDerivs)
-{
-  // ATTENTION! This function assume two dimensions (x, y) and that
-  // the vertices are sorted in a clock-wise order.
-
-  assert(T.vertex(0).numPosition());
-
-  double area;
-  for (size_t n = 0; n < T.numCell(); ++n) {
-    Cell cell = T.cell(n);
-    std::vector< std::pair<double, double> > vertices;
-    for (size_t i = 0; i < cell.numVertex(); ++i) {
-      std::pair<double, double> vertex;
-      vertex.first = vertexData[cell.vertex(i)->index()][0];
-      vertex.second = vertexData[cell.vertex(i)->index()][1];
-      vertices.push_back(vertex);
-    }
-    area = polygonArea(vertices);
-    double sa = area < 0 ? -1 : +1;
-    area = std::fabs(area);
-
-    if (parameter(1) != 0.0 && cellData[n][variableIndex(0, 0)] - area < 0) {
-      //Std::cerr << "Lower water volume than volume: " << n << " " 
-      //				<< area << " " << cellData[n][variableIndex(0,0)]
-      //				<< std::endl;
-      continue;
-    }
-    for (size_t i = 1; i < (cell.numVertex() + 1); ++i) {
-      Vertex *vertex = cell.vertex(i % cell.numVertex()); // Current vertex in polygon.
-      Vertex *pvertex = cell.vertex((i - 1) % cell.numVertex()); // Previous vertex in polygon.
-      Vertex *nvertex = cell.vertex((i + 1) % cell.numVertex()); // Next vertex in polygon.
-
-      double px = vertexData[pvertex->index()][0];
-      double py = vertexData[pvertex->index()][1];
-
-      double nx = vertexData[nvertex->index()][0];
-      double ny = vertexData[nvertex->index()][1];
-
-      double dAdx = sa * 0.5 * (-py + ny);
-      double dAdy = sa * 0.5 * (px - nx);
-
-
-      vertexDerivs[vertex->index()][0] += parameter(0) * (1 - area / cellData[n][variableIndex(0, 0)]) * dAdx;
-      vertexDerivs[vertex->index()][1] += parameter(0) * (1 - area / cellData[n][variableIndex(0, 0)]) * dAdy;
-
-    }
-  }
-}
-
-double VertexFromPressureExperimental::polygonArea(std::vector< std::pair<double, double> > vertices)
-{
-  double area = 0.0;
-  size_t N = vertices.size();
-  for (size_t n = 0; n < N; ++n) {
-    area += vertices[n].first * vertices[(n + 1) % N].second;
-    area -= vertices[(n + 1) % N].first * vertices[n].second;
-  }
-  area *= 0.5;
-  return area;
 }
 
 CellVolumeExperimental::

@@ -161,6 +161,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new Pressure2D::AreaPotential(paraValue,indValue);
  else if(idValue=="Pressure2D::AreaPotentialSpatialThreshold")
    return new Pressure2D::AreaPotentialSpatialThreshold(paraValue,indValue);
+ else if (idValue == "Pressure2D::AreaPotentialTargetArea")
+   return new Pressure2D::AreaPotentialTargetArea(paraValue, indValue);
   // Pressure forces implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
@@ -186,8 +188,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new InfiniteWallForce(paraValue,indValue); 
   else if(idValue=="EpidermalVertexForce")
     return new EpidermalVertexForce(paraValue,indValue); 
-  else if (idValue == "VertexFromPressureExperimental")
-    return new VertexFromPressureExperimental(paraValue, indValue);
   else if (idValue == "CellVolumeExperimental")
     return new CellVolumeExperimental(paraValue, indValue);
   else if (idValue == "EpidermalRadialForce")
@@ -649,8 +649,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	      << "Reaction VertexFromCellInternalPressure not used anymore." << std::endl
 	      << "Use Pressure2D::AreaPotential with parameter(2) set to 1 instead." << std::endl;
     exit(EXIT_FAILURE);
-  }
-
+ }
+ else if(idValue=="VertexFromPressureExperimental") {
+   std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	     << "Reaction VertexFromPressureExperimental renamed to "
+	     << "Pressure2D::AreaPotentialTargetArea." << std::endl;
+   exit(EXIT_FAILURE);
+ }
 
 
   // Default, if nothing found
