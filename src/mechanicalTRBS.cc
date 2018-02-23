@@ -15,7 +15,6 @@
 #include <iostream>
 #include <sstream>
 
-
 VertexFromTRBS::  
 VertexFromTRBS(std::vector<double> &paraValue, 
 	       std::vector< std::vector<size_t> > 
@@ -3008,8 +3007,8 @@ derivs(Tissue &T,
       lambdaT=youngT*poissonT/(1-poissonT*poissonT);
       mioT=youngT/(2*(1+poissonT));
      
-      // lambdaTmatrix=youngMatrixA*poissonT/(1-poissonT*poissonT);
-      // mioTmatrix=youngMatrixA/(2*(1+poissonT));
+      // lambdaTmatrix=youngMatrixA*poissonT/(1-poissonT*poissonT); 
+     // mioTmatrix=youngMatrixA/(2*(1+poissonT));
     }
     
     // Lame coefficients based on delin. paper (for 2D 0<poisson<1)

@@ -12,57 +12,208 @@
 #include"baseReaction.h"
 #include<cmath>
 
+/// @namespace Pressure2D
+/// @brief Functions providing updates on vertices based on 2D cell pressure forces.
 ///
-/// @brief Updates vertices from a cell pressure potential, i.e. forces normal to edges
+/// These functions are for generating forces from internal cell pressures, and the
+/// differs between perpendicular to edge forces and potential based on area increase.
 ///
-/// @details A area rule in two dimensions is used to calculate the forces on vertex @$v@$ from a cell is
-///
-/// @f[\frac{dx_v}{dt} = 0.5*p_0 (y_{v_r} - y_{v_l}) @f]
-/// @f[\frac{dy_v}{dt} = 0.5*p_0 (x_{v_l} - x_{v_r}) @f]
-///
-/// where @$v_r,v_l@$ are right and left vertices in the sorted order. @$p_0$ represents the pressure,
-/// and if @$p_1=1@$, the pressure will be divided by the cell volume.
-///
-/// In a model file, the reaction is given by:
-/// @verbatim
-/// VertexFromCellPressure 2 0
-/// P V_normflag(=0/1)
-/// @endverbatim
-///
-/// @note Requires two dimensions with vertices sorted.
-///
-class VertexFromCellPressure : public BaseReaction {
+namespace Pressure2D { 
+
+  ///
+  /// @brief Updates vertices from a cell pressure potential, implemented as forces normal to
+  /// edges
+  ///
+  /// @details An area rule in two dimensions is used to calculate the forces on vertex
+  /// @f$v@f$ from a cell is
+  ///
+  /// @f[\frac{dx_v}{dt} = 0.5*p_0 (y_{v_r} - y_{v_l}) @f]
+  /// @f[\frac{dy_v}{dt} = 0.5*p_0 (x_{v_l} - x_{v_r}) @f]
+  ///
+  /// where @f$v_r,v_l@f$ are right and left vertices in the sorted order. @f$p_0@f$
+  /// represents the pressure, and if @f$p_{1}=1@f$, the pressure will be divided by
+  /// the cell volume. The Force is in the 'outward' normal direction for the two edges
+  /// connected to the vertices and proportional to the length of the edge.
+  ///
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// Pressure2D::EdgeForce 2 0
+  /// P V_normflag(=0/1)
+  /// @endverbatim
+  ///
+  /// @note Requires two dimensions with vertices sorted.
+  ///
+  class EdgeForce : public BaseReaction {
+    
+  public:
   
- public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    EdgeForce(std::vector<double> &paraValue, 
+			   std::vector< std::vector<size_t> > &indValue );
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
+  ///
+  /// @brief Updates vertices from a cell pressure potential described as an area expansion
+  ///
+  /// This reaction is a 2D version of a pressure force calculated from a potential given
+  /// as an area expansion
+  /// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
+  /// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and @f$p_{0}@f$
+  /// is a constant pressure. The time derivative of vertex positions are then calculated as
+  /// positional derivative of the potential
+  /// @f[ \frac{dv_{ix}}{dt} = - \frac{dU}{dv_{ix}}@f]
+  /// @f[ \frac{dv_{iy}}{dt} = - \frac{dU}{dv_{iy}}@f]
+  /// The area (expansion) is calculated for each triangle described
+  /// by an edge (two vertex positions, @f$v_{1},v_{2}@f$) and the center of mass @f$x_{c}@f,
+  /// of the cell. The Area is given as @f$\frac{1}{2} h n@f$, where n is the length of the edge
+  /// (base of triangle) and h is the height. The height 'vector' is extracted by first finding
+  /// The vector from the center of the edge, @f$x_{0}@f$, and the center of mass
+  /// $f[ dx = x_{c} - x_{0} @f]
+  /// then project this down onto the edge vector @f$n@f$ followd by extracting the height
+  /// vector @f$h@f$ perpendicular to the edge for the area calculation 
+  /// @f[ h = dx + dx \frac{e}{|e|} @f]
+  ///
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// Pressure2D::AreaPotential 2[/3] 0
+  /// P V_normFlag(=0/1) [InternalCellsOnlyFlag(=0/1)]
+  /// @endverbatim
+  /// where @f$p_{0}=P@f$ is the pressure magnitude, @f$p_{1}@f$ is a flag set to 1 if the
+  /// calculated forces should be normalised with the cell area, and @f$p_{2}@f$ is an
+  /// optional flag set to 1 if the pressure should be applied only to internal cells, i.e.
+  /// non-epidermal cells not connected to the background. 
+  ///
+  /// @note The secondary effect to the area of the movement of the center of mass when a
+  /// vertex is moved is not taken into account.
+  /// 
+  class AreaPotential : public BaseReaction {
+    
+  public:
+    
+    AreaPotential(std::vector<double> &paraValue, 
+		  std::vector< std::vector<size_t> > &indValue );
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
   
   ///
-  /// @brief Main constructor
+  /// @brief Updates vertices from a cell pressure potential described as an area expansion
+  /// if the cell is close enough to the maximal position
   ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
+  /// This reaction uses for each individual cell the same update as Pressure2D::AreaPotential
+  /// and the only difference is an extra parameter setting a threshold in space where
+  /// the update is only done if the cell is closer to the maximal position than this given
+  /// threshold variable in the direction given as (only) variable index. The idea is for example
+  /// to define a growth zone close to the apex of a tissue that follows the tip as the tissue is
+  /// growing.
   ///
-  /// @param paraValue vector with parameters
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// Pressure2D::AreaPotentialSpatialThreshold 2 1 1
+  /// P Threshold
+  /// direction_index
+  /// @endverbatim
+  /// where P=@f$p_{0}@f$ is the constant pressure, Threshold=@f$p_{1}@f$ is the spatial threshold
+  /// for how close to the maximal value a cell needs to be to be updated, and direction_index is the
+  /// spatial direction the max and threshold are calculated in.
   ///
-  /// @param indValue vector of vectors with variable indices
+  /// @see Pressure2D::AreaPotential
+  /// @note Currently, this reaction has not implemented a flag for area normalized forces.
   ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  class AreaPotentialSpatialThreshold : public BaseReaction {
+    
+  public:
+    
+    AreaPotentialSpatialThreshold(std::vector<double> &paraValue, 
+				  std::vector< std::vector<size_t> > &indValue );
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
   ///
-  VertexFromCellPressure(std::vector<double> &paraValue, 
-			 std::vector< std::vector<size_t> > &indValue );
+  /// @brief Updates vertices with forces from a cell pressure potential described by an area expansion and
+  /// with an additional aim of a target area
+  ///
+  /// This reaction is a 2D version of a pressure force calculated from a potential given
+  /// as an area expansion
+  /// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
+  /// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and @f$p_{0}@f$
+  /// is a constant pressure. The time derivative of vertex positions are then calculated as
+  /// positional derivative of the potential
+  /// @f[ \frac{dv_{ix}}{dt} = - \frac{dU}{dv_{ix}}@f]
+  /// @f[ \frac{dv_{iy}}{dt} = - \frac{dU}{dv_{iy}}@f]
+  /// The area is calculated by the formula
+  /// @f[ 2A = abs(\sum_{i} v_{ix}v_{(i+1)y} - v_{(i+1)x}v_{iy}) @f]
+  /// where the vertices is covered in a circular fashion (@f$v_{N}=v_{0}@f$).
+  /// In addition, a target area, @f$A_{w}@f$ is given in a cell variable
+  /// and the update is multiplied by the factor
+  /// @f[ (1-\frc{A}{A_{w}}) @f]
+  /// and a flag for if area decrease is allowed is given as a second parameter, i.e. if
+  /// p_{1}=1, there will be no update leading to decreasing cell area. 
+  /// In a model file, the reaction is given by:
+  /// @verbatim
+  /// Pressure2D::AreaPotentialTargetArea 2 1 1
+  /// P flag_AreaDecrease(=0/1)]
+  /// @endverbatim
+  /// where @f$p_{0}=P@f$ is the pressure magnitude, @f$p_{1}@f$ is a flag set to 1 if
+  /// a decrease in area is allowed.
+  ///
+  /// @note This uses a different version of area calculation compared to the other AreaPotential versions
+  /// (possibly better).
+  /// 
+  class AreaPotentialTargetArea : public BaseReaction
+  {  
+  public:
+    AreaPotentialTargetArea(std::vector<double> &paraValue, 
+			    std::vector< std::vector<size_t> > &indValue);
+    
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs);
+    double polygonArea(std::vector< std::pair<double, double> > vertices);
+  };
   
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
+} // end namespace Pressure2D
 
 namespace CenterTriangulation {
   ///
@@ -70,7 +221,7 @@ namespace CenterTriangulation {
   ///
   /// @details This function determines the direction of the pressure force term
   /// from the position of the central mesh cell vertex to the center of the wall. 
-  /// Applies a force proportional to the pressure (parameter(0)) and the 
+  /// Applies a force proportional to a constant pressure (parameter(0)) and the 
   /// size of the wall. parameter(1) equal to 1 normalizes the force with cell volume. 
   /// (0 otherwise).
   ///
@@ -188,56 +339,6 @@ namespace CenterTriangulation {
 } // end namespace CenterTriangulation
 
 
-//!Updates vertices from a cell pressure potential
-class VertexFromCellPressureVolumeNormalized : public BaseReaction {
-  
- public:
-  
-  VertexFromCellPressureVolumeNormalized(std::vector<double> &paraValue, 
-					 std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from a cell pressure potential
-class VertexFromCellPressureThresholdFromMaxPos : public BaseReaction {
-  
- public:
-  
-  VertexFromCellPressureThresholdFromMaxPos(std::vector<double> &paraValue, 
-					    std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-//!Updates vertices from a cell 'pressure' potential for internal cells
-class VertexFromCellInternalPressure : public BaseReaction {
-  
- public:
-  
-  VertexFromCellInternalPressure(std::vector<double> &paraValue, 
-				 std::vector< std::vector<size_t> > &indValue );
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
 
 //!Updates vertices from cells via a power diagram potential
 class VertexFromCellPowerdiagram : public BaseReaction {
@@ -390,36 +491,6 @@ class EpidermalVertexForce : public BaseReaction {
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
 };
-
-
-///
-/// @brief text 
-///
-/// @details In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromPressureExperimental
-///
-///  
-/// 
-/// @endverbatim
-///
-///
-class VertexFromPressureExperimental : public BaseReaction
-{  
- public:
-  VertexFromPressureExperimental(std::vector<double> &paraValue, 
-				 std::vector< std::vector<size_t> > &indValue);
-  
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs);
-  double polygonArea(std::vector< std::pair<double, double> > vertices);
-};
-
 
 ///
 /// @brief text

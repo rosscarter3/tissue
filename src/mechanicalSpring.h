@@ -15,6 +15,10 @@
 ///
 /// @brief Namespace containing mechanical 'reactions' connected to walls, i.e. 1D edges between 2D cells
 ///
+/// Classes describing updates related to 'spring'-like updates, i.e. the vertex positions connected by an edge are
+/// updated depending on their position, the resting length of the edge and possible other inputs such as molecular
+/// concentration in a cell.
+///
 namespace WallMechanics {
   ///
   /// @brief Updates vertices from an asymmetric wall spring potential
@@ -23,15 +27,16 @@ namespace WallMechanics {
   ///
   /// @f[ \frac{dx_i}{dt} = (x_{i}-x_{j}) \frac{K_{force}}{L_{ij}}(1-\frac{L_{ij}}{d}) @f]
   ///
-  /// where @f$ d @f$ = distance between vertices,
-  /// where @f$ x_i,x_j @f$ = vertex position in specific dimension,
-  /// @f$ L_{ij} @f$ = variable for the resting length of the wall.
+  /// where @f$ d @f$ is the distance between vertices,
+  /// @f$ x_i,x_j @f$ is the vertex position,
+  /// @f$ L_{ij} @f$ is the variable for storing the resting length of the wall.
   ///
   /// The parameters are @f$ K_{force} @f$ (parameter(0)), which sets the strength
   /// of the spring (spring constant), and @f$ K_{adh} @f$ (parameter(1)), which
   /// sets the relative strength of attractive forces compared to repressive
   /// forces (when attractive forces, the two parameters are multiplied 
-  /// (@f$ K=K_{force}K_{adhFrac} @f$). 
+  /// (@f$ K=K_{force}K_{adhFrac} @f$), and hence @f$K_{adhFrac}@f$ would usually
+  /// be set to one or a lower value to make wall 'shrinkage' less probable. 
   /// The update needs the index of the wall length variable at the 
   /// first level (variableIndex(0,0)), and 
   /// optionally a wall variable index for storing the total wall Force (variableIndex(1,0)). 
@@ -42,25 +47,24 @@ namespace WallMechanics {
   /// WallMechanics::Spring 2 1 1
   /// K_force K_adh
   /// L_ij-index
-  ///
+  /// @endverbatim
   /// or, when the force is saved in wall variable:
-  ///
+  /// @verbatim
   /// WallMechanics::Spring 2 2 1 1
   /// K_force K_adh
   /// L_ij-index
   /// Forcesave-index
-  ///
+  /// @endverbatim
   /// A third alternative is available for setting a different spring constant ( @f$ K_{force2} @f$
   /// , parameter(2)) for walls where a wall variable is set exactly to 1, and then the third index-layer
   /// holds the index of the 'flag' variable.
-  ///
+  /// @verbatim
   /// WallMechanics::Spring 3 3 1 1/0 1
   /// K_force K_adh K_force2
   /// L_ij-index
   /// [Forcesave-index]
   /// wall_type_index
   /// @endverbatim
-  ///
   /// @note This reaction used to be called VertexFromWallSpring
   ///
   class Spring : public BaseReaction {
@@ -200,9 +204,9 @@ namespace WallMechanics {
   /// variable in the form (contributions from cells on either side)
   ///
   /// @f[ K_{spring} = p_{0} + p_{1} (\frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}} + c_{1}^{p_{3}}} +
-  /// \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+c_{2}^{p_{3}}} @f]
+  /// \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+c_{2}^{p_{3}}} ) @f]
   ///
-  /// where @f$ p_{0},p_{1} @f$ sets the range of pring constant values, and @f$p_{2},p_{3}@f$
+  /// where @f$ p_{0},p_{1} @f$ sets the range of spring constant values, and @f$p_{2},p_{3}@f$
   /// are the Hill constant and coefficient, respectively.
   ///
   /// This function is implemented as stiffness decreasing with the concentration as used for
@@ -267,7 +271,6 @@ namespace WallMechanics {
   /// concentration.
   /// As for WallMechanics::Spring, a sixth parameter (fraction/adhesion) can set a ratio of
   /// attractive vs repressive force.
-  ///
   /// @verbatim
   ///   SpringInternalExternalThreshold 6 1 2  
   ///   threshold p0 p1 p2 p3
@@ -275,10 +278,8 @@ namespace WallMechanics {
   ///   wall_length_index
   ///   species_index
   /// @endverbatim
-  ///
   /// @note This process is done additively for both cells connected to a cell
   /// wall.
-  ///
   ///
   /// @see WallMechanics::Spring for spring force calculation.
   ///
@@ -715,37 +716,6 @@ class VertexFromWallSpringMTHistory : public BaseReaction {
         DataMatrix &cellDerivs,
         DataMatrix &wallDerivs,
         DataMatrix &vertexDerivs );
-};
-
-class VertexFromWallSpringExperimental : public BaseReaction
-{
-  public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    VertexFromWallSpringExperimental(std::vector<double> &paraValue,
-        std::vector< std::vector<size_t> > &indValue);
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///  
-    void derivs(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &wallData,
-        DataMatrix &vertexData,
-        DataMatrix &cellDerivs,
-        DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs);
 };
 
 class VertexFromWallSpringMTConcentrationHill : public BaseReaction {

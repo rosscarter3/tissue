@@ -14,6 +14,14 @@
 #include "tissue.h"
 #include "baseCompartmentChange.h"
 
+///
+/// @brief Namespace for classes describing cell division rules.
+///
+/// All divisions are described by a flag and an update function where the first one flags when it is time to
+/// divide, e.g. when a cell size passes a threshold value, and the second describes the update, e.g. puts the
+/// new wall along the shortest path dividing the cell in two equally sized daughters.
+///
+/// @ see BaseCompartmentChange
 namespace Division {
   ///
   /// @brief Divides a cell when volume above a threshold, with new wall perpendicular to the longest wall segment.
