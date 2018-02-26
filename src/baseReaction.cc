@@ -43,12 +43,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   }
   else if(idValue == "WallGrowth::Constant" )
     return new WallGrowth::Constant(paraValue, indValue);
-  else if(idValue == "WallGrowthExponentialStressTruncated") {
-    std::cerr << "Reaction WallGrowthExponentialStressTruncated "
-	      << "has been replaced by WallGrowth::Stress (setting the stretch_flag to 1 and provide L_th)." 
-	      << std::endl;
-    exit(EXIT_FAILURE);
-  }
   else if(idValue == "WallGrowthStress" || idValue == "WallGrowth::Stress" )
     return new WallGrowth::Stress(paraValue, indValue);
   else if(idValue == "WallGrowthStrain" || idValue == "WallGrowth::Strain" )
@@ -66,24 +60,12 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallGrowth::StressSpatial(paraValue, indValue);
   else if(idValue == "WallGrowthStressSpatialSingle" || idValue == "WallGrowth::StressSpatialSingle")
     return new WallGrowth::StressSpatialSingle(paraValue, indValue);
-  else if(idValue == "WallGrowthStressConcentrationHill" || idValue == "WallGrowth::StressConcentrationHill")
+  else if(idValue == "WallGrowthStressConcentrationHill" ||
+	  idValue == "WallGrowth::StressConcentrationHill")
     return new WallGrowth::StressConcentrationHill(paraValue, indValue);
   else if(idValue == "WallGrowthConstantStressEpidermalAsymmetric" || 
 	  idValue == "WallGrowth::ConstantStressEpidermalAsymmetric")
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
-  else if (idValue == "WallLengthGrowExperimental") {
-    std::cerr << "Reaction WallLengthGrowExperimental "
-	      << "has been replaced by WallGrowth::Force. Better is to use the WallGrowth::Stress "
-	      << "(setting the stretch_flag to 0 and not provide L_th)." 
-	      << std::endl;
-    exit(EXIT_FAILURE);
-  }
-  else if (idValue == "WallGrowthConstantStress" || 
-	   idValue == "WallGrowthConstantStressConcentrationHill") {
-    std::cerr << "BaseReaction::createReaction() WallGrowthConstantStress* has been "
-	      << "replaced by WallGrowth::Stress*." << std::endl;
-    exit(EXIT_FAILURE);
-  }
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
   else if(idValue == "MoveVertexRadially")
@@ -145,13 +127,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new cellcellRepulsion(paraValue,indValue);
  else if(idValue=="vertexFromSubstrate")
    return new vertexFromSubstrate(paraValue,indValue);
- else if (idValue=="VertexFromWallSpringAsymmetric" ||
-          idValue=="VertexFromEpidermalWallSpringAsymmetric" ||
-          idValue=="VertexFromEpidermalCellWallSpringAsymmetric") {
-   std::cerr << "BaseReaction::BaseReaction() All *SpringAsymmetric have been renamed "
-             << "*Spring." << std::endl;
-   exit(-1);
- }
+
   //Mechanical interactions between vertices
   //mechanical.h,mechanical.cc
   // namespace Pressure2D
@@ -171,8 +147,11 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
 
+ else if (idValue == "TargetAreaFromPressure")
+   return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);  
+  
   // Forces acting on vertices
  else if(idValue=="VertexForceOrigoFromIndex")
    return new VertexForceOrigoFromIndex(paraValue,indValue); 
@@ -188,8 +167,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new InfiniteWallForce(paraValue,indValue); 
   else if(idValue=="EpidermalVertexForce")
     return new EpidermalVertexForce(paraValue,indValue); 
-  else if (idValue == "CellVolumeExperimental")
-    return new CellVolumeExperimental(paraValue, indValue);
   else if (idValue == "EpidermalRadialForce")
     return new EpidermalRadialForce(paraValue, indValue);
   else if (idValue == "PerpendicularWallPressure")
@@ -620,10 +597,41 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
   // Obselete reactions
+  else if(idValue == "WallGrowthExponentialStressTruncated") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction WallGrowthExponentialStressTruncated "
+	      << "has been replaced by WallGrowth::Stress (setting "
+	      << "the stretch_flag to 1 and provide L_th)." 
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  else if (idValue == "WallLengthGrowExperimental") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction WallLengthGrowExperimental "
+	      << "has been replaced by WallGrowth::Force. Better is to use the WallGrowth::Stress "
+	      << "(setting the stretch_flag to 0 and not provide L_th)." 
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  else if (idValue == "WallGrowthConstantStress" || 
+	   idValue == "WallGrowthConstantStressConcentrationHill") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "WallGrowthConstantStress* has been "
+	      << "replaced by WallGrowth::Stress*." << std::endl;
+    exit(EXIT_FAILURE);
+  }
   else if (idValue == "VertexFromWallSpringExperimental") {
     std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction VertexFromWallSpringExperimental not used anymore." << std::endl
 	      << "Use WallMechanics::Spring with parameter(2) set to 1.0 instead." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  else if (idValue=="VertexFromWallSpringAsymmetric" ||
+	   idValue=="VertexFromEpidermalWallSpringAsymmetric" ||
+	   idValue=="VertexFromEpidermalCellWallSpringAsymmetric") {
+    std::cerr << "BaseReaction::BaseReaction() EXITING: "
+	      << "All reactions named *SpringAsymmetric have been renamed "
+	      << "*Spring." << std::endl;
     exit(EXIT_FAILURE);
   }
   else if(idValue=="VertexFromCellPressure") {
@@ -654,6 +662,12 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
 	     << "Reaction VertexFromPressureExperimental renamed to "
 	     << "Pressure2D::AreaPotentialTargetArea." << std::endl;
+   exit(EXIT_FAILURE);
+ }
+ else if(idValue=="CellVolumeExperimental") {
+   std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
+	     << "Reaction CellVolumeExperimental renamed to "
+	     << "TargetAreaFromPressure." << std::endl;
    exit(EXIT_FAILURE);
  }
 
