@@ -31,13 +31,13 @@ BaseReaction::~BaseReaction(){}
 
 BaseReaction *
 BaseReaction::createReaction(std::vector<double> &paraValue,
-			       std::vector< std::vector<size_t> > &indValue, 
+			       std::vector< std::vector<size_t> > &indValue,
 			       std::string idValue ) {
-  
+
   //Growth related updates
   //growth.h,growth.cc
   if(idValue == "WallGrowthExponentialTruncated" ) {
-    std::cerr << "Reaction WallGrowthExponentialTruncated has been replaced by WallGrowth::Constant." 
+    std::cerr << "Reaction WallGrowthExponentialTruncated has been replaced by WallGrowth::Constant."
 	      << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -55,7 +55,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	   idValue == "CenterTriangulation::WallGrowth::Stress")
     return new WallGrowth::CenterTriangulation::Stress(paraValue, indValue);
   else if (idValue == "CenterTriangulation::WallGrowth::StrainTRBS")
-    return new WallGrowth::CenterTriangulation::StrainTRBS(paraValue, indValue);    
+    return new WallGrowth::CenterTriangulation::StrainTRBS(paraValue, indValue);
   else if(idValue == "WallGrowthStressSpatial" || idValue == "WallGrowth::StressSpatial")
     return new WallGrowth::StressSpatial(paraValue, indValue);
   else if(idValue == "WallGrowthStressSpatialSingle" || idValue == "WallGrowth::StressSpatialSingle")
@@ -63,7 +63,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue == "WallGrowthStressConcentrationHill" ||
 	  idValue == "WallGrowth::StressConcentrationHill")
     return new WallGrowth::StressConcentrationHill(paraValue, indValue);
-  else if(idValue == "WallGrowthConstantStressEpidermalAsymmetric" || 
+  else if(idValue == "WallGrowthConstantStressEpidermalAsymmetric" ||
 	  idValue == "WallGrowth::ConstantStressEpidermalAsymmetric")
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
@@ -84,7 +84,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WaterVolumeFromTurgor(paraValue, indValue);
   else if (idValue == "DilutionFromVertexDerivs")
     return new DilutionFromVertexDerivs(paraValue, indValue);
-  
+
   //Mechanical interactions between vertices
   //mechanicalSpring.h,mechanicalSpring.cc
   else if(idValue=="VertexFromWallSpring" || idValue=="WallMechanics::Spring")
@@ -146,27 +146,26 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
-
  else if (idValue == "TargetAreaFromPressure")
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
-   return new VertexFromCellPowerdiagram(paraValue,indValue);  
-  
+   return new VertexFromCellPowerdiagram(paraValue,indValue);
+
   // Forces acting on vertices
  else if(idValue=="VertexForceOrigoFromIndex")
-   return new VertexForceOrigoFromIndex(paraValue,indValue); 
+   return new VertexForceOrigoFromIndex(paraValue,indValue);
  else if(idValue=="CellForceOrigoFromIndex")
-   return new CellForceOrigoFromIndex(paraValue,indValue); 
+   return new CellForceOrigoFromIndex(paraValue,indValue);
  else if(idValue=="CylinderForce")
-   return new CylinderForce(paraValue,indValue); 
+   return new CylinderForce(paraValue,indValue);
  else if(idValue=="SphereCylinderForce")
-   return new SphereCylinderForce(paraValue,indValue); 
+   return new SphereCylinderForce(paraValue,indValue);
  else if(idValue=="SphereCylinderForceFromRadius")
-   return new SphereCylinderForceFromRadius(paraValue,indValue); 
+   return new SphereCylinderForceFromRadius(paraValue,indValue);
  else if(idValue=="InfiniteWallForce")
-   return new InfiniteWallForce(paraValue,indValue); 
+   return new InfiniteWallForce(paraValue,indValue);
   else if(idValue=="EpidermalVertexForce")
-    return new EpidermalVertexForce(paraValue,indValue); 
+    return new EpidermalVertexForce(paraValue,indValue);
   else if (idValue == "EpidermalRadialForce")
     return new EpidermalRadialForce(paraValue, indValue);
   else if (idValue == "PerpendicularWallPressure")
@@ -215,12 +214,12 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new maxVelocity(paraValue,indValue);
   else if (idValue == "DebugReaction")
     return new DebugReaction(paraValue, indValue);
-  
+
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells
   else if (idValue == "CenterTriangulation::Initiate")
     return new CenterTriangulation::Initiate(paraValue, indValue);
-  
+
   // mechanicalTRBS.h (.cc)
   // Mechanical updates related to triangular (biquadratic) springs
   else if (idValue == "VertexFromTRBS")
@@ -234,7 +233,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue == "VertexFromTRBScenterTriangulationMT")
     return new VertexFromTRBScenterTriangulationMT(paraValue, indValue);
   else if (idValue == "VertexFromTRLScenterTriangulationMT")
-    return new VertexFromTRLScenterTriangulationMT(paraValue, indValue);  
+    return new VertexFromTRLScenterTriangulationMT(paraValue, indValue);
   else if (idValue == "VertexFromTRBScenterTriangulationConcentrationHillMT")
    return new VertexFromTRBScenterTriangulationConcentrationHillMT(paraValue, indValue);
   else if (idValue == "FiberModel")
@@ -256,66 +255,66 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   //creation.h,creation.cc
   else if(idValue=="CreationZero")
-    return new CreationZero(paraValue,indValue); 
+    return new CreationZero(paraValue,indValue);
   else if(idValue=="CreationOne")
-    return new CreationOne(paraValue,indValue); 
+    return new CreationOne(paraValue,indValue);
   else if(idValue=="CreationTwo")
-    return new CreationTwo(paraValue,indValue); 
+    return new CreationTwo(paraValue,indValue);
   else if(idValue=="CreationSpatialSphere")
-    return new CreationSpatialSphere(paraValue,indValue); 
+    return new CreationSpatialSphere(paraValue,indValue);
   else if(idValue=="CreationSpatialRing")
-    return new CreationSpatialRing(paraValue,indValue); 
+    return new CreationSpatialRing(paraValue,indValue);
   else if(idValue=="CreationSpatialCoordinate")
-    return new CreationSpatialCoordinate(paraValue,indValue); 
+    return new CreationSpatialCoordinate(paraValue,indValue);
   else if(idValue=="CreationSpatialPlane")
-    return new CreationSpatialPlane(paraValue,indValue); 
+    return new CreationSpatialPlane(paraValue,indValue);
   else if(idValue=="CreationFromList")
-    return new CreationFromList(paraValue,indValue); 
+    return new CreationFromList(paraValue,indValue);
   else if(idValue=="CreationOneGeometric")
-    return new CreationOneGeometric(paraValue,indValue); 
+    return new CreationOneGeometric(paraValue,indValue);
   else if(idValue=="creationSinus")
     return new CreationSinus(paraValue,indValue);
-    
+
   //degradation.h,degradation.cc
   else if(idValue=="DegradationOne")
-    return new DegradationOne(paraValue,indValue); 
+    return new DegradationOne(paraValue,indValue);
   else if(idValue=="DegradationTwo")
-    return new DegradationTwo(paraValue,indValue); 
+    return new DegradationTwo(paraValue,indValue);
   else if(idValue=="DegradationN")
-    return new DegradationN(paraValue,indValue); 
+    return new DegradationN(paraValue,indValue);
   else if(idValue=="DegradationTwoGeometric")
-    return new DegradationTwoGeometric(paraValue,indValue); 
+    return new DegradationTwoGeometric(paraValue,indValue);
   else if(idValue=="DegradationHill")
-    return new DegradationHill(paraValue,indValue); 
+    return new DegradationHill(paraValue,indValue);
   else if(idValue=="DegradationHillN")
-    return new DegradationHillN(paraValue,indValue); 
+    return new DegradationHillN(paraValue,indValue);
   else if(idValue=="DegradationOneWall")
-    return new DegradationOneWall(paraValue,indValue); 
+    return new DegradationOneWall(paraValue,indValue);
   else if(idValue=="DegradationOneBoundary")
-    return new DegradationOneBoundary(paraValue,indValue); 
+    return new DegradationOneBoundary(paraValue,indValue);
   else if(idValue=="DegradationOneFromList")
-    return new DegradationOneFromList(paraValue,indValue); 
+    return new DegradationOneFromList(paraValue,indValue);
   //grn.h,grn.cc
   else if(idValue=="Hill")
-    return new Hill(paraValue,indValue); 
+    return new Hill(paraValue,indValue);
   else if(idValue=="HillGeneralOne")
-    return new HillGeneralOne(paraValue,indValue); 
+    return new HillGeneralOne(paraValue,indValue);
   else if(idValue=="HillGeneralOne_TwoInputs")
-    return new HillGeneralOne_TwoInputs(paraValue,indValue); 
+    return new HillGeneralOne_TwoInputs(paraValue,indValue);
   else if(idValue=="HillGeneralTwo")
-    return new HillGeneralTwo(paraValue,indValue); 
+    return new HillGeneralTwo(paraValue,indValue);
   else if(idValue=="HillGeneralThree")
-    return new HillGeneralThree(paraValue,indValue); 
+    return new HillGeneralThree(paraValue,indValue);
   else if(idValue=="Grn")
-    return new Grn(paraValue,indValue); 
+    return new Grn(paraValue,indValue);
   else if(idValue=="Gsrn2")
-    return new Gsrn2(paraValue,indValue); 
+    return new Gsrn2(paraValue,indValue);
 
   //transport.h,transport.cc
   else if(idValue=="MembraneDiffusionSimple")
-    return new MembraneDiffusionSimple(paraValue,indValue); 
+    return new MembraneDiffusionSimple(paraValue,indValue);
   else if(idValue=="MembraneDiffusionSimple2")
-    return new MembraneDiffusionSimple2(paraValue,indValue); 
+    return new MembraneDiffusionSimple2(paraValue,indValue);
   else if(idValue=="DiffusionSimple")
     return new DiffusionSimple(paraValue,indValue);
   else if(idValue=="DiffusionConductiveSimple")
@@ -331,93 +330,93 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   //network.h,network.cc
  else if(idValue=="AuxinModelSimple1")
-    return new AuxinModelSimple1(paraValue,indValue); 
+    return new AuxinModelSimple1(paraValue,indValue);
   else if(idValue=="AuxinModel1")
-    return new AuxinModel1(paraValue,indValue); 
+    return new AuxinModel1(paraValue,indValue);
   else if(idValue=="AuxinModel1S")
-    return new AuxinModel1S(paraValue,indValue); 
+    return new AuxinModel1S(paraValue,indValue);
   else if(idValue=="AuxinModelStress")
-    return new AuxinModelStress(paraValue,indValue); 
+    return new AuxinModelStress(paraValue,indValue);
   else if(idValue=="AuxinModelSimpleStress")
-    return new AuxinModelSimpleStress(paraValue,indValue); 
+    return new AuxinModelSimpleStress(paraValue,indValue);
   else if(idValue=="AuxinModelSimple1Wall")
-    return new AuxinModelSimple1Wall(paraValue,indValue); 
+    return new AuxinModelSimple1Wall(paraValue,indValue);
   else if(idValue=="AuxinModelSimple2")
-    return new AuxinModelSimple2(paraValue,indValue); 
+    return new AuxinModelSimple2(paraValue,indValue);
   else if(idValue=="AuxinModelSimple3")
-    return new AuxinModelSimple3(paraValue,indValue); 
+    return new AuxinModelSimple3(paraValue,indValue);
   else if(idValue=="AuxinModelSimple4")
-    return new AuxinModelSimple4(paraValue,indValue); 
+    return new AuxinModelSimple4(paraValue,indValue);
   else if(idValue=="AuxinModelSimple5")
-    return new AuxinModelSimple5(paraValue,indValue); 
+    return new AuxinModelSimple5(paraValue,indValue);
   else if(idValue=="AuxinModel4")
-    return new AuxinModel4(paraValue,indValue); 
+    return new AuxinModel4(paraValue,indValue);
   else if(idValue=="AuxinModel5")
-    return new AuxinModel5(paraValue,indValue); 
+    return new AuxinModel5(paraValue,indValue);
   else if(idValue=="AuxinModel6")
-    return new AuxinModel6(paraValue,indValue); 
+    return new AuxinModel6(paraValue,indValue);
   else if(idValue=="AuxinModel7")
-    return new AuxinModel7(paraValue,indValue); 
+    return new AuxinModel7(paraValue,indValue);
   else if(idValue=="AuxinTransportCellCellNoGeometry")
-    return new AuxinTransportCellCellNoGeometry(paraValue,indValue); 
+    return new AuxinTransportCellCellNoGeometry(paraValue,indValue);
   else if(idValue=="AuxinWallModel")
-    return new AuxinWallModel(paraValue,indValue); 
+    return new AuxinWallModel(paraValue,indValue);
   else if(idValue=="AuxinROPModel")
-    return new AuxinROPModel(paraValue,indValue); 
+    return new AuxinROPModel(paraValue,indValue);
   else if(idValue=="AuxinROPModel2")
-    return new AuxinROPModel2(paraValue,indValue); 
+    return new AuxinROPModel2(paraValue,indValue);
   else if(idValue=="AuxinROPModel3")
-    return new AuxinROPModel3(paraValue,indValue); 
+    return new AuxinROPModel3(paraValue,indValue);
   else if(idValue=="AuxinPINBistabilityModel")
-    return new AuxinPINBistabilityModel(paraValue,indValue); 
+    return new AuxinPINBistabilityModel(paraValue,indValue);
   else if(idValue=="AuxinPINBistabilityModelCell")
-    return new AuxinPINBistabilityModelCell(paraValue,indValue); 
+    return new AuxinPINBistabilityModelCell(paraValue,indValue);
   else if(idValue=="AuxinExoBistability")
-    return new AuxinExoBistability(paraValue,indValue); 
+    return new AuxinExoBistability(paraValue,indValue);
   else if(idValue=="AuxinPINBistabilityModelCellNew")
-    return new AuxinExoBistability(paraValue,indValue); 
+    return new AuxinExoBistability(paraValue,indValue);
   else if(idValue=="SimpleROPModel")
-    return new SimpleROPModel(paraValue,indValue); 
+    return new SimpleROPModel(paraValue,indValue);
   else if(idValue=="SimpleROPModel2")
-    return new SimpleROPModel2(paraValue,indValue); 
+    return new SimpleROPModel2(paraValue,indValue);
   else if(idValue=="SimpleROPModel3")
-    return new SimpleROPModel3(paraValue,indValue); 
+    return new SimpleROPModel3(paraValue,indValue);
   else if(idValue=="SimpleROPModel4")
-    return new SimpleROPModel4(paraValue,indValue);  
+    return new SimpleROPModel4(paraValue,indValue);
   else if(idValue=="SimpleROPModel5")
-    return new SimpleROPModel5(paraValue,indValue);  
+    return new SimpleROPModel5(paraValue,indValue);
   else if(idValue=="SimpleROPModel6")
-    return new SimpleROPModel6(paraValue,indValue);  
+    return new SimpleROPModel6(paraValue,indValue);
   else if(idValue=="SimpleROPModel7")
-    return new SimpleROPModel7(paraValue,indValue); 
+    return new SimpleROPModel7(paraValue,indValue);
   else if(idValue=="UpInternalGradientModel")
     return new UpInternalGradientModel(paraValue,indValue);
-    
+
    else if(idValue=="DownInternalGradientModel")
     return new DownInternalGradientModel(paraValue,indValue);
    else if(idValue=="DownInternalGradientModelGeometric")
     return new DownInternalGradientModelGeometric(paraValue,indValue);
-    
+
   else if(idValue=="DownInternalGradientModelSingleCell")
     return new DownInternalGradientModelSingleCell(paraValue,indValue);
-    
+
   else if(idValue=="UpExternalGradientModel")
     return new UpExternalGradientModel(paraValue,indValue);
-    
+
   else if(idValue=="UpInternalGradientModel")
     return new UpInternalGradientModel(paraValue,indValue);
-    
+
   else if(idValue=="AuxinFluxModel")
     return new AuxinFluxModel(paraValue,indValue);
-    
+
  else if(idValue=="IntracellularPartitioning")
     return new IntracellularPartitioning(paraValue,indValue);
-    
+
  else if(idValue=="IntracellularCoupling")
     return new IntracellularCoupling(paraValue,indValue);
-    
+
  else if(idValue=="IntracellularIndirectCoupling")
-    return new IntracellularIndirectCoupling(paraValue,indValue); 
+    return new IntracellularIndirectCoupling(paraValue,indValue);
 
   //directionReaction.h, directionUpdate.cc
   else if (idValue == "ContinousMTDirection")
@@ -432,7 +431,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new UpdateMTDirectionConcenHill(paraValue, indValue);
   else if (idValue == "RotatingDirection")
     return new RotatingDirection(paraValue, indValue);
-  
+
   //sisterVertex.h, sisterVertex.cc
   else if (idValue == "SisterVertex::InitiateFromFile")
     return new SisterVertex::InitiateFromFile(paraValue, indValue);
@@ -442,107 +441,108 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new SisterVertex::Spring(paraValue, indValue);
   else if (idValue == "SisterVertex::CombineDerivatives")
     return new SisterVertex::CombineDerivatives(paraValue, indValue);
-  
+
   //adhocReaction.h,adhocReaction.cc
-  else if(idValue=="VertexNoUpdateFromPosition")
-    return new VertexNoUpdateFromPosition(paraValue,indValue); 
-  else if(idValue=="VertexNoUpdateFromIndex")
-    return new VertexNoUpdateFromIndex(paraValue,indValue);
-  else if(idValue=="VertexNoUpdateFromList")
-    return new VertexNoUpdateFromList(paraValue,indValue);
-  else if(idValue=="VertexRandTip")
-    return new VertexRandTip(paraValue,indValue); 
-  else if(idValue=="VertexNoUpdateBoundary")
-    return new VertexNoUpdateBoundary(paraValue,indValue); 
-  else if(idValue=="VertexNoUpdateBoundaryPtemplate")
-    return new VertexNoUpdateBoundaryPtemplate(paraValue,indValue); 
-  else if(idValue=="VertexNoUpdateBoundaryPtemplateStatic")
-    return new VertexNoUpdateBoundaryPtemplateStatic(paraValue,indValue); 
-  else if(idValue=="VertexNoUpdateBoundaryPtemplateStatic3D")
-    return new VertexNoUpdateBoundaryPtemplateStatic3D(paraValue,indValue);
-  else if(idValue=="VertexNoUpdateBoundary3D")
-    return new VertexNoUpdateBoundary3D(paraValue,indValue);  
-  else if(idValue=="VertexFromConstStressBoundary")
-    return new VertexFromConstStressBoundary(paraValue,indValue);  
-  else if(idValue=="cellPolarity3D")
-    return new cellPolarity3D(paraValue,indValue); 
-  else if(idValue=="diffusion3D")
-    return new diffusion3D(paraValue,indValue); 
-  else if(idValue=="manipulate")
-    return new manipulate(paraValue,indValue); 
-  else if(idValue=="VertexTranslateToMax")
-    return new VertexTranslateToMax(paraValue,indValue); 
-  else if(idValue=="CenterCOM")
-    return new CenterCOM(paraValue,indValue); 
-  else if(idValue=="CenterCOMcenterTriangulation")
-    return new CenterCOMcenterTriangulation(paraValue,indValue); 
-  else if(idValue=="CalculatePCAPlane")
-    return new CalculatePCAPlane(paraValue,indValue); 
-  else if(idValue=="InitiateWallLength")
-    return new InitiateWallLength(paraValue,indValue); 
-  else if(idValue=="InitiateWallVariableConstant")
-    return new InitiateWallVariableConstant(paraValue,indValue); 
-  else if(idValue=="InitiateWallMesh")
-    return new InitiateWallMesh(paraValue,indValue); 
-  else if(idValue=="StrainTest")
-    return new StrainTest(paraValue,indValue); 
-  else if(idValue=="CalculateVertexStressDirection")
-    return new CalculateVertexStressDirection(paraValue,indValue); 
-  else if(idValue=="MoveVerticesRandomlyCapCylinder")
-    return new MoveVerticesRandomlyCapCylinder(paraValue,indValue); 
-  else if(idValue=="scaleTemplate")
-    return new scaleTemplate(paraValue,indValue); 
-  else if(idValue=="copyCellVector")
-    return new copyCellVector(paraValue,indValue); 
-  else if(idValue=="limitZdis")
-    return new limitZdis(paraValue,indValue); 
-  else if(idValue=="randomizeMT")
-    return new randomizeMT(paraValue,indValue); 
-  else if(idValue=="restrictVertexRadially")
-    return new restrictVertexRadially(paraValue,indValue); 
-  else if(idValue=="CreationPrimordiaTime")
-    return new CreationPrimordiaTime(paraValue,indValue); 
-  else if(idValue=="VertexFromRotationalForceLinear")
-    return new VertexFromRotationalForceLinear(paraValue,indValue); 
-  else if(idValue=="ThresholdSwitch")
-    return new ThresholdSwitch(paraValue,indValue); 
-  else if(idValue=="AndGate")
-    return new AndGate(paraValue,indValue); 
-  else if(idValue=="AndNotGate")
-    return new AndNotGate(paraValue,indValue); 
-  else if(idValue=="AndSpecialGate")
-    return new AndSpecialGate(paraValue,indValue); 
-  else if(idValue=="AndSpecialGate2")
-    return new AndSpecialGate2(paraValue,indValue); 
-    else if(idValue=="AndSpecialGate3")
-    return new AndSpecialGate3(paraValue,indValue); 
-  else if(idValue=="AndGateCount")
-    return new AndGateCount(paraValue,indValue); 
-    else if(idValue=="OrGateCount")
-    return new OrGateCount(paraValue,indValue); 
-  else if(idValue=="OrSpecialGateCount")
-    return new OrSpecialGateCount(paraValue,indValue); 
-  else if(idValue=="AndThresholdsGate")
-    return new AndThresholdsGate(paraValue,indValue); 
-  else if(idValue=="Count")
-    return new Count(paraValue,indValue);
-  else if(idValue=="FlagCount")
-    return new FlagCount(paraValue,indValue);
-  else if(idValue=="ThresholdReset")
-    return new ThresholdReset(paraValue,indValue); 
-  else if(idValue=="ThresholdNoisyReset")
-    return new ThresholdNoisyReset(paraValue,indValue); 
-  else if(idValue=="ThresholdResetAndCount")
-    return new ThresholdResetAndCount(paraValue,indValue); 
-  else if(idValue=="FlagNoisyReset")
-    return new FlagNoisyReset(paraValue,indValue); 
-  else if(idValue=="ThresholdAndFlagNoisyReset")
-    return new ThresholdAndFlagNoisyReset(paraValue,indValue); 
-  else if(idValue=="FlagAddValue")
-    return new FlagAddValue(paraValue,indValue); 
-  else if(idValue=="CopyVariable")
-    return new CopyVariable(paraValue,indValue); 
-  
+  else if (idValue == "VertexNoUpdateFromPosition")
+    return new VertexNoUpdateFromPosition(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateFromIndex")
+    return new VertexNoUpdateFromIndex(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateFromList")
+    return new VertexNoUpdateFromList(paraValue, indValue);
+  else if (idValue == "VertexRandTip")
+    return new VertexRandTip(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateBoundary")
+    return new VertexNoUpdateBoundary(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateBoundaryPtemplate")
+    return new VertexNoUpdateBoundaryPtemplate(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateBoundaryPtemplateStatic")
+    return new VertexNoUpdateBoundaryPtemplateStatic(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateBoundaryPtemplateStatic3D")
+    return new VertexNoUpdateBoundaryPtemplateStatic3D(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateBoundary3D")
+    return new VertexNoUpdateBoundary3D(paraValue, indValue);
+  else if (idValue == "VertexFromConstStressBoundary")
+    return new VertexFromConstStressBoundary(paraValue, indValue);
+  else if (idValue == "cellPolarity3D")
+    return new cellPolarity3D(paraValue, indValue);
+  else if (idValue == "diffusion3D")
+    return new diffusion3D(paraValue, indValue);
+  else if (idValue == "manipulate")
+    return new manipulate(paraValue, indValue);
+  else if (idValue == "VertexTranslateToMax")
+    return new VertexTranslateToMax(paraValue, indValue);
+  else if (idValue == "CenterCOM")
+    return new CenterCOM(paraValue, indValue);
+  else if (idValue == "CenterCOMcenterTriangulation")
+    return new CenterCOMcenterTriangulation(paraValue, indValue);
+  else if (idValue == "CalculatePCAPlane")
+    return new CalculatePCAPlane(paraValue, indValue);
+  else if (idValue == "InitiateWallLength")
+    return new InitiateWallLength(paraValue, indValue);
+  else if (idValue == "InitiateTargetArea")
+    return new InitiateTargetArea(paraValue, indValue);
+  else if (idValue == "InitiateWallVariableConstant")
+    return new InitiateWallVariableConstant(paraValue, indValue);
+  else if (idValue == "InitiateWallMesh")
+    return new InitiateWallMesh(paraValue, indValue);
+  else if (idValue == "StrainTest")
+    return new StrainTest(paraValue, indValue);
+  else if (idValue == "CalculateVertexStressDirection")
+    return new CalculateVertexStressDirection(paraValue, indValue);
+  else if (idValue == "MoveVerticesRandomlyCapCylinder")
+    return new MoveVerticesRandomlyCapCylinder(paraValue, indValue);
+  else if (idValue == "scaleTemplate")
+    return new scaleTemplate(paraValue, indValue);
+  else if (idValue == "copyCellVector")
+    return new copyCellVector(paraValue, indValue);
+  else if (idValue == "limitZdis")
+    return new limitZdis(paraValue, indValue);
+  else if (idValue == "randomizeMT")
+    return new randomizeMT(paraValue, indValue);
+  else if (idValue == "restrictVertexRadially")
+    return new restrictVertexRadially(paraValue, indValue);
+  else if (idValue == "CreationPrimordiaTime")
+    return new CreationPrimordiaTime(paraValue, indValue);
+  else if (idValue == "VertexFromRotationalForceLinear")
+    return new VertexFromRotationalForceLinear(paraValue, indValue);
+  else if (idValue == "ThresholdSwitch")
+    return new ThresholdSwitch(paraValue, indValue);
+  else if (idValue == "AndGate")
+    return new AndGate(paraValue, indValue);
+  else if (idValue == "AndNotGate")
+    return new AndNotGate(paraValue, indValue);
+  else if (idValue == "AndSpecialGate")
+    return new AndSpecialGate(paraValue, indValue);
+  else if (idValue == "AndSpecialGate2")
+    return new AndSpecialGate2(paraValue, indValue);
+  else if (idValue == "AndSpecialGate3")
+    return new AndSpecialGate3(paraValue, indValue);
+  else if (idValue == "AndGateCount")
+    return new AndGateCount(paraValue, indValue);
+  else if (idValue == "OrGateCount")
+    return new OrGateCount(paraValue, indValue);
+  else if (idValue == "OrSpecialGateCount")
+    return new OrSpecialGateCount(paraValue, indValue);
+  else if (idValue == "AndThresholdsGate")
+    return new AndThresholdsGate(paraValue, indValue);
+  else if (idValue == "Count")
+    return new Count(paraValue, indValue);
+  else if (idValue == "FlagCount")
+    return new FlagCount(paraValue, indValue);
+  else if (idValue == "ThresholdReset")
+    return new ThresholdReset(paraValue, indValue);
+  else if (idValue == "ThresholdNoisyReset")
+    return new ThresholdNoisyReset(paraValue, indValue);
+  else if (idValue == "ThresholdResetAndCount")
+    return new ThresholdResetAndCount(paraValue, indValue);
+  else if (idValue == "FlagNoisyReset")
+    return new FlagNoisyReset(paraValue, indValue);
+  else if (idValue == "ThresholdAndFlagNoisyReset")
+    return new ThresholdAndFlagNoisyReset(paraValue, indValue);
+  else if (idValue == "FlagAddValue")
+    return new FlagAddValue(paraValue, indValue);
+  else if (idValue == "CopyVariable")
+    return new CopyVariable(paraValue, indValue);
 
   // cellTime.h
   else if (idValue=="CellTimeDerivative")
@@ -579,7 +579,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new MembraneCyclingAll::LocalWallFeedbackNonLinear(paraValue, indValue);
   else if (idValue=="MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition")
     return new MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition(paraValue, indValue);
- 
+
   //massAction.h
   else if (idValue=="MassAction::General")
     return new MassAction::General(paraValue, indValue);
@@ -601,7 +601,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction WallGrowthExponentialStressTruncated "
 	      << "has been replaced by WallGrowth::Stress (setting "
-	      << "the stretch_flag to 1 and provide L_th)." 
+	      << "the stretch_flag to 1 and provide L_th)."
 	      << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -609,11 +609,11 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction WallLengthGrowExperimental "
 	      << "has been replaced by WallGrowth::Force. Better is to use the WallGrowth::Stress "
-	      << "(setting the stretch_flag to 0 and not provide L_th)." 
+	      << "(setting the stretch_flag to 0 and not provide L_th)."
 	      << std::endl;
     exit(EXIT_FAILURE);
   }
-  else if (idValue == "WallGrowthConstantStress" || 
+  else if (idValue == "WallGrowthConstantStress" ||
 	   idValue == "WallGrowthConstantStressConcentrationHill") {
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "WallGrowthConstantStress* has been "
@@ -675,15 +675,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Default, if nothing found
   else {
     std::cerr << std::endl << "BaseReaction::createReaction() EXITING: "
-	      << "Reactiontype " 
+	      << "Reactiontype "
 	      << idValue << " not known, no reaction created." << std::endl;
     exit(EXIT_FAILURE);
   }
 }
 
-BaseReaction* 
+BaseReaction*
 BaseReaction::createReaction(std::istream &IN ) {
-  
+
   std::string idVal;
   size_t pNum,levelNum;
   IN >> idVal;
@@ -692,19 +692,19 @@ BaseReaction::createReaction(std::istream &IN ) {
   std::vector<size_t> varIndexNum( levelNum );
   for( size_t i=0 ; i<levelNum ; i++ )
     IN >> varIndexNum[i];
-  
+
   std::vector<double> pVal( pNum );
   for( size_t i=0 ; i<pNum ; i++ )
     IN >> pVal[i];
-  
+
   std::vector< std::vector<size_t> > varIndexVal( levelNum );
   for( size_t i=0 ; i<levelNum ; i++ )
     varIndexVal[i].resize( varIndexNum[i] );
-  
+
   for( size_t i=0 ; i<levelNum ; i++ )
     for( size_t j=0 ; j<varIndexNum[i] ; j++ )
       IN >> varIndexVal[i][j];
-  
+
   return createReaction(pVal,varIndexVal,idVal);
 }
 
@@ -713,37 +713,37 @@ derivs(Tissue &T,
        DataMatrix &cellData,
        DataMatrix &walldata,
        DataMatrix &vertexData,
-       DataMatrix &cellderivs, 
+       DataMatrix &cellderivs,
        DataMatrix &wallderivs,
-       DataMatrix &vertexDerivs ) 
+       DataMatrix &vertexDerivs )
 {
   std::cerr << "BaseReaction::derivs() should not be used. "
 	    << "Should always be mapped onto one of the real types." << std::endl;
   exit(0);
-}  
+}
 
 void BaseReaction::
 derivsWithAbs(Tissue &T,
        DataMatrix &cellData,
        DataMatrix &walldata,
        DataMatrix &vertexData,
-       DataMatrix &cellderivs, 
+       DataMatrix &cellderivs,
        DataMatrix &wallderivs,
        DataMatrix &vertexDerivs,
-       DataMatrix &sdydtCell, 
+       DataMatrix &sdydtCell,
        DataMatrix &sdydtWall,
-       DataMatrix &sdydtVertex) 
+       DataMatrix &sdydtVertex)
 {
   std::cerr << "BaseReaction::derivsWithAbs() should not be used. "
 	    << "Should always be mapped onto one of the real types." << std::endl;
   exit(0);
-}  
+}
 
 void BaseReaction::initiate(Tissue &T,
 			    DataMatrix &cellData,
 			    DataMatrix &walldata,
 			    DataMatrix &vertexData,
-			    DataMatrix &cellderivs, 
+			    DataMatrix &cellderivs,
 			    DataMatrix &wallderivs,
 			    DataMatrix &vertexDerivs )
 {
@@ -753,11 +753,11 @@ void BaseReaction::update(Tissue &T,
 			  DataMatrix &cellData,
 			  DataMatrix &walldata,
 			  DataMatrix &vertexData,
-			  double h) 
+			  double h)
 {
 }
 
-void BaseReaction::print( std::ofstream &os ) 
+void BaseReaction::print( std::ofstream &os )
 {
   std::cerr << "BaseReaction::print(ofstream) should not be used. "
 	    << "Should always be mapped onto one of the real types.\n";
@@ -767,7 +767,7 @@ void BaseReaction::print( std::ofstream &os )
 void BaseReaction::printState(Tissue *T,
 			      DataMatrix &cellData,
 			      DataMatrix &wallData,
-			      DataMatrix &vertexData, 
+			      DataMatrix &vertexData,
 			      std::ostream &os)
 {
 }
