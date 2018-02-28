@@ -25,12 +25,20 @@
 ///
 namespace Pressure2D {
 ///
-/// @brief Updates vertices from a cell pressure potential, implemented as
-/// forces normal to edges
+/// @brief Updates vertices from a cell pressure potential implemented as an area-based potential
 ///
-/// @details An area rule in two dimensions is used to calculate the forces on
-/// vertex
-/// @f$v@f$ from a cell is
+/// @details This reaction is a 2D version of a pressure force calculated from a
+/// potential given as an area expansion
+/// @f[ U(v_{i}) = - \frac{1}{2} p_{0} A(v_{i}) @f]
+/// where @f$v_{i}@f$ are the vertex positions for the cell, A is the area and
+/// @f$p_{0}@f$ is a constant pressure. The time derivative of vertex positions
+/// are then calculated as positional derivative of the potential
+/// @f[ \frac{dv_{ix}}{dt} = - \frac{dU}{dv_{ix}}@f]
+/// @f[ \frac{dv_{iy}}{dt} = - \frac{dU}{dv_{iy}}@f]
+/// The area is calculated by the formula
+/// @f[ 2A = abs(\sum_{i} v_{ix}v_{(i+1)y} - v_{(i+1)x}v_{iy}) @f]
+/// where the vertices is covered in a circular fashion (@f$v_{N}=v_{0}@f$).
+/// The forces on vertex @f$v@f$ from a cell is then given by
 ///
 /// @f[\frac{dx_v}{dt} = 0.5*p_0 (y_{v_r} - y_{v_l}) @f]
 /// @f[\frac{dy_v}{dt} = 0.5*p_0 (x_{v_l} - x_{v_r}) @f]
@@ -43,12 +51,12 @@ namespace Pressure2D {
 ///
 /// In a model file, the reaction is given by:
 /// @verbatim
-/// Pressure2D::EdgeForce 2 0
+/// Pressure2D::AreaPotential 2 0
 /// P V_normflag(=0/1)
 /// @endverbatim
 /// @note Requires two dimensions with vertices sorted.
 ///
-class EdgeForce : public BaseReaction {
+class AreaPotential : public BaseReaction {
   public:
   ///
   /// @brief Main constructor
@@ -62,8 +70,8 @@ class EdgeForce : public BaseReaction {
   ///
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   ///
-  EdgeForce(std::vector<double> &paraValue,
-            std::vector<std::vector<size_t>> &indValue);
+  AreaPotential(std::vector<double> &paraValue,
+		std::vector<std::vector<size_t>> &indValue);
 
   ///
   /// @brief Derivative function for this reaction class
@@ -100,7 +108,7 @@ class EdgeForce : public BaseReaction {
 ///
 /// In a model file, the reaction is given by:
 /// @verbatim
-/// Pressure2D::AreaPotential 2[/3] 0
+/// Pressure2D::AreaPotentialTri 2[/3] 0
 /// P V_normFlag(=0/1) [InternalCellsOnlyFlag(=0/1)]
 /// @endverbatim
 /// where @f$p_{0}=P@f$ is the pressure magnitude, @f$p_{1}@f$ is a flag set to
@@ -111,8 +119,9 @@ class EdgeForce : public BaseReaction {
 ///
 /// @note The secondary effect to the area of the movement of the center of mass
 /// when a vertex is moved is not taken into account.
+/// @note Maybe convert to the area description used in Pressure2D::AreaPotential?
 ///
-class AreaPotential : public BaseReaction {
+class AreaPotentialTri : public BaseReaction {
   public:
   ///
   /// @brief Main constructor
@@ -126,8 +135,8 @@ class AreaPotential : public BaseReaction {
   ///
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   ///
-  AreaPotential(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+  AreaPotentialTri(std::vector<double> &paraValue,
+		   std::vector<std::vector<size_t>> &indValue);
 
   ///
   /// @brief Derivative function for this reaction class
@@ -144,7 +153,7 @@ class AreaPotential : public BaseReaction {
 /// expansion if the cell is close enough to the maximal position
 ///
 /// @details This reaction uses for each individual cell the same update as
-/// Pressure2D::AreaPotential and the only difference is an extra parameter
+/// Pressure2D::AreaPotentialTri and the only difference is an extra parameter
 /// setting a threshold in space where the update is only done if the cell is
 /// closer to the maximal position than this given threshold variable in the
 /// direction given as (only) variable index. The idea is for example to define
@@ -153,7 +162,7 @@ class AreaPotential : public BaseReaction {
 ///
 /// In a model file, the reaction is given by:
 /// @verbatim
-/// Pressure2D::AreaPotentialSpatialThreshold 2 1 1
+/// Pressure2D::AreaPotentialTriSpatialThreshold 2 1 1
 /// P Threshold
 /// direction_index
 /// @endverbatim
@@ -162,11 +171,12 @@ class AreaPotential : public BaseReaction {
 /// to be updated, and direction_index is the spatial direction the max and
 /// threshold are calculated in.
 ///
-/// @see Pressure2D::AreaPotential
+/// @see Pressure2D::AreaPotentialTri
 /// @note Currently, this reaction has not implemented a flag for area
 /// normalized forces.
+/// @note Maybe convert to the area description used in Pressure2D::AreaPotential?
 ///
-class AreaPotentialSpatialThreshold : public BaseReaction {
+class AreaPotentialTriSpatialThreshold : public BaseReaction {
   public:
   ///
   /// @brief Main constructor
@@ -180,8 +190,8 @@ class AreaPotentialSpatialThreshold : public BaseReaction {
   ///
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   ///
-  AreaPotentialSpatialThreshold(std::vector<double> &paraValue,
-                                std::vector<std::vector<size_t>> &indValue);
+  AreaPotentialTriSpatialThreshold(std::vector<double> &paraValue,
+				   std::vector<std::vector<size_t>> &indValue);
 
   ///
   /// @brief Derivative function for this reaction class
@@ -225,8 +235,7 @@ class AreaPotentialSpatialThreshold : public BaseReaction {
 /// where @f$p_{0}=P@f$ is the pressure magnitude, @f$p_{1}@f$ is a flag set to
 /// 1 if a decrease in area is allowed.
 ///
-/// @note This uses a different version of area calculation compared to the
-/// other AreaPotential versions (possibly better).
+/// @see Pressure2D::AreaPotential
 /// @see TargetAreaFromPressure
 ///
 class AreaPotentialTargetArea : public BaseReaction {

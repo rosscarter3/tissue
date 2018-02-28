@@ -13,29 +13,29 @@
 
 namespace Pressure2D {
 
-EdgeForce::EdgeForce(std::vector<double> &paraValue,
+AreaPotential::AreaPotential(std::vector<double> &paraValue,
                      std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indices
   //
   if (paraValue.size() != 2 || (paraValue[1] != 0.0 && paraValue[1] != 1.0)) {
     std::cerr
-        << "Pressure2D::EdgeForce::"
-        << "EdgeForce() "
+        << "Pressure2D::AreaPotential::"
+        << "AreaPotential() "
         << "Uses two parameters P_force and normalizeVolumeFlag (= 0 or 1)."
         << std::endl;
     exit(EXIT_FAILURE);
   }
 
   if (indValue.size() != 0) {
-    std::cerr << "Pressure2D::EdgeForce::"
-              << "EdgeForce() "
+    std::cerr << "Pressure2D::AreaPotential::"
+              << "AreaPotential() "
               << "No index should be given." << std::endl;
     exit(EXIT_FAILURE);
   }
 
   // Set the variable values
   //
-  setId("Pressure2D::EdgeForce");
+  setId("Pressure2D::AreaPotential");
   setParameter(paraValue);
   setVariableIndex(indValue);
 
@@ -47,9 +47,9 @@ EdgeForce::EdgeForce(std::vector<double> &paraValue,
   setParameterId(tmp);
 }
 
-void EdgeForce::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                       DataMatrix &vertexData, DataMatrix &cellDerivs,
-                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs) {
+void AreaPotential::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+			   DataMatrix &vertexData, DataMatrix &cellDerivs,
+			   DataMatrix &wallDerivs, DataMatrix &vertexDerivs) {
   // NOTE: Assuming cells and vertices are sorted, and that we are working in
   // 2 dimensions.
 
@@ -82,28 +82,28 @@ void EdgeForce::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
   }
 }
 
-AreaPotential::AreaPotential(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue) {
+AreaPotentialTri::AreaPotentialTri(std::vector<double> &paraValue,
+				   std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
   //
   if (paraValue.size() != 2 && paraValue.size() != 3) {
-    std::cerr << "Pressure2D::AreaPotential::"
-              << "AreaPotential() "
+    std::cerr << "Pressure2D::AreaPotentialTri::"
+              << "AreaPotentialTri() "
               << "Uses two or three parameters p0=P_force, "
               << "p1=flag_Vnorm(=1/0), [p2=flag_internalCellsOnly(=1/0)]."
               << std::endl;
     exit(EXIT_FAILURE);
   }
   if (paraValue[1] != 0 && paraValue[1] != 1) {
-    std::cerr << "Pressure2D::AreaPotential::"
-              << "AreaPotential() "
+    std::cerr << "Pressure2D::AreaPotentialTri::"
+              << "AreaPotentialTri() "
               << "p1=flag_Vnorm(=1/0), is a flag and needs to be set to 0 or 1."
               << std::endl;
     exit(EXIT_FAILURE);
   }
   if (paraValue.size() > 2 && (paraValue[2] != 0 && paraValue[2] != 1)) {
-    std::cerr << "Pressure2D::AreaPotential::"
-              << "AreaPotential() "
+    std::cerr << "Pressure2D::AreaPotentialTri::"
+              << "AreaPotentialTri() "
               << "p2=flag_InternalCellsOnly(=1/0), is a flag and needs to be "
                  "set to 0 or 1."
               << std::endl
@@ -111,14 +111,14 @@ AreaPotential::AreaPotential(std::vector<double> &paraValue,
     exit(EXIT_FAILURE);
   }
   if (indValue.size() != 0) {
-    std::cerr << "Pressure2D::AreaPotential::"
-              << "AreaPotential() "
+    std::cerr << "Pressure2D::AreaPotentialTri::"
+              << "AreaPotentialTri() "
               << "No index should be given." << std::endl;
     exit(EXIT_FAILURE);
   }
   // Set the variable values
   //
-  setId("Pressure2D::AreaPotential");
+  setId("Pressure2D::AreaPotentialTri");
   setParameter(paraValue);
   setVariableIndex(indValue);
 
@@ -133,7 +133,7 @@ AreaPotential::AreaPotential(std::vector<double> &paraValue,
   setParameterId(tmp);
 }
 
-void AreaPotential::derivs(Tissue &T, DataMatrix &cellData,
+void AreaPotentialTri::derivs(Tissue &T, DataMatrix &cellData,
                            DataMatrix &wallData, DataMatrix &vertexData,
                            DataMatrix &cellDerivs, DataMatrix &wallDerivs,
                            DataMatrix &vertexDerivs) {
@@ -207,26 +207,26 @@ void AreaPotential::derivs(Tissue &T, DataMatrix &cellData,
   }
 }
 
-AreaPotentialSpatialThreshold::AreaPotentialSpatialThreshold(
+AreaPotentialTriSpatialThreshold::AreaPotentialTriSpatialThreshold(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
   //
   if (paraValue.size() != 2) {
-    std::cerr << "Pressure2D::AreaPotentialSpatialThreshold::"
-              << "AreaPotentialSpatialThreshold() "
+    std::cerr << "Pressure2D::AreaPotentialTriSpatialThreshold::"
+              << "AreaPotentialTriSpatialThreshold() "
               << "Uses two parameters P_force and X_th.\n";
     exit(EXIT_FAILURE);
   }
   if (indValue.size() != 1 || indValue[0].size() != 1) {
-    std::cerr << "AreaPotentialSpatialThreshold::"
-              << "AreaPotentialSpatialThreshold() "
+    std::cerr << "AreaPotentialTriSpatialThreshold::"
+              << "AreaPotentialTriSpatialThreshold() "
               << "One index given (direction for threshold).\n";
     exit(EXIT_FAILURE);
   }
   // Set the variable values
   //
-  setId("Pressure2D::AreaPotentialSpatialThreshold");
+  setId("Pressure2D::AreaPotentialTriSpatialThreshold");
   setParameter(paraValue);
   setVariableIndex(indValue);
 
@@ -238,7 +238,7 @@ AreaPotentialSpatialThreshold::AreaPotentialSpatialThreshold(
   setParameterId(tmp);
 }
 
-void AreaPotentialSpatialThreshold::derivs(Tissue &T, DataMatrix &cellData,
+void AreaPotentialTriSpatialThreshold::derivs(Tissue &T, DataMatrix &cellData,
                                            DataMatrix &wallData,
                                            DataMatrix &vertexData,
                                            DataMatrix &cellDerivs,

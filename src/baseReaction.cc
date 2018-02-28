@@ -131,12 +131,12 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   //Mechanical interactions between vertices
   //mechanical.h,mechanical.cc
   // namespace Pressure2D
- else if(idValue=="Pressure2D::EdgeForce")
-   return new Pressure2D::EdgeForce(paraValue,indValue);
  else if(idValue=="Pressure2D::AreaPotential")
    return new Pressure2D::AreaPotential(paraValue,indValue);
- else if(idValue=="Pressure2D::AreaPotentialSpatialThreshold")
-   return new Pressure2D::AreaPotentialSpatialThreshold(paraValue,indValue);
+ else if(idValue=="Pressure2D::AreaPotentialTri")
+   return new Pressure2D::AreaPotentialTri(paraValue,indValue);
+ else if(idValue=="Pressure2D::AreaPotentialTriSpatialThreshold")
+   return new Pressure2D::AreaPotentialTriSpatialThreshold(paraValue,indValue);
  else if (idValue == "Pressure2D::AreaPotentialTargetArea")
    return new Pressure2D::AreaPotentialTargetArea(paraValue, indValue);
   // Pressure forces implemented assuming a CenterTriangulation
