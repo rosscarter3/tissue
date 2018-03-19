@@ -238,10 +238,12 @@ void RK5Adaptive::simulate(size_t verbose)
         wallData_.size() != yScalW.size() ||
         vertexData_.size() != yScalV.size())
       {
-        std::cerr << "RK5Adaptive::simulate() WARNING"
-                  << " rescaling temporary vectors not adopted for "
-                  << "center triangulation." << std::endl;
-        yScalC.resize(cellData_.size(), yScalC[0]);
+	if (verbose) {
+	  std::cerr << "RK5Adaptive::simulate() WARNING"
+		    << " rescaling temporary vectors not adopted for "
+		    << "center triangulation." << std::endl;
+	}
+	yScalC.resize(cellData_.size(), yScalC[0]);
         yScalW.resize(wallData_.size(), yScalW[0]);
         yScalV.resize(vertexData_.size(), yScalV[0]);
         yTempC.resize(cellData_.size(), yTempC[0]);
