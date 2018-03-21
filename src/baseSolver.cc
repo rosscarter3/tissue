@@ -1697,7 +1697,20 @@ void BaseSolver::print(std::ostream &os) {
     //   }
     // }
   }
-
+  else if (printFlag_==77) { //print cell information in simple format
+    for (size_t cellind = 0; cellind < cellData_.size(); cellind++) {
+      std::vector<double> o;
+      o = T_->cell(cellind).positionFromVertex(vertexData_);
+      
+      os << cellind << " " << T_->cell(cellind).calculateVolume(vertexData_) << " "
+	 << T_->cell(cellind).numVertex() << " " << o[0] << " " << o[1] << " ";
+      for (size_t vInd=0; vInd<T_->cell(cellind).numVertex(); vInd++) {
+	size_t vertexIndex = T_->cell(cellind).vertex(vInd)->index();
+	os << vertexData_[vertexIndex][0] << " " << vertexData_[vertexIndex][1] << " ";
+      }
+      os << std::endl;
+    }
+  }
   else if (printFlag_ == 96) {
     size_t dimensions = vertexData_[0].size();
 
