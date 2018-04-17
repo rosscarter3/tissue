@@ -151,7 +151,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
 
-  // Forces acting on vertices
+  // Forces acting on vertices, collected in namespace Force
  else if(idValue=="VertexForceOrigoFromIndex")
    return new VertexForceOrigoFromIndex(paraValue,indValue);
  else if(idValue=="CellForceOrigoFromIndex")
@@ -162,12 +162,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new SphereCylinderForce(paraValue,indValue);
  else if(idValue=="SphereCylinderForceFromRadius")
    return new SphereCylinderForceFromRadius(paraValue,indValue);
- else if(idValue=="InfiniteWallForce")
-   return new InfiniteWallForce(paraValue,indValue);
-  else if(idValue=="EpidermalVertexForce")
-    return new EpidermalVertexForce(paraValue,indValue);
-  else if (idValue == "EpidermalRadialForce")
-    return new EpidermalRadialForce(paraValue, indValue);
+ else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
+   return new Force::InfiniteWall(paraValue,indValue);
+  else if(idValue=="Force::EpidermalCoordinate")
+    return new Force::EpidermalCoordinate(paraValue,indValue);
+  else if (idValue == "Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
+    return new Force::EpidermalRadial(paraValue, indValue);
+
   else if (idValue == "PerpendicularWallPressure")
     return new PerpendicularWallPressure(paraValue, indValue);
   else if (idValue == "VertexFromCellPlane")
@@ -597,6 +598,14 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
   // Obselete reactions
+  else if(idValue=="EpidermalVertexForce") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction EpidermalVertexForce "
+	      << "has been replaced by Force::EpidermalCoordinate."
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
+    
   else if(idValue == "WallGrowthExponentialStressTruncated") {
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction WallGrowthExponentialStressTruncated "
