@@ -430,7 +430,23 @@ class TargetAreaFromPressure : public BaseReaction {
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-//! Updates vertices from cells via a power diagram potential
+///
+/// @brief Updates vertices from cells via a power diagram potential
+///
+/// @details Power diagrams is a version of voronoi-tesselation where different 'cells'
+/// are allowed to have different sizes. See e.g.
+/// F. AURENHAMMER (1987) POWER DIAGRAMS: PROPERTIES, ALGORITHMS AND APPLICATIONS
+/// SIAM J Computing 16:78-96.
+/// Given that cell sizes are stored, power diagrams can be used to calculate an 'optimal'
+/// position of a vertex connected to threee cells. This function then updates the vertex
+/// position towards this optimal position with a rate @f$p_0@f$. In the model file
+/// the reaction is given by
+/// @verbatim
+/// VertexFromCellPowerDiagram 1 1 1
+/// K_force
+/// cellSizeIndex
+/// @endverbatim
+///
 class VertexFromCellPowerdiagram : public BaseReaction {
   public:
   VertexFromCellPowerdiagram(std::vector<double> &paraValue,

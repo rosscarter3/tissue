@@ -823,27 +823,27 @@ VertexFromCellPowerdiagram::VertexFromCellPowerdiagram(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
   if (paraValue.size() != 1) {
     std::cerr << "VertexFromCellPowerdiagram::"
               << "VertexFromCellPowerdiagram() "
               << "Uses one parameter K_force.\n";
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   if (indValue.size() != 1 || indValue[0].size() != 1) {
     std::cerr << "VertexFromCellPowerdiagram::"
               << "VertexFromCellPowerdiagram() "
               << "Cell radius index given.\n";
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   // Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
   setId("VertexFromCellPowerdiagram");
   setParameter(paraValue);
   setVariableIndex(indValue);
 
   // Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<std::string> tmp(numParameter());
   tmp[0] = "K_force";
   setParameterId(tmp);
