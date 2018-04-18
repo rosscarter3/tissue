@@ -1330,53 +1330,6 @@ class AngleVector : public BaseReaction {
 };
 
 ///
-/// @brief Updates position of vertices in an interwall on a cylinderical
-/// template due to the force applied axially and tensional to the regions with
-/// z between a and a+d(upward) and -a and -a-d(downward) resembling Hypocotyl
-/// axial growth.
-///
-/// @details In a model file the reaction is defined as:
-/// @verbatim
-/// VertexFromHypocotylGrowth 4 0
-/// Y0 a d F
-/// @endverbatim
-///
-class VertexFromHypocotylGrowth : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromHypocotylGrowth(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
 /// @brief Calculates the maximum velocity of vertices
 /// and stores it in a given index in cellData vector
 /// to check the closeness to mechanical equilibrium

@@ -170,7 +170,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Force::EpidermalCoordinate(paraValue,indValue);
   else if (idValue == "Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
     return new Force::EpidermalRadial(paraValue, indValue);
-
+  else if(idValue=="Force::Axial")
+    return new Force::Axial(paraValue,indValue);
+  
   else if (idValue == "PerpendicularWallPressure")
     return new PerpendicularWallPressure(paraValue, indValue);
   else if (idValue == "VertexFromCellPlane")
@@ -211,8 +213,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new CalculateAngleVectorXYplane(paraValue,indValue);
   else if(idValue=="AngleVector")
     return new AngleVector(paraValue,indValue);
-  else if(idValue=="VertexFromHypocotylGrowth")
-    return new VertexFromHypocotylGrowth(paraValue,indValue);
   else if(idValue=="maxVelocity")
     return new maxVelocity(paraValue,indValue);
 
@@ -600,6 +600,14 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
   // Obselete reactions
+  else if(idValue=="VertexFromHypocotylGrowth") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction VertexFromHypocotylGrowth "
+	      << "has been replaced by Force::Axial. "
+	      << "See documentation for alternative versions."
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
   else if(idValue=="EpidermalVertexForce") {
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction EpidermalVertexForce "
