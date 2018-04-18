@@ -215,8 +215,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromHypocotylGrowth(paraValue,indValue);
   else if(idValue=="maxVelocity")
     return new maxVelocity(paraValue,indValue);
-  else if (idValue == "DebugReaction")
-    return new DebugReaction(paraValue, indValue);
 
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells
@@ -546,7 +544,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new FlagAddValue(paraValue, indValue);
   else if (idValue == "CopyVariable")
     return new CopyVariable(paraValue, indValue);
-
+  else if (idValue == "DebugReaction")
+    return new DebugReaction(paraValue, indValue);
+  
   // cellTime.h
   else if (idValue=="CellTimeDerivative")
     return new CellTimeDerivative(paraValue, indValue);
