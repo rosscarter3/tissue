@@ -69,8 +69,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
-  else if(idValue == "MoveVertexRadially")
-    return new MoveVertexRadially(paraValue, indValue);
+  // HJ: Move these to Force namespace
   else if(idValue == "MoveEpidermalVertexRadially")
     return new MoveEpidermalVertexRadially(paraValue, indValue);
   else if(idValue == "MoveVerteX")
@@ -81,6 +80,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new MoveVertexRadiallycenterTriangulation(paraValue, indValue);
   else if(idValue == "MoveVertexSphereCylinder")
     return new MoveVertexSphereCylinder(paraValue, indValue);
+
   else if (idValue == "WaterVolumeFromTurgor")
     return new WaterVolumeFromTurgor(paraValue, indValue);
   else if (idValue == "DilutionFromVertexDerivs")
@@ -156,7 +156,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if (idValue == "PerpendicularWallPressure")
    return new PerpendicularWallPressure(paraValue, indValue);
 
-  // namespace FacePressure
+  // HJ: create namespace FacePressure for these
   else if (idValue == "VertexFromCellPlane")
     return new VertexFromCellPlane(paraValue, indValue);
   else if (idValue == "VertexFromCellPlaneLinear")
@@ -204,6 +204,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new Force::InfiniteWall(paraValue,indValue);
   else if(idValue=="Force::EpidermalCoordinate")
     return new Force::EpidermalCoordinate(paraValue,indValue);
+  else if(idValue=="Force::Radial" || idValue == "MoveVertexRadially")
+    return new Force::Radial(paraValue, indValue);
   else if (idValue=="Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
     return new Force::EpidermalRadial(paraValue, indValue);
   else if(idValue=="Force::IndexRadial" || idValue=="VertexForceOrigoFromIndex")

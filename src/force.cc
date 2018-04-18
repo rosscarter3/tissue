@@ -138,6 +138,83 @@ namespace Force {
     }
   }
   
+  Radial::
+  Radial(std::vector<double> &paraValue, 
+	 std::vector< std::vector<size_t> > 
+	 &indValue ) {
+    
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=2 || ( paraValue[1]!=0 && paraValue[1]!=1) ) {
+      std::cerr << "Force::Radial::"
+		<< "Radial() "
+		<< "Uses two parameters k_growth and r_pow (0,1)" << std::endl;
+      exit(EXIT_FAILURE);
+    }  
+    if( indValue.size() != 0 ) {
+      std::cerr << "Force::Radial::"
+		<< "Radial() "
+		<< "No variable index is used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::Radial");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "k_growth";
+    tmp[0] = "r_pow";
+    setParameterId( tmp );
+  }
+
+  void Radial::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    size_t numVertices = T.numVertex();
+    size_t dimension=vertexData[0].size();
+    
+    for( size_t i=0 ; i<numVertices ; ++i ) {
+      double fac=parameter(0);
+      if( parameter(1)==0.0 ) {
+	double r=0.0;
+	for( size_t d=0 ; d<dimension ; ++d )
+	  r += vertexData[i][d]*vertexData[i][d];
+	if( r>0.0 )
+	  r = std::sqrt(r);
+	if( r>0.0 )
+	  fac /= r;
+	else
+	  fac=0.0;
+      }
+      for( size_t d=0 ; d<dimension ; ++d )
+	vertexDerivs[i][d] += fac*vertexData[i][d];
+    }
+  }
+  
+  void Radial::derivsWithAbs(Tissue &T,
+			     DataMatrix &cellData,
+			     DataMatrix &wallData,
+			     DataMatrix &vertexData,
+			     DataMatrix &cellDerivs,
+			     DataMatrix &wallDerivs,
+			     DataMatrix &vertexDerivs,
+			     DataMatrix &sdydtCell,
+			     DataMatrix &sdydtWall,
+			     DataMatrix &sdydtVertex )  {
+    return derivs(T,cellData,wallData,vertexData,cellDerivs,wallDerivs,vertexDerivs);
+  }
+  
   EpidermalRadial::EpidermalRadial(
 				   std::vector<double> &paraValue,
 				   std::vector<std::vector<size_t>> &indValue) {

@@ -539,7 +539,7 @@ class PerpendicularWallPressure : public BaseReaction {
 
 ///
 /// @brief Updates vertices from an 'internal pressure' term defined to act in the cell
-/// normal direction.
+/// (face) normal direction.
 ///
 /// @details This function calculates the area of a cell and then distribute a
 /// force 'outwards' among the cell vertices. It relies on that the PCA cell
