@@ -69,15 +69,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
-  // HJ: Move these to Force namespace
+  // HJ: Move these to the Force namespace (force.h). Some needs to be merged with other reactions
   else if(idValue == "MoveEpidermalVertexRadially")
     return new MoveEpidermalVertexRadially(paraValue, indValue);
   else if(idValue == "MoveVerteX")
     return new MoveVerteX(paraValue, indValue);
   else if(idValue == "MoveVertexY")
       return new MoveVertexY(paraValue, indValue);
-  else if(idValue == "MoveVertexRadiallycenterTriangulation")
-    return new MoveVertexRadiallycenterTriangulation(paraValue, indValue);
   else if(idValue == "MoveVertexSphereCylinder")
     return new MoveVertexSphereCylinder(paraValue, indValue);
 
@@ -194,18 +192,23 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
- else if(idValue=="CylinderForce")
-   return new CylinderForce(paraValue,indValue);
- else if(idValue=="SphereCylinderForce")
-   return new SphereCylinderForce(paraValue,indValue);
- else if(idValue=="SphereCylinderForceFromRadius")
-   return new SphereCylinderForceFromRadius(paraValue,indValue);
- else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
-   return new Force::InfiniteWall(paraValue,indValue);
+  // HJ: some yet needs to be moved from mechanical.h
+  else if(idValue=="CylinderForce")
+    return new CylinderForce(paraValue,indValue);
+  else if(idValue=="SphereCylinderForce")
+    return new SphereCylinderForce(paraValue,indValue);
+  else if(idValue=="SphereCylinderForceFromRadius")
+    return new SphereCylinderForceFromRadius(paraValue,indValue);
+  else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
+    return new Force::InfiniteWall(paraValue,indValue);
   else if(idValue=="Force::EpidermalCoordinate")
     return new Force::EpidermalCoordinate(paraValue,indValue);
   else if(idValue=="Force::Radial" || idValue == "MoveVertexRadially")
     return new Force::Radial(paraValue, indValue);
+  else if(idValue=="Force::CenterTriangulation::Radial" ||
+	  idValue=="CenterTriangulation::Force::Radial" ||
+	  idValue == "MoveVertexRadiallycenterTriangulation")
+    return new Force::CenterTriangulation::Radial(paraValue, indValue);
   else if (idValue=="Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
     return new Force::EpidermalRadial(paraValue, indValue);
   else if(idValue=="Force::IndexRadial" || idValue=="VertexForceOrigoFromIndex")
@@ -225,7 +228,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue=="VertexFromExternalWall")
     return new VertexFromExternalWall(paraValue,indValue);
   
-
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells
   else if (idValue == "CenterTriangulation::Initiate")

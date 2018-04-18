@@ -108,7 +108,7 @@ namespace Force {
   ///
   /// @brief Growth via vertex forces radially outwards
   ///
-  /// The tissue grows from vertex movement radially outwards. The update is given by
+  /// @details The tissue grows from vertex movement radially outwards. The update is given by
   /// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
   /// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
   /// where @f$ p_{0} @f$ is the force/rate (@f$ k_{growth} @f$),
@@ -126,7 +126,7 @@ namespace Force {
     ///
     /// @brief Main constructor
     ///
-    /// This is the main constructor which sets the parameters and variable
+    /// @details This is the main constructor which sets the parameters and variable
     /// indices that defines the reaction.
     ///
     /// @param paraValue vector with parameters
@@ -167,6 +167,60 @@ namespace Force {
 		       DataMatrix &sdydtWall,
 		       DataMatrix &sdydtVertex );
   };
+
+  namespace CenterTriangulation {
+    ///
+    /// @brief Growth via a force acting on vertices radially outwards
+    ///
+    ///  The tissue grows from vertex movement radially outwards,  and also
+    /// includes moving the vertex defining the 'center' of the cells in the
+    /// center triangulated mesh. The update is given by
+    /// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
+    /// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
+    ///
+    /// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
+    /// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
+    /// In a model file the reaction is defined as
+    /// @verbatim
+    /// Force::CenterTriangulation::Radial 2 1 1
+    /// p_0 p_1
+    /// InternalVarStartIndex
+    /// @endverbatim
+    /// @see Force::Radial (same but without moving the central vertices)
+    /// @note Used to be named MoveVertexRadiallycenterTriangulation (still allowed).
+    ///
+    class Radial : public BaseReaction {
+      
+    public:
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      Radial(std::vector<double> &paraValue,
+	     std::vector< std::vector<size_t> >
+	     &indValue );
+      ///
+      /// @brief Derivative function for this reaction class
+      ///
+      /// @see BaseReaction::derivs(Tissue &T,...)
+      ///
+      void derivs(Tissue &T,
+		  DataMatrix &cellData,
+		  DataMatrix &wallData,
+		  DataMatrix &vertexData,
+		  DataMatrix &cellDerivs,
+		  DataMatrix &wallDerivs,
+		  DataMatrix &vertexDerivs );
+    };
+  } // end namespace CenterTriangulation
   
   ///
   /// @brief Applies a force on epidermal vertices in a radial direction
