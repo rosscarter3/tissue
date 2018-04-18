@@ -15,6 +15,7 @@
 #include "creation.h"
 #include "degradation.h"
 #include "directionReaction.h"
+#include "force.h"
 #include "grn.h"
 #include "growth.h"
 #include "mechanical.h"
@@ -150,8 +151,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
-
+  
   // Forces acting on vertices, collected in namespace Force
+  // force.h, force.cc
  else if(idValue=="VertexForceOrigoFromIndex")
    return new VertexForceOrigoFromIndex(paraValue,indValue);
  else if(idValue=="CellForceOrigoFromIndex")
