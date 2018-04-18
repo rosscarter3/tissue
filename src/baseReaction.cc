@@ -140,6 +140,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new Pressure2D::AreaPotentialTriSpatialThreshold(paraValue,indValue);
  else if (idValue == "Pressure2D::AreaPotentialTargetArea")
    return new Pressure2D::AreaPotentialTargetArea(paraValue, indValue);
+
   // Pressure forces implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
@@ -147,34 +148,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
+
  else if (idValue == "TargetAreaFromPressure")
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
-  
-  // Forces acting on vertices, collected in namespace Force
-  // force.h, force.cc
- else if(idValue=="VertexForceOrigoFromIndex")
-   return new VertexForceOrigoFromIndex(paraValue,indValue);
- else if(idValue=="CellForceOrigoFromIndex")
-   return new CellForceOrigoFromIndex(paraValue,indValue);
- else if(idValue=="CylinderForce")
-   return new CylinderForce(paraValue,indValue);
- else if(idValue=="SphereCylinderForce")
-   return new SphereCylinderForce(paraValue,indValue);
- else if(idValue=="SphereCylinderForceFromRadius")
-   return new SphereCylinderForceFromRadius(paraValue,indValue);
- else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
-   return new Force::InfiniteWall(paraValue,indValue);
-  else if(idValue=="Force::EpidermalCoordinate")
-    return new Force::EpidermalCoordinate(paraValue,indValue);
-  else if (idValue == "Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
-    return new Force::EpidermalRadial(paraValue, indValue);
-  else if(idValue=="Force::Axial")
-    return new Force::Axial(paraValue,indValue);
-  
-  else if (idValue == "PerpendicularWallPressure")
-    return new PerpendicularWallPressure(paraValue, indValue);
+ else if (idValue == "PerpendicularWallPressure")
+   return new PerpendicularWallPressure(paraValue, indValue);
+
+  // namespace FacePressure
   else if (idValue == "VertexFromCellPlane")
     return new VertexFromCellPlane(paraValue, indValue);
   else if (idValue == "VertexFromCellPlaneLinear")
@@ -195,6 +177,41 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromCellPlaneSphereCylinderConcentrationHill(paraValue, indValue);
   else if (idValue == "VertexFromCellPlaneTriangular")
     return new VertexFromCellPlaneTriangular(paraValue, indValue);
+
+  // HJ: move these (and some from adhocReaction to a calculate namespace.
+  else if(idValue=="TemplateVolumeChange")
+    return new TemplateVolumeChange(paraValue,indValue);
+  else if(idValue=="CalculateAngleVectors")
+    return new CalculateAngleVectors(paraValue,indValue);
+  else if(idValue=="CalculateAngleVectorXYplane")
+    return new CalculateAngleVectorXYplane(paraValue,indValue);
+  else if(idValue=="AngleVector")
+    return new AngleVector(paraValue,indValue);
+
+  // HJ: should this be in adhocReaction?
+  else if(idValue=="maxVelocity")
+    return new maxVelocity(paraValue,indValue);
+  
+  // Forces acting on vertices, collected in namespace Force
+  // force.h, force.cc
+ else if(idValue=="CylinderForce")
+   return new CylinderForce(paraValue,indValue);
+ else if(idValue=="SphereCylinderForce")
+   return new SphereCylinderForce(paraValue,indValue);
+ else if(idValue=="SphereCylinderForceFromRadius")
+   return new SphereCylinderForceFromRadius(paraValue,indValue);
+ else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
+   return new Force::InfiniteWall(paraValue,indValue);
+  else if(idValue=="Force::EpidermalCoordinate")
+    return new Force::EpidermalCoordinate(paraValue,indValue);
+  else if (idValue=="Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
+    return new Force::EpidermalRadial(paraValue, indValue);
+  else if(idValue=="Force::IndexRadial" || idValue=="VertexForceOrigoFromIndex")
+    return new Force::IndexRadial(paraValue,indValue);
+  else if(idValue=="Force::CellIndexRadial" || idValue=="CellForceOrigoFromIndex")
+    return new Force::CellIndexRadial(paraValue,indValue);
+  else if(idValue=="Force::Axial")
+    return new Force::Axial(paraValue,indValue);
   else if(idValue=="VertexFromForce")
     return new VertexFromForce(paraValue,indValue);
   else if(idValue=="VertexFromForceLinear")
@@ -205,16 +222,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromParabolid(paraValue,indValue);
   else if(idValue=="VertexFromExternalWall")
     return new VertexFromExternalWall(paraValue,indValue);
-  else if(idValue=="TemplateVolumeChange")
-    return new TemplateVolumeChange(paraValue,indValue);
-  else if(idValue=="CalculateAngleVectors")
-    return new CalculateAngleVectors(paraValue,indValue);
-  else if(idValue=="CalculateAngleVectorXYplane")
-    return new CalculateAngleVectorXYplane(paraValue,indValue);
-  else if(idValue=="AngleVector")
-    return new AngleVector(paraValue,indValue);
-  else if(idValue=="maxVelocity")
-    return new maxVelocity(paraValue,indValue);
+  
 
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells

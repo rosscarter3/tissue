@@ -469,38 +469,6 @@ class VertexFromCellPowerdiagram : public BaseReaction {
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-//! Applies a force towards or from origo on vertices specified by indices
-class VertexForceOrigoFromIndex : public BaseReaction {
- public:
-  VertexForceOrigoFromIndex(std::vector<double> &paraValue,
-			    std::vector<std::vector<size_t>> &indValue);
-  
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-	      DataMatrix &vertexData, DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force towards or from origo on vertices of cells
-class CellForceOrigoFromIndex : public BaseReaction {
- public:
-  CellForceOrigoFromIndex(std::vector<double> &paraValue,
-			  std::vector<std::vector<size_t>> &indValue);
-  
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-	      DataMatrix &vertexData, DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
   //! Applies a force towards or from a Cylinder surface
   class CylinderForce : public BaseReaction {
   public:

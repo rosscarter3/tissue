@@ -187,17 +187,130 @@ namespace Force {
       
       double x = vertex.position(0);
       double y = vertex.position(1);
-      double A = std::sqrt(x * x + y * y);
-      if (A == 0) continue;
-      x /= A;
-      y /= A;
+      double R = std::sqrt(x * x + y * y);
+      if (R == 0) continue;
+      x /= R;
+      y /= R;
       
-      // 		std::cerr << "Vertex " << vertex.index() << std::endl;
-      // 		std::cerr << " x = " << x << std::endl;
-      // 		std::cerr << " y = " << y << std::endl;
+      // std::cerr << "Vertex " << vertex.index() << std::endl;
+      // std::cerr << " x = " << x << std::endl;
+      // std::cerr << " y = " << y << std::endl;
       
-      vertexDerivs[vertex.index()][0] += -parameter(0) * x;
-      vertexDerivs[vertex.index()][1] += -parameter(0) * y;
+      vertexDerivs[vertex.index()][0] += parameter(0) * x;
+      vertexDerivs[vertex.index()][1] += parameter(0) * y;
+    }
+  }
+
+  IndexRadial::IndexRadial(std::vector<double> &paraValue,
+			   std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 2) {
+      std::cerr << "Force::IndexRadial::"
+		<< "IndexRadial() "
+		<< "Uses two parameters K_force direction_flag(-1 -> inwards)"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (paraValue[1] != 1.0 && paraValue[1] != -1.0) {
+      std::cerr << "Force::IndexRadial::"
+		<< "IndexRadial() "
+		<< "direction_flag (second parameter) needs to be 1 (outward) "
+		<< "or -1 (inwards)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 1 || indValue[0].size() < 1) {
+      std::cerr << "Force::IndexRadial::"
+		<< "IndexRadial() "
+		<< "Vertex indices to be updated in first level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::IndexRadial");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "K_force";
+    tmp[1] = "direction_flag";
+    setParameterId(tmp);
+  }
+  
+  void IndexRadial::derivs(Tissue &T, DataMatrix &cellData,
+			   DataMatrix &wallData,
+			   DataMatrix &vertexData,
+			   DataMatrix &cellDerivs,
+			   DataMatrix &wallDerivs,
+			   DataMatrix &vertexDerivs) {
+    size_t dimension = vertexData[variableIndex(0, 0)].size();
+    double coeff = parameter(0) * parameter(1);
+    // For each vertex in list
+    for (size_t k = 0; k < numVariableIndex(0); ++k) {
+      size_t i = variableIndex(0, k);
+      for (size_t d = 0; d < dimension; d++)
+	vertexDerivs[i][d] += coeff * vertexData[i][d];
+    }
+  }
+  
+  CellIndexRadial::CellIndexRadial(std::vector<double> &paraValue,
+				   std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 2) {
+      std::cerr << "Force::CellIndexRadial::"
+		<< "CellIndexRadial() "
+		<< "Uses two parameters K_force direction_flag (1 -> outwards, "
+		<< "-1 -> inwards)"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (paraValue[1] != 1.0 && paraValue[1] != -1.0) {
+      std::cerr << "Force::CellIndexRadial::"
+		<< "CellIndexRadial() "
+		<< "direction_flag (second parameter) needs to be 1 (outward) "
+		<< "or -1 (inwards)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 1 || indValue[0].size() < 1) {
+      std::cerr << "Force::CellIndexRadial::"
+		<< "CellIndexRadial() "
+		<< "Cell indices for which vertices are to be updated to be "
+		<< "provided in first level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::CellIndexRadial");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "K_force";
+    tmp[1] = "direction_flag";
+    setParameterId(tmp);
+  }
+  
+  void CellIndexRadial::derivs(Tissue &T, DataMatrix &cellData,
+			       DataMatrix &wallData,
+			       DataMatrix &vertexData,
+			       DataMatrix &cellDerivs,
+			       DataMatrix &wallDerivs,
+			       DataMatrix &vertexDerivs) {
+    double coeff = parameter(0) * parameter(1);
+    size_t dimension = vertexData[0].size();
+    // For each vertex in cell list
+    for (size_t k = 0; k < numVariableIndex(0); ++k) {
+      size_t cellI = variableIndex(0, k);
+      for (size_t l = 0; l < T.cell(cellI).numVertex(); ++l) {
+	size_t i = T.cell(cellI).vertex(l)->index();
+	for (size_t d = 0; d < dimension; d++)
+	  vertexDerivs[i][d] += coeff * vertexData[i][d];
+      }
     }
   }
   
