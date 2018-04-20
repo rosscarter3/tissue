@@ -18,6 +18,7 @@
 #include "force.h"
 #include "grn.h"
 #include "growth.h"
+#include "growthForce.h"
 #include "mechanical.h"
 #include "mechanicalSpring.h"
 #include "mechanicalTRBS.h"
@@ -42,30 +43,31 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	      << std::endl;
     exit(EXIT_FAILURE);
   }
-  else if(idValue == "WallGrowth::Constant" )
+  else if(idValue == "WallGrowth::Constant")
     return new WallGrowth::Constant(paraValue, indValue);
-  else if(idValue == "WallGrowthStress" || idValue == "WallGrowth::Stress" )
+  else if(idValue == "WallGrowth::Stress" || idValue == "WallGrowthStress")
     return new WallGrowth::Stress(paraValue, indValue);
-  else if(idValue == "WallGrowthStrain" || idValue == "WallGrowth::Strain" )
+  else if(idValue == "WallGrowth::Strain" || idValue == "WallGrowthStrain")
     return new WallGrowth::Strain(paraValue, indValue);
   else if (idValue == "WallGrowth::CenterTriangulation::Constant" ||
 	   idValue == "CenterTriangulation::WallGrowth::Constant")
     return new WallGrowth::CenterTriangulation::Constant(paraValue, indValue);
-  else if (idValue == "WallGrowthStresscenterTriangulation" ||
-	   idValue == "WallGrowth::CenterTriangulation::Stress" ||
-	   idValue == "CenterTriangulation::WallGrowth::Stress")
+  else if (idValue == "WallGrowth::CenterTriangulation::Stress" ||
+	   idValue == "CenterTriangulation::WallGrowth::Stress" ||
+	   idValue == "WallGrowthStresscenterTriangulation")
     return new WallGrowth::CenterTriangulation::Stress(paraValue, indValue);
-  else if (idValue == "CenterTriangulation::WallGrowth::StrainTRBS")
+  else if (idValue == "WallGrowth::CenterTriangulation::StrainTRBS" ||
+	   idValue == "CenterTriangulation::WallGrowth::StrainTRBS")
     return new WallGrowth::CenterTriangulation::StrainTRBS(paraValue, indValue);
-  else if(idValue == "WallGrowthStressSpatial" || idValue == "WallGrowth::StressSpatial")
+  else if(idValue == "WallGrowth::StressSpatial" || idValue == "WallGrowthStressSpatial")
     return new WallGrowth::StressSpatial(paraValue, indValue);
-  else if(idValue == "WallGrowthStressSpatialSingle" || idValue == "WallGrowth::StressSpatialSingle")
+  else if(idValue == "WallGrowth::StressSpatialSingle" || idValue == "WallGrowthStressSpatialSingle")
     return new WallGrowth::StressSpatialSingle(paraValue, indValue);
-  else if(idValue == "WallGrowthStressConcentrationHill" ||
-	  idValue == "WallGrowth::StressConcentrationHill")
+  else if(idValue == "WallGrowth::StressConcentrationHill" ||
+	  idValue == "WallGrowthStressConcentrationHill")
     return new WallGrowth::StressConcentrationHill(paraValue, indValue);
-  else if(idValue == "WallGrowthConstantStressEpidermalAsymmetric" ||
-	  idValue == "WallGrowth::ConstantStressEpidermalAsymmetric")
+  else if(idValue == "WallGrowth::ConstantStressEpidermalAsymmetric" ||
+	  idValue == "WallGrowthConstantStressEpidermalAsymmetric")
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
@@ -154,7 +156,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if (idValue == "PerpendicularWallPressure")
    return new PerpendicularWallPressure(paraValue, indValue);
 
-  // HJ: create namespace FacePressure for these
+  // HJ: create namespace FacePressure for these and create documentation
   else if (idValue == "VertexFromCellPlane")
     return new VertexFromCellPlane(paraValue, indValue);
   else if (idValue == "VertexFromCellPlaneLinear")
@@ -203,12 +205,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Force::InfiniteWall(paraValue,indValue);
   else if(idValue=="Force::EpidermalCoordinate")
     return new Force::EpidermalCoordinate(paraValue,indValue);
-  else if(idValue=="Force::Radial" || idValue == "MoveVertexRadially")
-    return new Force::Radial(paraValue, indValue);
-  else if(idValue=="Force::CenterTriangulation::Radial" ||
-	  idValue=="CenterTriangulation::Force::Radial" ||
-	  idValue == "MoveVertexRadiallycenterTriangulation")
-    return new Force::CenterTriangulation::Radial(paraValue, indValue);
   else if (idValue=="Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
     return new Force::EpidermalRadial(paraValue, indValue);
   else if(idValue=="Force::IndexRadial" || idValue=="VertexForceOrigoFromIndex")
@@ -227,6 +223,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromParabolid(paraValue,indValue);
   else if(idValue=="VertexFromExternalWall")
     return new VertexFromExternalWall(paraValue,indValue);
+
+  // Growth by adding forces to vertices
+  // GrowthForce.h(.cc)
+  else if(idValue=="GrowthForce::Radial" || idValue == "MoveVertexRadially")
+    return new GrowthForce::Radial(paraValue, indValue);
+  else if(idValue=="GrowthForce::CenterTriangulation::Radial" ||
+	  idValue=="CenterTriangulation::GrowthForce::Radial" ||
+	  idValue == "MoveVertexRadiallycenterTriangulation")
+    return new GrowthForce::CenterTriangulation::Radial(paraValue, indValue);
   
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells
