@@ -38,12 +38,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   //Growth related updates
   //growth.h,growth.cc
-  if(idValue == "WallGrowthExponentialTruncated" ) {
-    std::cerr << "Reaction WallGrowthExponentialTruncated has been replaced by WallGrowth::Constant."
-	      << std::endl;
-    exit(EXIT_FAILURE);
-  }
-  else if(idValue == "WallGrowth::Constant")
+  if(idValue == "WallGrowth::Constant")
     return new WallGrowth::Constant(paraValue, indValue);
   else if(idValue == "WallGrowth::Stress" || idValue == "WallGrowthStress")
     return new WallGrowth::Stress(paraValue, indValue);
@@ -275,48 +270,70 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Bending::AngleRelax(paraValue, indValue);
 
   //creation.h,creation.cc
-  else if(idValue=="CreationZero")
-    return new CreationZero(paraValue,indValue);
-  else if(idValue=="CreationOne")
-    return new CreationOne(paraValue,indValue);
-  else if(idValue=="CreationTwo")
-    return new CreationTwo(paraValue,indValue);
-  else if(idValue=="CreationSpatialSphere")
-    return new CreationSpatialSphere(paraValue,indValue);
-  else if(idValue=="CreationSpatialRing")
-    return new CreationSpatialRing(paraValue,indValue);
-  else if(idValue=="CreationSpatialCoordinate")
-    return new CreationSpatialCoordinate(paraValue,indValue);
-  else if(idValue=="CreationSpatialPlane")
-    return new CreationSpatialPlane(paraValue,indValue);
-  else if(idValue=="CreationFromList")
-    return new CreationFromList(paraValue,indValue);
-  else if(idValue=="CreationOneGeometric")
-    return new CreationOneGeometric(paraValue,indValue);
-  else if(idValue=="creationSinus")
-    return new CreationSinus(paraValue,indValue);
-
+  else if(idValue=="Creation::Zero" ||
+	  idValue=="CreationZero")
+    return new Creation::Zero(paraValue,indValue);
+  else if(idValue=="Creation::One" ||
+	  idValue=="CreationOne")
+    return new Creation::One(paraValue,indValue);
+  else if(idValue=="Creation::Two" ||
+	  idValue=="CreationTwo")
+    return new Creation::Two(paraValue,indValue);
+  else if(idValue=="Creation::SpatialSphere" ||
+	  idValue=="CreationSpatialSphere")
+    return new Creation::SpatialSphere(paraValue,indValue);
+  else if(idValue=="Creation::SpatialRing" ||
+	  idValue=="CreationSpatialRing")
+    return new Creation::SpatialRing(paraValue,indValue);
+  else if(idValue=="Creation::SpatialCoordinate" ||
+	  idValue=="CreationSpatialCoordinate")
+    return new Creation::SpatialCoordinate(paraValue,indValue);
+  else if(idValue=="Creation::SpatialPlane" ||
+	  idValue=="CreationSpatialPlane")
+    return new Creation::SpatialPlane(paraValue,indValue);
+  else if(idValue=="Creation::FromList" ||
+	  idValue=="CreationFromList")
+    return new Creation::FromList(paraValue,indValue);
+  else if(idValue=="Creation::OneGeometric" ||
+	  idValue=="CreationOneGeometric")
+    return new Creation::OneGeometric(paraValue,indValue);
+  else if(idValue=="Creation::Sinus" ||
+	  idValue=="CreationSinus" ||
+	  idValue=="creationSinus") // just because it was accepterd...
+    return new Creation::Sinus(paraValue,indValue);
+  
   //degradation.h,degradation.cc
-  else if(idValue=="DegradationOne")
-    return new DegradationOne(paraValue,indValue);
-  else if(idValue=="DegradationTwo")
-    return new DegradationTwo(paraValue,indValue);
-  else if(idValue=="DegradationN")
-    return new DegradationN(paraValue,indValue);
-  else if(idValue=="DegradationTwoGeometric")
-    return new DegradationTwoGeometric(paraValue,indValue);
-  else if(idValue=="DegradationHill")
-    return new DegradationHill(paraValue,indValue);
-  else if(idValue=="DegradationHillN")
-    return new DegradationHillN(paraValue,indValue);
-  else if(idValue=="DegradationOneWall")
-    return new DegradationOneWall(paraValue,indValue);
-  else if(idValue=="DegradationOneBoundary")
-    return new DegradationOneBoundary(paraValue,indValue);
-  else if(idValue=="DegradationOneFromList")
-    return new DegradationOneFromList(paraValue,indValue);
+  else if(idValue=="Degradation::One" ||
+	  idValue=="DegradationOne")
+    return new Degradation::One(paraValue,indValue);
+  else if(idValue=="Degradation::Two" ||
+	  idValue=="DegradationTwo")
+    return new Degradation::Two(paraValue,indValue);
+  else if(idValue=="Degradation::N" ||
+	  idValue=="DegradationN")
+    return new Degradation::N(paraValue,indValue);
+  else if(idValue=="Degradation::TwoGeometric" ||
+	  idValue=="DegradationTwoGeometric")
+    return new Degradation::TwoGeometric(paraValue,indValue);
+  else if(idValue=="Degradation::Hill" ||
+	  idValue=="DegradationHill")
+    return new Degradation::Hill(paraValue,indValue);
+  else if(idValue=="Degradation::HillN" ||
+	  idValue=="DegradationHillN")
+    return new Degradation::HillN(paraValue,indValue);
+  else if(idValue=="Degradation::OneWall" ||
+	  idValue=="DegradationOneWall")
+    return new Degradation::OneWall(paraValue,indValue);
+  else if(idValue=="Degradation::OneBoundary" ||
+	  idValue=="DegradationOneBoundary")
+    return new Degradation::OneBoundary(paraValue,indValue);
+  else if(idValue=="Degradation::OneFromList" ||
+	  idValue=="DegradationOneFromList")
+    return new Degradation::OneFromList(paraValue,indValue);
+  
   //grn.h,grn.cc
-  else if(idValue=="Hill")
+  else if(idValue=="Grn::Hill" ||
+	  idValue=="Hill")
     return new Hill(paraValue,indValue);
   else if(idValue=="HillGeneralOne")
     return new HillGeneralOne(paraValue,indValue);
@@ -330,7 +347,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Grn(paraValue,indValue);
   else if(idValue=="Gsrn2")
     return new Gsrn2(paraValue,indValue);
-
+  
   //transport.h,transport.cc
   else if(idValue=="MembraneDiffusionSimple")
     return new MembraneDiffusionSimple(paraValue,indValue);
@@ -412,31 +429,23 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new SimpleROPModel7(paraValue,indValue);
   else if(idValue=="UpInternalGradientModel")
     return new UpInternalGradientModel(paraValue,indValue);
-
-   else if(idValue=="DownInternalGradientModel")
+  else if(idValue=="DownInternalGradientModel")
     return new DownInternalGradientModel(paraValue,indValue);
-   else if(idValue=="DownInternalGradientModelGeometric")
+  else if(idValue=="DownInternalGradientModelGeometric")
     return new DownInternalGradientModelGeometric(paraValue,indValue);
-
   else if(idValue=="DownInternalGradientModelSingleCell")
     return new DownInternalGradientModelSingleCell(paraValue,indValue);
-
   else if(idValue=="UpExternalGradientModel")
     return new UpExternalGradientModel(paraValue,indValue);
-
   else if(idValue=="UpInternalGradientModel")
     return new UpInternalGradientModel(paraValue,indValue);
-
   else if(idValue=="AuxinFluxModel")
     return new AuxinFluxModel(paraValue,indValue);
-
- else if(idValue=="IntracellularPartitioning")
+  else if(idValue=="IntracellularPartitioning")
     return new IntracellularPartitioning(paraValue,indValue);
-
- else if(idValue=="IntracellularCoupling")
+  else if(idValue=="IntracellularCoupling")
     return new IntracellularCoupling(paraValue,indValue);
-
- else if(idValue=="IntracellularIndirectCoupling")
+  else if(idValue=="IntracellularIndirectCoupling")
     return new IntracellularIndirectCoupling(paraValue,indValue);
 
   //directionReaction.h, directionUpdate.cc
@@ -594,15 +603,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new MembraneCycling::InternalCellLinear(paraValue, indValue);
   else if (idValue=="MembraneCycling::CellFluxExocytosis")
     return new MembraneCycling::CellFluxExocytosis(paraValue, indValue);
-
- // MembraneCyclingAll.h
+  
+  // MembraneCyclingAll.h
   else if (idValue=="MembraneCyclingAll::Constant")
     return new MembraneCyclingAll::Constant(paraValue, indValue);
   else if (idValue=="MembraneCyclingAll::LocalWallFeedbackNonLinear")
     return new MembraneCyclingAll::LocalWallFeedbackNonLinear(paraValue, indValue);
   else if (idValue=="MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition")
     return new MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition(paraValue, indValue);
-
+  
   //massAction.h
   else if (idValue=="MassAction::General")
     return new MassAction::General(paraValue, indValue);
@@ -620,6 +629,12 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
   // Obselete reactions
+  if(idValue == "WallGrowthExponentialTruncated" ) {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction WallGrowthExponentialTruncated has been replaced by WallGrowth::Constant."
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
   else if(idValue=="VertexFromHypocotylGrowth") {
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction VertexFromHypocotylGrowth "

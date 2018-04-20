@@ -10,749 +10,713 @@
 #include"creation.h"
 #include<cmath>
 
-CreationZero::
-CreationZero(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=1 ) {
-    std::cerr << "CreationZero::"
-	      << "CreationZero() "
-	      << "Uses one parameter k_c (constant production rate)." << std::endl;
-    exit(0);
-  }
-  if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-    std::cerr << "CreationZero::"
-	      << "CreationZero() "
-	      << "Index for variable to be updated given." << std::endl;
-    exit(0);
-  }
-  //Set the variable values
-  //
-  setId("CreationZero");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
+namespace Creation {
+  Zero::
+  Zero(std::vector<double> &paraValue, 
+       std::vector< std::vector<size_t> > 
+       &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::Zero::"
+		<< "Zero() "
+		<< "Uses one parameter k_c (constant production rate)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+      std::cerr << "Creation::Zero::"
+		<< "Zero() "
+		<< "Index for variable to be updated given." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("Creation::Zero");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
   
-  //Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "k_c";
-  setParameterId( tmp );
-}
-
-void CreationZero::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    cellDerivs[cellI][cIndex] += k_c;
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId( tmp );
   }
-}
-
-void CreationZero::
-derivsWithAbs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs,
-	      DataMatrix &sdydtCell,
-	      DataMatrix &sdydtWall,
-	      DataMatrix &sdydtVertex ) 
-{
-  //Do the update for each cell
-  size_t numCells = T.numCell();
   
-  size_t cIndex = variableIndex(0,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    cellDerivs[cellI][cIndex] += k_c;
-    sdydtCell[cellI][cIndex] += k_c;
-  }
-}
-
-CreationOne::
-CreationOne(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=1 ) {
-    std::cerr << "CreationOne::"
-	      << "CreationOne() "
-	      << "Uses one parameter k_c (linear production rate)." << std::endl;
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
-    std::cerr << "CreationOne::"
-	      << "CreationOne() "
-	      << "Index for variable to be updated given in first row and "
-	      << "index for production-dependent variable in 2nd." << std::endl;
-    exit(0);
-  }
-  //Set the variable values
-  //
-  setId("CreationOne");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  //Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "k_c";
-  setParameterId( tmp );
-}
-
-void CreationOne::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex];
-  }
-}
-
-void CreationOne::
-derivsWithAbs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs,
-	      DataMatrix &sdydtCell,
-	      DataMatrix &sdydtWall,
-	      DataMatrix &sdydtVertex ) 
-{
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-  
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    double value = k_c * cellData[cellI][xIndex];
-    cellDerivs[cellI][cIndex] += value;
-    sdydtCell[cellI][cIndex] += value;    
-  }
-}
-
-  
-CreationTwo::
-CreationTwo(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=1 ) {
-    std::cerr << "CreationTwo::"
-	      << "CreationTwo() "
-	      << "Uses one parameter k_c (linear production rate)." << std::endl;
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 2 ) {
-    std::cerr << "CreationOne::"
-	      << "CreationOne() "
-	      << "One index for variable to be updated given in first row and "
-	      << "Two indices for production-dependent variables in 2nd." << std::endl;
-    exit(0);
-  }
-  //Set the variable values
-  //
-  setId("CreationTwo");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  //Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "k_c";
-  setParameterId( tmp );
-}
-
-void CreationTwo::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-  size_t yIndex = variableIndex(1,1);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex] * cellData[cellI][yIndex];
-  }
-}
-
-
-CreationSpatialSphere::
-CreationSpatialSphere(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=4 ) {
-    std::cerr << "CreationSpatialSphere::CreationSpatialSphere() "
-	      << "Uses four parameters V_max R(K_Hill) n_Hill and R_sign\n";
-    exit(0);
-  }
-  if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-    std::cerr << "CreationSpatialSphere::"
-	      << "CreationSpatialSphere() "
-	      << "Index for variable to be updated given." << std::endl;
-    exit(0);
-  }
-  // Sign should be -/+1
-  if( paraValue[3] != -1 && paraValue[3] != 1 ) {
-    std::cerr << "CreationSpatialSphere::CreationSpatialSphere() "
-	      << "R_sign should be +/-1 to set production inside/outside R"
-	      << std::endl;
-    exit(0);
-  }
-	
-  // Set the variable values
-  setId("creationSpatialSphere");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp.resize( numParameter() );
-  tmp[0] = "V_max";
-  tmp[1] = "R (K_Hill)";
-  tmp[2] = "n_Hill";
-  tmp[3] = "R_sign";  
-  setParameterId( tmp );
-}
-
-void CreationSpatialSphere::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  double powK_ = std::pow(parameter(1),parameter(2));
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {
-
-    //Calculate cell center from vertices positions
-    std::vector<double> cellCenter;
-    cellCenter = T.cell(cellI).positionFromVertex(vertexData);
-    assert( cellCenter.size() == vertexData[0].size() );
-    double r=0.0;
-    for( size_t d=0 ; d<cellCenter.size() ; ++d )
-      r += cellCenter[d]*cellCenter[d];
-    r = std::sqrt(r);
-
-    double powR = std::pow(r,parameter(2));
-	
-    if (parameter(3)>0.0)
-      cellDerivs[cellI][cIndex] += parameter(0)*powR/(powK_+powR);
-    else
-      cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powR);
-
-
-  }
-}
-
-CreationSpatialRing::
-CreationSpatialRing(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=5 ) {
-    std::cerr << "CreationSpatialRing::CreationSpatialRing() "
-	      << "Uses five parameters V_max R(K_Hill) r_ring n_Hill and R_sign\n";
-    exit(0);
-  }
-  if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-    std::cerr << "CreationSpatialRing::"
-	      << "CreationSpatialRing() "
-	      << "Index for variable to be updated given." << std::endl;
-    exit(0);
-  }
-  // Sign should be -/+1
-  if( paraValue[4] != -1 && paraValue[4] != 1 ) {
-    std::cerr << "CreationSpatialRing::CreationSpatialRing() "
-	      << "R_sign should be +/-1 to set production inside/outside R"
-	      << std::endl;
-    exit(0);
-  }
-	
-  // Set the variable values
-  setId("creationSpatialRing");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp.resize( numParameter() );
-  tmp[0] = "V_max";
-  tmp[1] = "R (K_Hill)";
-  tmp[2] = "r_ring";
-  tmp[3] = "n_Hill";
-  tmp[4] = "R_sign";  
-  setParameterId( tmp );
-}
-
-void CreationSpatialRing::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  double powK_ = std::pow(parameter(1),parameter(3));
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {
-
-    //Calculate cell center from vertices positions
-    std::vector<double> cellCenter;
-    cellCenter = T.cell(cellI).positionFromVertex(vertexData);
-    assert( cellCenter.size() == vertexData[0].size() );
-    double r=0.0;
-    for( size_t d=0 ; d<cellCenter.size() ; ++d )
-      r += cellCenter[d]*cellCenter[d];
-    r = std::sqrt(r);
-
-    r = std::sqrt( (r - parameter(2)) * (r - parameter(2))  ); // we want the distance to the ring
-
-    double powR = std::pow(r,parameter(3));
-	
-    if (parameter(4)>0.0)
-      cellDerivs[cellI][cIndex] += parameter(0)*powR/(powK_+powR);
-    else
-      cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powR);
-
-
-  }
-}
-
-CreationSpatialCoordinate::
-CreationSpatialCoordinate(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=4 ) {
-    std::cerr << "CreationSpatialCoordinate::CreationSpatialCoordinate() "
-	      << "Uses four parameters V_max X(K_Hill) n_Hill and X_sign\n";
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
-    std::cerr << "CreationSpatialCoordinate::"
-	      << "CreationSpatialCoordinate() "
-	      << "Two levels of indices used: index for variable to be updated given as first index, index for the spatial coordinate to use given as the second index" << std::endl;
-    exit(0);
-  }
-  // Sign should be -/+1
-  if( paraValue[3] != -1 && paraValue[3] != 1 ) {
-    std::cerr << "CreationSpatialCoordinate::CreationSpatialCoordinate() "
-	      << "X_sign should be +/-1 to set production inside/outside X"
-	      << std::endl;
-    exit(0);
-  }
-	
-  // Set the variable values
-  setId("creationSpatialCoordinate");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp.resize( numParameter() );
-  tmp[0] = "V_max";
-  tmp[1] = "X (K_Hill)";
-  tmp[2] = "n_Hill";
-  tmp[3] = "X_sign";  
-  setParameterId( tmp );
-}
-
-void CreationSpatialCoordinate::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-  double powK_ = std::pow(parameter(1),parameter(2));
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {
-
-    //Calculate cell center from vertices positions
-    std::vector<double> cellCenter;
-    cellCenter = T.cell(cellI).positionFromVertex(vertexData);
-    assert( cellCenter.size() == vertexData[0].size() );
-
-    double powX = std::pow(cellCenter[xIndex],parameter(2));
-	
-    if (parameter(3)>0.0)
-      cellDerivs[cellI][cIndex] += parameter(0)*powX/(powK_+powX);
-    else
-      cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powX);
-
-
-  }
-}
-
-CreationSpatialPlane::
-CreationSpatialPlane(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=3 ) {
-    std::cerr << "CreationSpatialPlane::CreationSpatialPlane() "
-	      << "Uses three parameters V_max X(K_Hill) and X_sign\n";
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
-    std::cerr << "CreationSpatialPlane::"
-	      << "CreationSpatialPlane() "
-	      << "Two levels of indices used: index for variable to be updated given as first index, index for the spatial coordinate to use given as the second index" << std::endl;
-    exit(0);
-  }
-  // Sign should be -/+1
-  if( paraValue[2] != -1 && paraValue[2] != 1 ) {
-    std::cerr << "CreationSpatialCoordinate::CreationSpatialCoordinate() "
-	      << "X_sign should be +/-1 to set production inside/outside X"
-	      << std::endl;
-    exit(0);
-  }
-	
-  // Set the variable values
-  setId("creationSpatialCoordinate");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp.resize( numParameter() );
-  tmp[0] = "V_max";
-  tmp[1] = "X (K_Hill)";
-  tmp[2] = "n_Hill";
-  setParameterId( tmp );
-}
-
-void CreationSpatialPlane::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-
-  double X = parameter(1);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {
-
-    //Calculate cell center from vertices positions
-    std::vector<double> cellCenter;
-    cellCenter = T.cell(cellI).positionFromVertex(vertexData);
-    assert( cellCenter.size() == vertexData[0].size() );
-	
-
-    double x_coord = cellCenter[xIndex];
+  void Zero::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
     
-    double deriv_add=0;
-
-    if (parameter(2)<0.0)
-      deriv_add = ((x_coord <= X) ? parameter(0) : 0);
-    else
-      deriv_add = ((x_coord >= X) ? parameter(0) : 0);
-
-    cellDerivs[cellI][cIndex] += deriv_add;
-
-
-  }
-}
-
-
-
-
-
-
-
-CreationFromList::
-CreationFromList(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=1 ) {
-    std::cerr << "CreationFromList::CreationFromList() "
-	      << "Uses one parameter k_c, the constant production rate"
-              <<std::endl;
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() < 1 ) {
-    std::cerr << "CreationFromList::"
-	      << "CreationFromList() "
-	      << "Two levels of indices used: index for variable to be updated given "
-              << "as first index, a list of cell indices given in the second level" 
-              << std::endl;
-    exit(0);
+    size_t cIndex = variableIndex(0,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += k_c;
+    }
   }
   
-	
-  // Set the variable values
-  setId("creationFromList");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "k_c";
-  setParameterId(tmp);
-
-  proCells=indValue[1].size();
-}
-
-void CreationFromList::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  size_t cIndex = variableIndex(0,0);  
-  //For the cells in the list
-  for (size_t cellI = 0; cellI < proCells; ++cellI) {    
-    cellDerivs[variableIndex(1,cellI)][cIndex] += parameter(0);    
-  }
-}
-
-CreationOneGeometric::
-CreationOneGeometric(std::vector<double> &paraValue, 
-	     std::vector< std::vector<size_t> > 
-	     &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  //
-  if( paraValue.size()!=1 ) {
-    std::cerr << "CreationOneGeometric::"
-	      << "CreationOneGeometric() "
-	      << "Uses one parameter k_c (linear production rate)." << std::endl;
-    exit(0);
-  }
-  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
-    std::cerr << "CreationOneGeometric::"
-	      << "CreationOneGeometric() "
-	      << "Index for variable to be updated given in first row and "
-	      << "index for production-dependent variable in 2nd." << std::endl;
-    exit(0);
-  }
-  //Set the variable values
-  //
-  setId("CreationOneGeometric");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  //Set the parameter identities
-  //
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "k_c";
-  setParameterId( tmp );
-}
-
-void CreationOneGeometric::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) {
-  
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-  size_t xIndex = variableIndex(1,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-     double cellVolume = T.cell(cellI).calculateVolume(vertexData);	
-    cellDerivs[cellI][cIndex] += cellVolume*k_c*cellData[cellI][xIndex];
-  }
-}
-
-
-
-CreationSinus::CreationSinus(std::vector<double> &paraValue, 
-                             std::vector< std::vector<size_t> > 
-                             &indValue ) 
-{  
-  // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=3 ) {
-    std::cerr << "CreationSinus::CreationSinus() "
-              << "Uses three parameters amplitude, period, and phase." << std::endl;
-    exit(0);
-  }
-
-
-  if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-    std::cerr << "CreationSinus::"
-        << "CreationSinus() "
-        << "Index for variable to be updated given." << std::endl;
-    exit(0);
-  }
-
-  // Set the variable values
-  setId("creationSinus");
-  setParameter(paraValue);  
-  setVariableIndex(indValue);
-  
-  // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp.resize( numParameter() );
-  tmp[0] = "amplitude";
-  tmp[1] = "frequency";
-  tmp[2] = "phase";
-
-}
-
-void CreationSinus::
-derivs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs ) 
-{  
-  
-
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-
-  size_t cIndex = variableIndex(0,0);
-
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {      
-    cellDerivs[cellI][cIndex] += parameter(0)*
-    ( 1.0 + std::sin(6.28*(time_/parameter(1) + parameter(2) ) ) );};
-     
-}
-
-void CreationSinus::
-derivsWithAbs(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &wallData,
-        DataMatrix &vertexData,
-        DataMatrix &cellDerivs,
-        DataMatrix &wallDerivs,
-        DataMatrix &vertexDerivs,
-        DataMatrix &sdydtCell,
-        DataMatrix &sdydtWall,
-        DataMatrix &sdydtVertex ) 
-{
-  //Do the update for each cell
-  size_t numCells = T.numCell();
-  
-  size_t cIndex = variableIndex(0,0);
-  double k_c = parameter(0);
-  //For each cell
-  for (size_t cellI = 0; cellI < numCells; ++cellI) {  
-    double value = k_c*
-      ( 1.0 + std::sin(6.28*(time_/parameter(1) + parameter(2) ) ) );
+  void Zero::
+  derivsWithAbs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs,
+		DataMatrix &sdydtCell,
+		DataMatrix &sdydtWall,
+		DataMatrix &sdydtVertex ) 
+  {
+    //Do the update for each cell
+    size_t numCells = T.numCell();
     
-    cellDerivs[cellI][cIndex]  += value;
-    sdydtCell[cellI][cIndex]  += value;
+    size_t cIndex = variableIndex(0,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += k_c;
+      sdydtCell[cellI][cIndex] += k_c;
+    }
   }
-}
 
-void CreationSinus::
-update(Tissue &T,
-        DataMatrix &cellData,
-        DataMatrix &walldata,
-        DataMatrix &vertexData,
-        double h) 
-{
-  time_+=h;
-}
+  One::
+  One(std::vector<double> &paraValue, 
+      std::vector< std::vector<size_t> > 
+      &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::One::"
+	      << "One() "
+		<< "Uses one parameter k_c (linear production rate)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
+      std::cerr << "Creation::One::"
+		<< "One() "
+		<< "Index for variable to be updated given in first row and "
+		<< "index for production-dependent variable in 2nd." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("Creation::One");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId( tmp );
+  }
 
-void CreationSinus::
-initiate(Tissue &T,
-          DataMatrix &cellData,
-          DataMatrix &walldata,
-          DataMatrix &vertexData,
-          DataMatrix &cellderivs, 
-          DataMatrix &wallderivs,
-          DataMatrix &vertexDerivs)
-{
-  time_=0;
-}
+  void One::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex];
+    }
+  }
+
+  void One::
+  derivsWithAbs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs,
+		DataMatrix &sdydtCell,
+		DataMatrix &sdydtWall,
+		DataMatrix &sdydtVertex ) 
+  {
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      double value = k_c * cellData[cellI][xIndex];
+      cellDerivs[cellI][cIndex] += value;
+      sdydtCell[cellI][cIndex] += value;    
+    }
+  }
+
+  Two::
+  Two(std::vector<double> &paraValue, 
+      std::vector< std::vector<size_t> > 
+      &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::Two::"
+		<< "Two() "
+		<< "Uses one parameter k_c (linear production rate)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 2 ) {
+      std::cerr << "Creation::Two::"
+		<< "Two() "
+		<< "One index for variable to be updated given in first row and "
+		<< "Two indices for production-dependent variables in 2nd." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("Creation::Two");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId( tmp );
+  }
+
+  void Two::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    size_t yIndex = variableIndex(1,1);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex] * cellData[cellI][yIndex];
+    }
+  }
+  
+  SpatialSphere::
+  SpatialSphere(std::vector<double> &paraValue, 
+		std::vector< std::vector<size_t> > 
+		&indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=4 ) {
+      std::cerr << "Creation::SpatialSphere::SpatialSphere() "
+		<< "Uses four parameters V_max R(K_Hill) n_Hill and R_sign."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+      std::cerr << "Creation::SpatialSphere::"
+		<< "SpatialSphere() "
+		<< "Index for variable to be updated given." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Sign should be -/+1
+    if( paraValue[3] != -1 && paraValue[3] != 1 ) {
+      std::cerr << "Creation::SpatialSphere::SpatialSphere() "
+		<< "R_sign should be +/-1 to set production inside/outside R"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }	
+    // Set the variable values
+    setId("Creation::SpatialSphere");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "V_max";
+    tmp[1] = "R (K_Hill)";
+    tmp[2] = "n_Hill";
+    tmp[3] = "R_sign";  
+    setParameterId( tmp );
+  }
+
+  void SpatialSphere::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    double powK_ = std::pow(parameter(1),parameter(2));
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {
+      
+      //Calculate cell center from vertices positions
+      std::vector<double> cellCenter;
+      cellCenter = T.cell(cellI).positionFromVertex(vertexData);
+      assert( cellCenter.size() == vertexData[0].size() );
+      double r=0.0;
+      for( size_t d=0 ; d<cellCenter.size() ; ++d )
+	r += cellCenter[d]*cellCenter[d];
+      r = std::sqrt(r);
+      
+      double powR = std::pow(r,parameter(2));
+      
+      if (parameter(3)>0.0)
+	cellDerivs[cellI][cIndex] += parameter(0)*powR/(powK_+powR);
+      else
+	cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powR);
+    }
+  }
+  
+  SpatialRing::
+  SpatialRing(std::vector<double> &paraValue, 
+	      std::vector< std::vector<size_t> > 
+	      &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=5 ) {
+      std::cerr << "Creation::SpatialRing::SpatialRing() "
+		<< "Uses five parameters V_max R(K_Hill) r_ring n_Hill and R_sign"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+      std::cerr << "Creation::SpatialRing::"
+		<< "SpatialRing() "
+		<< "Index for variable to be updated given." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Sign should be -/+1
+    if( paraValue[4] != -1 && paraValue[4] != 1 ) {
+      std::cerr << "Creation::SpatialRing::SpatialRing() "
+		<< "R_sign should be +/-1 to set production inside/outside R"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }	
+    // Set the variable values
+    setId("Creation::SpatialRing");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "V_max";
+    tmp[1] = "R (K_Hill)";
+    tmp[2] = "r_ring";
+    tmp[3] = "n_Hill";
+    tmp[4] = "R_sign";  
+    setParameterId( tmp );
+  }
+
+  void SpatialRing::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    double powK_ = std::pow(parameter(1),parameter(3));
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {
+      
+      //Calculate cell center from vertices positions
+      std::vector<double> cellCenter;
+      cellCenter = T.cell(cellI).positionFromVertex(vertexData);
+      assert( cellCenter.size() == vertexData[0].size() );
+      double r=0.0;
+      for( size_t d=0 ; d<cellCenter.size() ; ++d )
+	r += cellCenter[d]*cellCenter[d];
+      r = std::sqrt(r);
+      
+      r = std::sqrt( (r - parameter(2)) * (r - parameter(2))  ); // we want the distance to the ring
+      
+      double powR = std::pow(r,parameter(3));
+      
+      if (parameter(4)>0.0)
+	cellDerivs[cellI][cIndex] += parameter(0)*powR/(powK_+powR);
+      else
+	cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powR);
+    }
+  }
+
+  SpatialCoordinate::
+  SpatialCoordinate(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=4 ) {
+      std::cerr << "Creation::SpatialCoordinate::SpatialCoordinate() "
+		<< "Uses four parameters V_max X(K_Hill) n_Hill and X_sign"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
+      std::cerr << "Creation::SpatialCoordinate::"
+		<< "SpatialCoordinate() "
+		<< "Two levels of indices used: index for variable to be updated given as first index, "
+		<< "index for the spatial coordinate to use given as the second index" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Sign should be -/+1
+    if( paraValue[3] != -1 && paraValue[3] != 1 ) {
+      std::cerr << "Creation::SpatialCoordinate::SpatialCoordinate() "
+		<< "X_sign should be +/-1 to set production inside/outside X"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }	
+    // Set the variable values
+    setId("Creation::SpatialCoordinate");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "V_max";
+    tmp[1] = "X (K_Hill)";
+    tmp[2] = "n_Hill";
+    tmp[3] = "X_sign";  
+    setParameterId( tmp );
+  }
+
+  void SpatialCoordinate::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    double powK_ = std::pow(parameter(1),parameter(2));
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {
+      
+      //Calculate cell center from vertices positions
+      std::vector<double> cellCenter;
+      cellCenter = T.cell(cellI).positionFromVertex(vertexData);
+      assert( cellCenter.size() == vertexData[0].size() );
+      
+      double powX = std::pow(cellCenter[xIndex],parameter(2));
+      
+      if (parameter(3)>0.0)
+	cellDerivs[cellI][cIndex] += parameter(0)*powX/(powK_+powX);
+      else
+	cellDerivs[cellI][cIndex] += parameter(0)*powK_/(powK_+powX);
+    }
+  }
+  
+  SpatialPlane::
+  SpatialPlane(std::vector<double> &paraValue, 
+	       std::vector< std::vector<size_t> > 
+	       &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=3 ) {
+      std::cerr << "Creation::SpatialPlane::SpatialPlane() "
+		<< "Uses three parameters V_max X(K_Hill) and X_sign."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
+      std::cerr << "Creation::SpatialPlane::"
+		<< "SpatialPlane() "
+		<< "Two levels of indices used: index for variable to be updated given as first index, "
+		<< "index for the spatial coordinate to use given as the second index" << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Sign should be -/+1
+    if( paraValue[2] != -1 && paraValue[2] != 1 ) {
+      std::cerr << "Creation::SpatialCoordinate::SpatialCoordinate() "
+		<< "X_sign should be +/-1 to set production inside/outside X"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+	
+    // Set the variable values
+    setId("Creation::SpatialCoordinate");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "V_max";
+    tmp[1] = "X (K_Hill)";
+    tmp[2] = "n_Hill";
+    setParameterId( tmp );
+  }
+
+  void SpatialPlane::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    
+    double X = parameter(1);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {
+      //Calculate cell center from vertices positions
+      std::vector<double> cellCenter;
+      cellCenter = T.cell(cellI).positionFromVertex(vertexData);
+      assert( cellCenter.size() == vertexData[0].size() );
+      double x_coord = cellCenter[xIndex];
+      double deriv_add=0;
+
+      if (parameter(2)<0.0)
+	deriv_add = ((x_coord <= X) ? parameter(0) : 0);
+      else
+	deriv_add = ((x_coord >= X) ? parameter(0) : 0);
+      
+      cellDerivs[cellI][cIndex] += deriv_add;
+    }
+  }
+
+  FromList::
+  FromList(std::vector<double> &paraValue, 
+	   std::vector< std::vector<size_t> > 
+	   &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::FromList::FromList() "
+		<< "Uses one parameter k_c, the constant production rate"
+		<<std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() < 1 ) {
+      std::cerr << "Creation::FromList::"
+		<< "FromList() "
+		<< "Two levels of indices used: index for variable to be updated given "
+		<< "as first index, a list of cell indices given in the second level" 
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    setId("Creation::FromList");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId(tmp);
+    proCells=indValue[1].size();
+  }
+  
+  void FromList::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    size_t cIndex = variableIndex(0,0);  
+    //For the cells in the list
+    for (size_t cellI = 0; cellI < proCells; ++cellI) {    
+      cellDerivs[variableIndex(1,cellI)][cIndex] += parameter(0);    
+    }
+  }
+
+  OneGeometric::
+  OneGeometric(std::vector<double> &paraValue, 
+	       std::vector< std::vector<size_t> > 
+	       &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::OneGeometric::"
+		<< "OneGeometric() "
+		<< "Uses one parameter k_c (linear production rate)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1 ) {
+      std::cerr << "Creation::OneGeometric::"
+		<< "OneGeometric() "
+		<< "Index for variable to be updated given in first row and "
+		<< "index for production-dependent variable in 2nd." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("Creation::OneGeometric");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+  
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId( tmp );
+  }
+
+  void OneGeometric::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs )
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      double cellVolume = T.cell(cellI).calculateVolume(vertexData);	
+      cellDerivs[cellI][cIndex] += cellVolume*k_c*cellData[cellI][xIndex];
+    }
+  }
+
+  Sinus::Sinus(std::vector<double> &paraValue, 
+	       std::vector< std::vector<size_t> > 
+	       &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    if( paraValue.size()!=3 ) {
+      std::cerr << "Creation::Sinus::Sinus() "
+		<< "Uses three parameters amplitude, period, and phase." << std::endl;
+      exit(EXIT_FAILURE);
+  }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+      std::cerr << "Creation::Sinus::"
+		<< "Sinus() "
+		<< "Index for variable to be updated given." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    setId("Creation::Sinus");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "amplitude";
+    tmp[1] = "frequency";
+    tmp[2] = "phase";
+  }
+
+  void Sinus::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    size_t cIndex = variableIndex(0,0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += parameter(0)*
+	( 1.0 + std::sin(6.28*(time_/parameter(1) + parameter(2) ) ) );};
+  }
+
+  void Sinus::
+  derivsWithAbs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs,
+		DataMatrix &sdydtCell,
+		DataMatrix &sdydtWall,
+		DataMatrix &sdydtVertex ) 
+  {
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {  
+      double value = k_c*
+	( 1.0 + std::sin(6.28*(time_/parameter(1) + parameter(2) ) ) );
+      
+      cellDerivs[cellI][cIndex]  += value;
+      sdydtCell[cellI][cIndex]  += value;
+    }
+  }
+
+  void Sinus::
+  update(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &walldata,
+	 DataMatrix &vertexData,
+	 double h) 
+  {
+    time_+=h;
+  }
+
+  void Sinus::
+  initiate(Tissue &T,
+	   DataMatrix &cellData,
+	   DataMatrix &walldata,
+	   DataMatrix &vertexData,
+	   DataMatrix &cellderivs, 
+	   DataMatrix &wallderivs,
+	   DataMatrix &vertexDerivs)
+  {
+    time_=0;
+  }
+} // end namespace Creation
