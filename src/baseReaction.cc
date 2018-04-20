@@ -71,16 +71,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
-  // HJ: Move these to the Force namespace (force.h). Some needs to be merged with other reactions
-  else if(idValue == "MoveEpidermalVertexRadially")
-    return new MoveEpidermalVertexRadially(paraValue, indValue);
-  else if(idValue == "MoveVerteX")
-    return new MoveVerteX(paraValue, indValue);
-  else if(idValue == "MoveVertexY")
-      return new MoveVertexY(paraValue, indValue);
-  else if(idValue == "MoveVertexSphereCylinder")
-    return new MoveVertexSphereCylinder(paraValue, indValue);
-
   else if (idValue == "WaterVolumeFromTurgor")
     return new WaterVolumeFromTurgor(paraValue, indValue);
   else if (idValue == "DilutionFromVertexDerivs")
@@ -232,6 +222,19 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	  idValue=="CenterTriangulation::GrowthForce::Radial" ||
 	  idValue == "MoveVertexRadiallycenterTriangulation")
     return new GrowthForce::CenterTriangulation::Radial(paraValue, indValue);
+  else if(idValue=="GrowthForce::EpidermalRadial" ||
+	  idValue == "MoveEpidermalVertexRadially")
+    return new GrowthForce::EpidermalRadial(paraValue, indValue);
+  else if(idValue=="GrowthForce::X" ||
+	  idValue=="MoveVerteX" ||
+	  idValue=="MoveVertexX")
+    return new GrowthForce::X(paraValue, indValue);
+  else if(idValue=="GrowthForce::Y" ||
+	  idValue == "MoveVertexY")
+    return new GrowthForce::Y(paraValue, indValue);
+  else if(idValue=="GrowthForce::SphereCylinder" ||
+	  idValue == "MoveVertexSphereCylinder")
+    return new GrowthForce::SphereCylinder(paraValue, indValue);
   
   // centerTriangulation.h (.cc)
   // Reactions related to a center triangulation of cells

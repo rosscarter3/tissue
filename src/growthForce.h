@@ -143,6 +143,234 @@ namespace GrowthForce {
 		  DataMatrix &vertexDerivs );
     };
   } // end namespace CenterTriangulation
+
+  ///
+  /// @brief Growth via vertex movement forces acting radially outwards
+  ///
+  /// @details The tissue grows the epidermal cells (cells bordering to the background)
+  /// from vertex movement radially outwards. The update can be
+  /// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
+  /// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
+  /// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
+  /// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// GrowthForce::EpidermalRadial 2 0
+  /// p_0 p_1
+  /// @endverbatim
+  ///
+  /// @note Used to be called MoveEpidermalVertexRadially
+  /// @see Force::EridermalRadial Some overlap but takes different parameters
+  ///
+  class EpidermalRadial : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    EpidermalRadial(std::vector<double> &paraValue,
+		    std::vector< std::vector<size_t> >
+		    &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs );
+  };
+  
+  ///
+  /// @brief Growth via vertex movement from forces acting in the x-direction
+  ///
+  /// @details The tissue grows from vertex movement outwards in the x-direction. The update can be
+  /// @f[ \frac{dx}{dt} = p_{0} @f] (if @f$ p_{1}=0 @f$) or
+  /// @f[ \frac{dx}{dt} = p_{0} x @f] (if @f$ p_{1}=1 @f$)
+  /// where @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
+  /// and @f$ p_{1} @f$ {0,1} is a flag determining which function to be used.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// GrowthForce::X 2 0
+  /// p_0 p_1
+  /// @endverbatim
+  ///
+  /// @note Used to be called MoveVerteX
+  ///
+  class X : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    X(std::vector<double> &paraValue,
+      std::vector< std::vector<size_t> >
+      &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs );
+    
+    void derivsWithAbs(Tissue &T,
+		       DataMatrix &cellData,
+		       DataMatrix &wallData,
+		       DataMatrix &vertexData,
+		       DataMatrix &cellDerivs,
+		       DataMatrix &wallDerivs,
+		       DataMatrix &vertexDerivs,
+		       DataMatrix &sdydtCell,
+		       DataMatrix &sdydtWall,
+		       DataMatrix &sdydtVertex );
+  };
+
+  ///
+  /// @brief Growth via vertex movement from forces acting in the y-direction
+  ///
+  /// @details The tissue grows from vertex movement outwards in the x-direction. The update can be
+  /// @f[ \frac{dy}{dt} = p_{0} @f] (if @f$ p_{1}=0 @f$) or
+  /// @f[ \frac{dy}{dt} = p_{0} x @f] (if @f$ p_{1}=1 @f$)
+  /// where @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
+  /// and @f$ p_{1} @f$ {0,1} is a flag determining which function to be used.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// GrowthForce::Y 2 0
+  /// p_0 p_1
+  /// @endverbatim
+  ///
+  /// @note Used to be called MoveVertexY
+  ///
+  class Y : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Y(std::vector<double> &paraValue,
+      std::vector< std::vector<size_t> >
+      &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs );
+    
+    void derivsWithAbs(Tissue &T,
+		       DataMatrix &cellData,
+		       DataMatrix &wallData,
+		       DataMatrix &vertexData,
+		       DataMatrix &cellDerivs,
+		       DataMatrix &wallDerivs,
+		       DataMatrix &vertexDerivs,
+		       DataMatrix &sdydtCell,
+		       DataMatrix &sdydtWall,
+		       DataMatrix &sdydtVertex );
+  };
+  
+  ///
+  /// @brief Growth via vertex movement from forces acting outwards along a sphereCylinder
+  ///
+  /// The tissue grows from vertex movement outwards (from apex) along a sphereCylinder.
+  /// This is a half sphere above z=0, and a cylinder below.
+  /// The update can be described by the angular (v) movement
+  /// @f[ \frac{dv}{dt} = p_0 @f]
+  /// if @f$p_1=0@f$, or
+  /// @f[ \frac{dv}{dt} = p_0*r @f]
+  /// if @f$p_1=1@f$, and where:
+  /// v is the angle from the apex
+  /// r is the sphere radius (it calculated from the vertex position)
+  /// p_0 is the rate,
+  /// p_1 is a flag determining function (i.e. constant or exponential).
+  ///
+  /// On the cylinder the vertex is moved downwards (in -z direction) given by
+  /// @f[ \frac{dz}{dt} = - p_0 @f]
+  /// if @f$p_1=0@f$, and
+  /// @f[ \frac{dz}{dt} = - p_0 (0.5 \pi r - z) @f]
+  /// if @f$p_1=0@f$, and
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// GrowthForce::SphereCylinder 2 0
+  /// p_0 p_1
+  /// @endverbatim
+  ///
+  /// @note Used to be called MoveVertexY
+  ///
+  class SphereCylinder : public BaseReaction {
+    
+public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SphereCylinder(std::vector<double> &paraValue,
+		   std::vector< std::vector<size_t> >
+		   &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs );
+  };
 } // end namespace GrowthForce
 
 #endif
