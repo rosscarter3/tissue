@@ -10,6 +10,7 @@
 #include "baseReaction.h"
 #include "adhocReaction.h"
 #include "bending.h"
+#include "calculate.h"
 #include "cellTime.h"
 #include "centerTriangulation.h"
 #include "creation.h"
@@ -73,7 +74,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   //Mechanical interactions between vertices
   //mechanicalSpring.h,mechanicalSpring.cc
-  else if(idValue=="VertexFromWallSpring" || idValue=="WallMechanics::Spring")
+  else if(idValue=="WallMechanics::Spring" ||
+	  idValue=="VertexFromWallSpring")
     return new WallMechanics::Spring(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTnew")
     return new VertexFromWallSpringMTnew(paraValue,indValue);
@@ -85,9 +87,11 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromDoubleWallSpring(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringSpatial")
     return new VertexFromWallSpringSpatial(paraValue,indValue);
-  else if(idValue=="VertexFromWallSpringConcentrationHill" || idValue=="WallMechanics::SpringConcentrationHill")
+  else if(idValue=="WallMechanics::SpringConcentrationHill" ||
+	  idValue=="VertexFromWallSpringConcentrationHill")
     return new WallMechanics::SpringConcentrationHill(paraValue,indValue);
-  else if(idValue=="SpringInternalExternalThreshold" || idValue=="WallMechanics::SpringInternalExternalThreshold")
+  else if(idValue=="WallMechanics::SpringInternalExternalThreshold" ||
+	  idValue=="SpringInternalExternalThreshold")
     return new WallMechanics::SpringInternalExternalThreshold(paraValue, indValue);
   else if(idValue=="VertexFromWallSpringMT")
     return new VertexFromWallSpringMT(paraValue,indValue);
@@ -95,9 +99,11 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromWallSpringMTSpatial(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTHistory")
     return new VertexFromWallSpringMTHistory(paraValue,indValue);
-  else if(idValue=="VertexFromEpidermalWallSpring" || idValue=="WallMechanics::SpringEpidermal")
+  else if(idValue=="WallMechanics::SpringEpidermal" ||
+	  idValue=="VertexFromEpidermalWallSpring")
     return new WallMechanics::SpringEpidermal(paraValue,indValue);
-  else if(idValue=="VertexFromEpidermalCellWallSpring" || idValue=="WallMechanics::SpringEpidermalCell")
+  else if(idValue=="WallMechanics::SpringEpidermalCell" ||
+	  idValue=="VertexFromEpidermalCellWallSpring")
     return new WallMechanics::SpringEpidermalCell(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTConcentrationHill")
     return new VertexFromWallSpringMTConcentrationHill(paraValue,indValue);
@@ -133,7 +139,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
-
+  
  else if (idValue == "TargetAreaFromPressure")
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
@@ -164,18 +170,24 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromCellPlaneTriangular(paraValue, indValue);
 
   // HJ: move these (and some from adhocReaction to a calculate namespace.
-  else if(idValue=="TemplateVolumeChange")
-    return new TemplateVolumeChange(paraValue,indValue);
-  else if(idValue=="CalculateAngleVectors")
-    return new CalculateAngleVectors(paraValue,indValue);
-  else if(idValue=="CalculateAngleVectorXYplane")
-    return new CalculateAngleVectorXYplane(paraValue,indValue);
-  else if(idValue=="AngleVector")
-    return new AngleVector(paraValue,indValue);
-
-  // HJ: should this be in adhocReaction?
-  else if(idValue=="maxVelocity")
-    return new maxVelocity(paraValue,indValue);
+  // calculate.h (.cc)
+  // namespace Calculate collecting some ad hoc rections for calculating useful
+  // information to be stored in cell or wall data 
+  else if(idValue=="Calculate::AngleVectors" ||
+	  idValue=="CalculateAngleVectors")
+    return new Calculate::AngleVectors(paraValue,indValue);
+  else if(idValue=="Calculate::AngleVectorXYplane" ||
+	  idValue=="CalculateAngleVectorXYplane")
+    return new Calculate::AngleVectorXYplane(paraValue,indValue);
+  else if(idValue=="Calculate::AngleVector" ||
+	  idValue=="AngleVector")
+    return new Calculate::AngleVector(paraValue,indValue);
+  else if(idValue=="Calculate::MaxVelocity" ||
+	  idValue=="maxVelocity")
+    return new Calculate::MaxVelocity(paraValue,indValue);
+  else if(idValue=="Calculate::TissueVolumeChange" ||
+	  idValue=="TemplateVolumeChange")
+    return new Calculate::TissueVolumeChange(paraValue,indValue);
   
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
