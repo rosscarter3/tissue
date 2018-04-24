@@ -191,12 +191,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
   // HJ: some yet needs to be moved from mechanical.h
-  else if(idValue=="CylinderForce")
-    return new CylinderForce(paraValue,indValue);
-  else if(idValue=="SphereCylinderForce")
-    return new SphereCylinderForce(paraValue,indValue);
-  else if(idValue=="SphereCylinderForceFromRadius")
-    return new SphereCylinderForceFromRadius(paraValue,indValue);
+  else if(idValue=="Force::Cylinder" ||
+	  idValue=="CylinderForce")
+    return new Force::Cylinder(paraValue,indValue);
+  else if(idValue=="Force::SphereCylinder" ||
+	  idValue=="SphereCylinderForce")
+    return new Force::SphereCylinder(paraValue,indValue);
+  else if(idValue=="Force::SphereCylinderRadius" ||
+	  idValue=="SphereCylinderForceFromRadius")
+    return new Force::SphereCylinderRadius(paraValue,indValue);
   else if(idValue=="Force::InfiniteWall" ||
 	  idValue=="InfiniteWallForce")
     return new Force::InfiniteWall(paraValue,indValue);

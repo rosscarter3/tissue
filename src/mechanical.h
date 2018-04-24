@@ -469,56 +469,6 @@ class VertexFromCellPowerdiagram : public BaseReaction {
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-  //! Applies a force towards or from a Cylinder surface
-  class CylinderForce : public BaseReaction {
-  public:
-    CylinderForce(std::vector<double> &paraValue,
-		  std::vector<std::vector<size_t>> &indValue);
-    
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-		DataMatrix &vertexData, DataMatrix &cellDerivs,
-		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  };
-  
-  ///
-  /// @brief Applies a force towards or from a SphereCylinder surface
-  ///
-  class SphereCylinderForce : public BaseReaction {
-  public:
-    SphereCylinderForce(std::vector<double> &paraValue,
-			std::vector<std::vector<size_t>> &indValue);
-    
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-		DataMatrix &vertexData, DataMatrix &cellDerivs,
-		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  };
-  
-  //! Applies a force towards a spherecylinder surface with defined radius
-  class SphereCylinderForceFromRadius : public BaseReaction {
-  public:
-    SphereCylinderForceFromRadius(std::vector<double> &paraValue,
-				  std::vector<std::vector<size_t>> &indValue);
-    
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-		DataMatrix &vertexData, DataMatrix &cellDerivs,
-		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  };
-
 ///
 /// @brief A cell 'pressure' reaction providing forces perpendicular to walls (with magnitude given by cell variable)
 ///

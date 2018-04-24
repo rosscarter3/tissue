@@ -13,6 +13,229 @@
 
 
 namespace Force {
+  
+  Cylinder::Cylinder(std::vector<double> &paraValue,
+		     std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 2) {
+      std::cerr << "Force::Cylinder::"
+		<< "Cylinder() "
+		<< "Uses two parameters K_force direction(-1 -> inwards)"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (paraValue[1] != 1.0 && paraValue[1] != -1.0) {
+      std::cerr << "Force::Cylinder::"
+		<< "Cylinder() "
+		<< "direction (second parameter) needs to be 1 (outward) "
+		<< "or -1 (inwards)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::Cylinder::"
+		<< "Cylinder() "
+		<< "No indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::Cylinder");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "K_force";
+    tmp[1] = "direction";
+    setParameterId(tmp);
+  }
+
+  void Cylinder::
+  derivs(Tissue &T, DataMatrix &cellData,
+	 DataMatrix &wallData, DataMatrix &vertexData,
+	 DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs) {
+    double coeff = parameter(0) * parameter(1);
+    size_t dimension = vertexData[0].size();
+    size_t lastPosIndex = dimension - 1;
+    // For each vertex
+    for (size_t i = 0; i < T.numVertex(); ++i) {
+      // On cylinder
+      double norm = 0.0;
+      for (size_t d = 0; d < lastPosIndex; d++)
+	norm += vertexData[i][d] * vertexData[i][d];
+      if (norm > 0.0)
+	norm = 1.0 / std::sqrt(norm);
+      else
+	norm = 0.0;
+      for (size_t d = 0; d < lastPosIndex; d++)
+	vertexDerivs[i][d] += coeff * norm * vertexData[i][d];
+    }
+  }
+  
+  SphereCylinder::SphereCylinder(
+				 std::vector<double> &paraValue,
+				 std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 2) {
+      std::cerr << "Force::SphereCylinder::"
+		<< "SphereCylinder() "
+		<< "Uses two parameters K_force direction (-1 -> inwards)"
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (paraValue[1] != 1.0 && paraValue[1] != -1.0) {
+      std::cerr << "Force::SphereCylinder::"
+		<< "SphereCylinder() "
+		<< "direction (second parameter) needs to be 1 (outward) "
+		<< "or -1 (inwards)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::SphereCylinder::"
+		<< "SphereCylinder() "
+		<< "Uses no indices." << std::endl;
+      exit(EXIT_FAILURE);
+  }
+    // Set the variable values
+    //
+    setId("Force::SphereCylinder");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "K_force";
+    tmp[1] = "direction";
+    setParameterId(tmp);
+  }
+  
+  void SphereCylinder::derivs(Tissue &T, DataMatrix &cellData,
+			      DataMatrix &wallData, DataMatrix &vertexData,
+			      DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+			      DataMatrix &vertexDerivs) {
+    double coeff = parameter(0) * parameter(1);
+    size_t dimension = vertexData[0].size();
+    size_t lastPosIndex = dimension - 1;
+    // For each vertex
+    for (size_t i = 0; i < T.numVertex(); ++i) {
+      if (vertexData[i][lastPosIndex] > 0.0) {
+	// On sphere
+	double norm = 0.0;
+	for (size_t d = 0; d < dimension; d++)
+	  norm += vertexData[i][d] * vertexData[i][d];
+	if (norm > 0.0)
+	  norm = 1.0 / std::sqrt(norm);
+	else
+	  norm = 0.0;
+	for (size_t d = 0; d < dimension; d++)
+	  vertexDerivs[i][d] += coeff * norm * vertexData[i][d];
+      } else {
+	// On cylinder
+	double norm = 0.0;
+	for (size_t d = 0; d < dimension - 1; d++)
+	  norm += vertexData[i][d] * vertexData[i][d];
+	if (norm > 0.0)
+	  norm = 1.0 / std::sqrt(norm);
+	else
+	  norm = 0.0;
+	for (size_t d = 0; d < dimension - 1; d++)
+	  vertexDerivs[i][d] += coeff * norm * vertexData[i][d];
+      }
+    }
+  }
+  
+  SphereCylinderRadius::
+  SphereCylinderRadius(
+		       std::vector<double> &paraValue,
+		       std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 3) {
+      std::cerr << "Force::SphereCylinderRadius::"
+		<< "SphereCylinderRadius() "
+		<< "Uses three parameters F_out, F_in and radius." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (paraValue[0] < 0.0 || paraValue[1] < 0.0 || paraValue[2] < 0.0) {
+      std::cerr << "Force::SphereCylinderRadius::"
+		<< "SphereCylinderRadius() "
+		<< "Parameters need to be positive." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::SphereCylinderRadius::"
+		<< "SphereCylinderRadius() "
+		<< "No indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::SphereCylinderRadius");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "F_out";
+    tmp[1] = "F_in";
+    tmp[2] = "R";
+    setParameterId(tmp);
+  }
+
+  void SphereCylinderRadius::
+  derivs(Tissue &T, DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs) {
+    size_t dimension = vertexData[0].size();
+    size_t lastPosIndex = dimension - 1;
+    double F_out = parameter(0);
+    double F_in = parameter(1);
+    double R = parameter(2);
+    // For each vertex
+    for (size_t i = 0; i < T.numVertex(); ++i) {
+      if (vertexData[i][lastPosIndex] > 0.0) {
+	// On sphere
+	double norm = 0.0;
+	for (size_t d = 0; d < dimension; d++)
+	  norm += vertexData[i][d] * vertexData[i][d];
+	norm = std::sqrt(norm);
+	if (norm < R) {
+	  double coeff = F_out * (R - norm) / norm;
+	  for (size_t d = 0; d < dimension; d++)
+	    vertexDerivs[i][d] += coeff * vertexData[i][d];
+	} else {
+	  double coeff = F_in * (R - norm) / norm;
+	  for (size_t d = 0; d < dimension; d++)
+	    vertexDerivs[i][d] += coeff * vertexData[i][d];
+	}
+      } else {
+	// On cylinder
+	double norm = 0.0;
+	for (size_t d = 0; d < dimension - 1; d++)
+	  norm += vertexData[i][d] * vertexData[i][d];
+	norm = std::sqrt(norm);
+	if (norm < R) {
+	  double coeff = F_out * (R - norm) / norm;
+	  for (size_t d = 0; d < dimension - 1; d++)
+	    vertexDerivs[i][d] += coeff * vertexData[i][d];
+	} else {
+	  double coeff = F_in * (R - norm) / norm;
+	  for (size_t d = 0; d < dimension - 1; d++)
+	    vertexDerivs[i][d] += coeff * vertexData[i][d];
+	}
+      }
+    }
+  }
+  
   InfiniteWall::InfiniteWall(
 			     std::vector<double> &paraValue,
 			     std::vector<std::vector<size_t>> &indValue) {
