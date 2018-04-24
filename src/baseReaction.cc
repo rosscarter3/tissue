@@ -132,20 +132,20 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if (idValue == "Pressure2D::AreaPotentialTargetArea")
    return new Pressure2D::AreaPotentialTargetArea(paraValue, indValue);
 
-  // Pressure forces implemented assuming a CenterTriangulation
+  // Pressure forces (from 2D cells) implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
    return new CenterTriangulation::VertexFromCellPressure(paraValue,indValue);
  else if(idValue=="CenterTriangulation::VertexFromCellPressureLinear" ||
          idValue=="VertexFromCellPressurecenterTriangulationLinear")
    return new CenterTriangulation::VertexFromCellPressureLinear(paraValue,indValue);
+ else if (idValue == "PerpendicularWallPressure")
+   return new PerpendicularWallPressure(paraValue, indValue);
   
  else if (idValue == "TargetAreaFromPressure")
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
- else if (idValue == "PerpendicularWallPressure")
-   return new PerpendicularWallPressure(paraValue, indValue);
 
   // HJ: create namespace FacePressure for these and create documentation
   else if (idValue == "VertexFromCellPlane")
@@ -169,7 +169,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue == "VertexFromCellPlaneTriangular")
     return new VertexFromCellPlaneTriangular(paraValue, indValue);
 
-  // HJ: move these (and some from adhocReaction to a calculate namespace.
   // calculate.h (.cc)
   // namespace Calculate collecting some ad hoc rections for calculating useful
   // information to be stored in cell or wall data 
@@ -198,15 +197,19 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new SphereCylinderForce(paraValue,indValue);
   else if(idValue=="SphereCylinderForceFromRadius")
     return new SphereCylinderForceFromRadius(paraValue,indValue);
-  else if(idValue=="Force::InfiniteWall" || idValue=="InfiniteWallForce")
+  else if(idValue=="Force::InfiniteWall" ||
+	  idValue=="InfiniteWallForce")
     return new Force::InfiniteWall(paraValue,indValue);
   else if(idValue=="Force::EpidermalCoordinate")
     return new Force::EpidermalCoordinate(paraValue,indValue);
-  else if (idValue=="Force::EpidermalRadial" || idValue == "EpidermalRadialForce")
+  else if (idValue=="Force::EpidermalRadial" ||
+	   idValue == "EpidermalRadialForce")
     return new Force::EpidermalRadial(paraValue, indValue);
-  else if(idValue=="Force::IndexRadial" || idValue=="VertexForceOrigoFromIndex")
+  else if(idValue=="Force::IndexRadial" ||
+	  idValue=="VertexForceOrigoFromIndex")
     return new Force::IndexRadial(paraValue,indValue);
-  else if(idValue=="Force::CellIndexRadial" || idValue=="CellForceOrigoFromIndex")
+  else if(idValue=="Force::CellIndexRadial" ||
+	  idValue=="CellForceOrigoFromIndex")
     return new Force::CellIndexRadial(paraValue,indValue);
   else if(idValue=="Force::Axial")
     return new Force::Axial(paraValue,indValue);
@@ -223,7 +226,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   // Growth by adding forces to vertices
   // GrowthForce.h(.cc)
-  else if(idValue=="GrowthForce::Radial" || idValue == "MoveVertexRadially")
+  else if(idValue=="GrowthForce::Radial" ||
+	  idValue == "MoveVertexRadially")
     return new GrowthForce::Radial(paraValue, indValue);
   else if(idValue=="GrowthForce::CenterTriangulation::Radial" ||
 	  idValue=="CenterTriangulation::GrowthForce::Radial" ||

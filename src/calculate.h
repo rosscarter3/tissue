@@ -12,6 +12,15 @@
 #include "baseReaction.h"
 #include "tissue.h"
 
+///
+/// @brief Namespace collecting reactions calculating variables such as angles and
+/// changes in volumes and storing them in cellData.
+///
+/// @details Collection of reaction that are not updating derivatives but rather
+/// do some calculations and store them in the cellData matrix. Examples are angles
+/// between vectors (e.g. stress and strain), or between a vector and an axis, and
+/// calculation of total change of volume for the tissue.
+///
 namespace Calculate {
   ///
   /// @brief Calculates abs(cos(...)) of angle between two 3d vectors
