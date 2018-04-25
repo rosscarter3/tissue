@@ -709,5 +709,130 @@ namespace Force {
   //     }
   //   }
   // }
+
+  Vector::Vector(std::vector<double> &paraValue,
+		 std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() > 3) {
+      std::cerr << "Force::Vector::Vector() "
+		<< "Uses a force vector that should be in one (x), two (x,y) or "
+		<< "three (x,y,z) "
+		<< "dimensions." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 1 || indValue[0].size() < 1) {
+      std::cerr << "Force::Vector::Vector() "
+		<< "List of vertex indices on which the force is applied given in first level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::Vector");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "F_x";
+    if (numParameter() > 1) tmp[1] = "F_y";
+    if (numParameter() == 3) tmp[2] = "F_z";
+    setParameterId(tmp);
+  }
+  
+  void Vector::derivs(Tissue &T, DataMatrix &cellData,
+		      DataMatrix &wallData, DataMatrix &vertexData,
+		      DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+		      DataMatrix &vertexDerivs) {
+    // Do the update for each vertex in the list given.
+    for (size_t k = 0; k < numVariableIndex(0); ++k) {
+      size_t i = variableIndex(0, k);
+      assert(i < vertexData.size());
+      for (size_t d = 0; d < vertexData[i].size(); ++d)
+	if (numParameter() > d) vertexDerivs[i][d] += parameter(d);
+    }
+  }
+
+  VectorLinear::
+  VectorLinear(
+	       std::vector<double> &paraValue,
+	       std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() < 2 || paraValue.size() > 4) {
+      std::cerr << "Force::VectorLinear::"
+		<< "VectorLinear() "
+		<< "Uses a force vector that should be in one (x), two (x,y) or "
+		<< "three (x,y,z) "
+		<< "dimensions plus a deltaT that sets the time the linear "
+		<< "increase of forces (from 0 to F_i) is applied."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 1 || indValue[0].size() < 1) {
+      std::cerr << "Force::VectorLinear::"
+		<< "VectorLinear() "
+		<< "List of vertex indices for force application given in first level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::VectorLinear");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "F_x";
+    if (numParameter() == 2)
+      tmp[1] = "deltaT";
+    else if (numParameter() == 3) {
+      tmp[1] = "F_y";
+      tmp[2] = "deltaT";
+    } else {
+      tmp[1] = "F_y";
+      tmp[2] = "F_z";
+      tmp[3] = "deltaT";
+    }
+    timeFactor_ = 0.0;
+    setParameterId(tmp);
+  }
+  
+  void VectorLinear::derivs(Tissue &T, DataMatrix &cellData,
+			    DataMatrix &wallData, DataMatrix &vertexData,
+			    DataMatrix &cellDerivs,
+			    DataMatrix &wallDerivs,
+			    DataMatrix &vertexDerivs) {
+    // Do the update for each vertex in the list given.
+    for (size_t k = 0; k < numVariableIndex(0); ++k) {
+      size_t i = variableIndex(0, k);
+      assert(i < vertexData.size());
+      
+      for (size_t d=0; d<vertexData[i].size(); ++d)
+	if( numParameter()>d )
+	  vertexDerivs[i][d] += timeFactor_*parameter(d);
+      
+      // ad-hoc for energy landscape
+      //HJ I commented this out for the moment!
+      //vertexDerivs[i][0] += timeFactor_ * parameter(0) / (2 - parameter(2));
+      //vertexDerivs[i][1] +=
+      //timeFactor_ * parameter(1) * (1 - parameter(2)) / (2 - parameter(2));
+      //;
+      //vertexDerivs[i][2] += 0;
+      // std::cerr<<timeFactor_*parameter(0)*(2-std::abs(parameter(1)))<<"  "
+      //         <<timeFactor_*parameter(1)<<std::endl;
+    }
+  }
+  
+  void VectorLinear::update(Tissue &T, DataMatrix &cellData,
+			    DataMatrix &wallData, DataMatrix &vertexData,
+			    double h) {
+    if (timeFactor_ < 1.0) {
+      timeFactor_ += h / parameter(numParameter() - 1);
+    }
+    if (timeFactor_ > 1.0) timeFactor_ = 1.0;
+  }
   
 } //end namespace Force

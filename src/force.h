@@ -395,6 +395,108 @@ namespace Force {
 		DataMatrix &vertexData, DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
   };
+
+  ///
+  /// @brief Updates list of vertices with a given force in direction provided by vector
+  ///
+  /// @details A force is given as parameters (1 parameter for x, 2 for x,y and 3 for x,y,z).
+  /// The update is given by (for dimensions i as specified by the parameters)
+  /// @f[ \frac{dx_i}{dt} = p_i @f]
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// VertexFromForce 1[/2/3] 1 (num vertices)
+  /// F_x [F_y F_z]
+  /// vertex_index_0
+  /// [vertex index_1]
+  /// [...]
+  /// @endverbatim
+  ///
+  /// @note Used to be called VertexFromForce
+  /// @see Force::VectorLinear Same as this reaction, but uses a 'ramping up' of the forces (linearly) over dT.
+  ///
+  class Vector : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Vector(std::vector<double> &paraValue,
+	   std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+
+  ///
+  /// @brief Updates list of vertices with a given force applied where the force
+  /// is linearly increased from zero across a given time span (deltaT).
+  ///
+  /// The update is given by (for dimensions i as specified by the parameters)
+  /// @f[ \frac{dx_i}{dt} = max{\frac{t}{T},1.0} p_i @f]
+  /// where @f$p_i@f$ are the forces and the factor in front is between 0 and 1
+  /// linear increasing between time (t) equals zero and t equals T.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Force::VectorLinear 2[/3/4] 1 (num vertices)
+  /// F_x [F_y F_z] T
+  /// vertex_index_0
+  /// [vertex index_1]
+  /// [...]
+  /// @endverbatim
+  ///
+  /// @note Used to be called VertexFromForceLinear.
+  /// @see Force::Vector Same as this reaction, but with Forces constant.
+  ///
+  class VectorLinear : public BaseReaction {
+  private:
+    double timeFactor_;    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    VectorLinear(std::vector<double> &paraValue,
+		 std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
+  };
   
 } // end namespace Force
 

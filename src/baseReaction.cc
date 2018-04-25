@@ -216,17 +216,19 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Force::CellIndexRadial(paraValue,indValue);
   else if(idValue=="Force::Axial")
     return new Force::Axial(paraValue,indValue);
-  else if(idValue=="VertexFromForce")
-    return new VertexFromForce(paraValue,indValue);
-  else if(idValue=="VertexFromForceLinear")
-    return new VertexFromForceLinear(paraValue,indValue);
+  else if(idValue=="Force::Vector" ||
+	  idValue=="VertexFromForce")
+    return new Force::Vector(paraValue,indValue);
+  else if(idValue=="Force::VectorLinear" ||
+	  idValue=="VertexFromForceLinear")
+    return new Force::VectorLinear(paraValue,indValue);
   else if(idValue=="VertexFromBall")
     return new VertexFromBall(paraValue,indValue);
   else if(idValue=="VertexFromParabolid")
     return new VertexFromParabolid(paraValue,indValue);
   else if(idValue=="VertexFromExternalWall")
     return new VertexFromExternalWall(paraValue,indValue);
-
+  
   // Growth by adding forces to vertices
   // GrowthForce.h(.cc)
   else if(idValue=="GrowthForce::Radial" ||
