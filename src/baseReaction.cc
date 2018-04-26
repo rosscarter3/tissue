@@ -28,7 +28,7 @@
 #include "sisterVertex.h"
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
-#include"massAction.h"
+#include "massAction.h"
 
 BaseReaction::~BaseReaction(){}
 
