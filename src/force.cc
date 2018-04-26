@@ -834,5 +834,250 @@ namespace Force {
     }
     if (timeFactor_ > 1.0) timeFactor_ = 1.0;
   }
+
+  Ball::Ball(std::vector<double> &paraValue,
+	     std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 5 && paraValue.size() != 8) {
+      std::cerr << "Force::Ball::Ball() "
+		<< "Puts a ball(sphere) of a given radius (radius) in a given "
+		<< "position (x,y,z) around meriestem or moves it toward meristem by a "
+		<< "given velocity vector "
+		<< "5 parameters for static : radius, x, y, z. Kforce" << std::endl
+		<< "8 parameters for dynamic : radius, x, y, z, Kforce, dx, dy, dz."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::Ball::Ball() "
+		<< "VertexFromBall() "
+		<< "No variable indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::Ball");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "Radius";
+    tmp[1] = "xc";
+    tmp[2] = "yc";
+    tmp[3] = "zc";
+    tmp[4] = "Kforce";
+    
+    setParameterId(tmp);
+  }
+
+  void Ball::derivs(Tissue &T, DataMatrix &cellData,
+		    DataMatrix &wallData, DataMatrix &vertexData,
+		    DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+		    DataMatrix &vertexDerivs) {
+    // Do the update for each vertex .
+    size_t numVertex = T.numVertex();
+    for (size_t vertexIndex = 0; vertexIndex < numVertex; ++vertexIndex) {
+      double Radius = parameter(0);
+      double Xc = parameter(1);
+      double Yc = parameter(2);
+      double Zc = parameter(3);
+      double Kforce = parameter(4);
+      DataMatrix position(1, vertexData[vertexIndex]);
+      double d2 = (position[0][0] - Xc) * (position[0][0] - Xc) +
+	(position[0][1] - Yc) * (position[0][1] - Yc) +
+	(position[0][2] - Zc) * (position[0][2] - Zc);
+      if (d2 < Radius * Radius) {
+	vertexDerivs[vertexIndex][0] += Kforce * (Radius - std::sqrt(d2)) *
+	  std::sqrt(Radius - std::sqrt(d2)) *
+	  (position[0][0] - Xc) / std::sqrt(d2);
+	vertexDerivs[vertexIndex][1] += Kforce * (Radius - std::sqrt(d2)) *
+	  std::sqrt(Radius - std::sqrt(d2)) *
+	  (position[0][1] - Yc) / std::sqrt(d2);
+	vertexDerivs[vertexIndex][2] += Kforce * (Radius - std::sqrt(d2)) *
+	  std::sqrt(Radius - std::sqrt(d2)) *
+	  (position[0][2] - Zc) / std::sqrt(d2);
+      }
+    }
+  }
+  
+  void Ball::update(Tissue &T, DataMatrix &cellData,
+		    DataMatrix &wallData, DataMatrix &vertexData,
+		    double h) {
+    if (numParameter() > 5) {
+      setParameter(1, parameter(1) + h * parameter(5));
+      setParameter(2, parameter(2) + h * parameter(6));
+      setParameter(3, parameter(3) + h * parameter(7));
+    }
+  }
+  
+  Parabolid::Parabolid(
+		       std::vector<double> &paraValue,
+		       std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 5 && paraValue.size() != 6) {
+      std::cerr << "Force::Parabolid::"
+		<< "Parabolid() "
+		<< "Puts a vertical(z) parabolid z=a((x-xc)2+(y-yc)2)+b with "
+		<< "given properties in a given "
+		<< "position (x,y) and b below or above template or  moves it "
+		<< "upward or downwars by a given velocity"
+		<< "5 parameters for static : a, xc, yc, b. Kforce" << std::endl
+		<< "6 parameters for dynamic : a, xc, yc, b, Kforce, v."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::Parabolid::"
+		<< "Parabolid() "
+		<< "No variable indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::Parabolid");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "a";
+    tmp[1] = "xc";
+    tmp[2] = "yc";
+    tmp[3] = "b";
+    tmp[4] = "Kforce";
+    
+    setParameterId(tmp);
+  }
+  
+  void Parabolid::derivs(Tissue &T, DataMatrix &cellData,
+			 DataMatrix &wallData, DataMatrix &vertexData,
+			 DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+			 DataMatrix &vertexDerivs) {
+    // Do the update for each vertex .
+    size_t numVertex = T.numVertex();
+    for (size_t vertexIndex = 0; vertexIndex < numVertex; ++vertexIndex) {
+      double a = parameter(0);
+      double Xc = parameter(1);
+      double Yc = parameter(2);
+      double b = parameter(3);
+      double Kforce = parameter(4);
+      DataMatrix position(1, vertexData[vertexIndex]);
+      double d = position[0][2] -
+	a * (position[0][0] - Xc) * (position[0][0] - Xc) -
+	a * (position[0][1] - Yc) * (position[0][1] - Yc) - b;
+      if (d < 0) {
+	// double m=2*a*(position[0][0]-Xc);
+	// double n=2*a*(position[0][1]-Yc);
+	
+	// vertexDerivs[vertexIndex][0]+=-Kforce*(m/std::sqrt(1+m*m+n*n));
+	// vertexDerivs[vertexIndex][1]+=-Kforce*(n/std::sqrt(1+m*m+n*n));
+	// vertexDerivs[vertexIndex][2]+=Kforce*(1/std::sqrt(1+m*m+n*n));
+	vertexDerivs[vertexIndex][2] += -Kforce * (d);
+      }
+    }
+  }
+  
+  void Parabolid::update(Tissue &T, DataMatrix &cellData,
+			 DataMatrix &wallData, DataMatrix &vertexData,
+			 double h) {
+    if (numParameter() > 5) setParameter(3, parameter(3) + h * parameter(5));
+  }
+  
+  ExternalWall::
+  ExternalWall(
+	       std::vector<double> &paraValue,
+	       std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 12) {
+      std::cerr << "Force::ExternalWall::ExternalWall() "
+		<< "Puts a wall in a given point(x,y,z) with a given normal "
+		<< "vector(nx,ny,nz)"
+		<< "with a given height beween zmin and zmax around meriestem "
+		<< "and  moves it"
+		<< "toward meristem with a given velocity vector(dx,dy,dz)"
+		<< "12 parameters used:x0, y0, z0, nx, ny, nz, zmin, zmax, dx, "
+		<< "dy, dz, Kforce"
+		<< std::endl
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::ExternalWall::ExternalWall() "
+		<< "No variable indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::ExternalWall");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "x0";
+    tmp[1] = "y0";
+    tmp[2] = "z0";
+    tmp[3] = "nx";
+    tmp[4] = "ny";
+    tmp[5] = "nz";
+    tmp[6] = "zmin";
+    tmp[7] = "zmax";
+    tmp[8] = "dx";
+    tmp[9] = "dy";
+    tmp[10] = "dz";
+    tmp[11] = "Kforce";
+    
+    setParameterId(tmp);
+  }
+  
+  void ExternalWall::derivs(Tissue &T, DataMatrix &cellData,
+			    DataMatrix &wallData,
+			    DataMatrix &vertexData,
+			    DataMatrix &cellDerivs,
+			    DataMatrix &wallDerivs,
+			    DataMatrix &vertexDerivs) {
+    // Do the update for each vertex .
+    size_t numVertex = T.numVertex();
+    for (size_t vertexIndex = 0; vertexIndex < numVertex; ++vertexIndex) {
+      double X0 = parameter(0);
+      double Y0 = parameter(1);
+      double Z0 = parameter(2);
+      double nx = parameter(3);
+      double ny = parameter(4);
+      double nz = parameter(5);
+      double Zmin = parameter(6);
+      double Zmax = parameter(7);
+      double Kforce = parameter(11);
+      DataMatrix position(1, vertexData[vertexIndex]);
+      double d = (nx * position[0][0] + ny * position[0][1] +
+		  nz * position[0][2] - nx * X0 - ny * Y0 - nz * Z0) /
+	std::sqrt(nx * nx + ny * ny + nz * nz);
+      if (d < 0 && position[0][2] > Zmin && position[0][2] < Zmax) {
+	vertexDerivs[vertexIndex][0] += Kforce * (-d) * std::sqrt(-d) * nx /
+	  std::sqrt(nx * nx + ny * ny + nz * nz);
+	vertexDerivs[vertexIndex][1] += Kforce * (-d) * std::sqrt(-d) * ny /
+	  std::sqrt(nx * nx + ny * ny + nz * nz);
+	vertexDerivs[vertexIndex][2] += Kforce * (-d) * std::sqrt(-d) * nz /
+	  std::sqrt(nx * nx + ny * ny + nz * nz);
+      }
+    }
+  }
+  
+  void ExternalWall::update(Tissue &T, DataMatrix &cellData,
+			    DataMatrix &wallData,
+			    DataMatrix &vertexData, double h) {
+    if (numParameter() > 5) {
+      setParameter(0, parameter(0) + h * parameter(8));
+      setParameter(1, parameter(1) + h * parameter(9));
+      setParameter(2, parameter(2) + h * parameter(10));
+    }
+  }
   
 } //end namespace Force

@@ -148,6 +148,8 @@ namespace Force {
   /// position(coordinate)
   /// @endverbatim
   ///
+  /// @see Force::ExternalWall for more complex version of a wall force that can be defined
+  /// in more general direction and that can move.
   class InfiniteWall : public BaseReaction {
   public:
     ///
@@ -489,6 +491,169 @@ namespace Force {
 		DataMatrix &vertexData, DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
     
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
+  };
+
+  ///
+  /// @brief Updates position of vertices assuming that a ball (force) pushing at the tissue,
+  /// where it is possible to have the ball moving at a given constant velocity
+  ///
+  /// @details The force is applied outwards with respect to a sphere/ball and the force
+  /// is proportional to
+  /// (overlap)^(3/2). In a model file the reaction is defined as
+  /// @verbatim
+  /// Force::Ball 5 0
+  /// Radius Xc Yc Zc Kforce
+  /// @endverbatim
+  /// or
+  /// @verbatim
+  /// Force::Ball 8 0
+  /// Radius Xc Yc Zc Kforce dXc dYc dZc
+  /// @endverbatim
+  /// where radius is the size of the 'ball' pushing at the tissue, Xc,Yc,Zc is
+  /// the center of the ball, and the optional dXc,dYc,dZc are the rates for
+  /// moving the ball along the different directions (the movement is generated in
+  /// the update function).
+  ///
+  /// @note Used to be called VertexFromBall
+  ///
+  class Ball : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Ball(std::vector<double> &paraValue,
+	 std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);    
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
+  };
+
+  ///
+  /// @brief Updates position of vertices assuming that a parabolid object is pushed into
+  /// a tissue, and can be moving with a given velocity (in z) into the template.
+  ///
+  /// @details The force is applied outwards with respect to the parabolid.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Force::Parabolid 5 0
+  /// a Xc Yc b Kforce
+  /// @endverbatim
+  /// or
+  /// @verbatim
+  /// Force::Parabolid 8 0
+  /// a Xc Yc b Kforce VelocityZ
+  /// @endverbatim
+  /// where the parabolid is defined by z=a((x-Xc)2 +(y-Yc)2)+b 
+  /// Xc,Yc is the center in x,y of the parabolid, and a and b are size/shape parameters. 
+  /// The optional VelocityZ is the rate for moving the ball along the z axis.
+  /// (the movement is generated in the update function).
+  ///
+  /// @note Used to be called VertexFromParabolid.
+  ///
+  class Parabolid : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Parabolid(std::vector<double> &paraValue,
+	      std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);    
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
+  };
+  
+  ///
+  /// @brief Updates position of vertices assuming that an external wall is moving
+  /// with a given velocity vector toward the meristem.
+  ///
+  /// @details The force is applied in the normal direction and is proportional to
+  /// (overlap)^(3/2) In a model file the reaction is defined as
+  /// @verbatim
+  /// Force::ExternalWall 12 0
+  /// X0 Y0 Z0 nx ny nz Zmin Zmax dXc dYc dZc Kforce
+  /// @endverbatim
+  /// where n is the normal vector to the 'wall' pushing at the tissue, X0,Y0,Z0
+  /// is a point on the wall and dXc,dYc,dZc are the rates for moving the wall
+  /// along the different directions (the movement is generated in the update
+  /// function).
+  ///
+  /// @note used to be called VertexFromExternalWall
+  /// @see Force::InfiniteWall is a simpler version with fewer parameters, but with wall along
+  /// axis and static
+  ///
+  class ExternalWall : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ExternalWall(std::vector<double> &paraValue,
+		 std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
     ///
     /// @brief Update function for this reaction class
     ///

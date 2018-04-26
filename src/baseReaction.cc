@@ -28,7 +28,7 @@
 #include "sisterVertex.h"
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
-#include"massAction.h"
+#include "massAction.h"
 
 BaseReaction::~BaseReaction(){}
 
@@ -222,12 +222,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue=="Force::VectorLinear" ||
 	  idValue=="VertexFromForceLinear")
     return new Force::VectorLinear(paraValue,indValue);
-  else if(idValue=="VertexFromBall")
-    return new VertexFromBall(paraValue,indValue);
-  else if(idValue=="VertexFromParabolid")
-    return new VertexFromParabolid(paraValue,indValue);
-  else if(idValue=="VertexFromExternalWall")
-    return new VertexFromExternalWall(paraValue,indValue);
+  else if(idValue=="Force::Ball" ||
+	  idValue=="VertexFromBall")
+    return new Force::Ball(paraValue,indValue);
+  else if(idValue=="Force::Parabolid" ||
+	  idValue=="VertexFromParabolid")
+    return new Force::Parabolid(paraValue,indValue);
+  else if(idValue=="Force::ExternalWall" ||
+	  idValue=="VertexFromExternalWall")
+    return new Force::ExternalWall(paraValue,indValue);
   
   // Growth by adding forces to vertices
   // GrowthForce.h(.cc)
