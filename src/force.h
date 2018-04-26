@@ -22,6 +22,116 @@
 namespace Force {
 
   ///
+  /// @brief Applies a force outwards (or inwards) perpendicular to a Cylinder surface direction
+  ///
+  /// @details This reaction applies a force in the radial (x,y) direction with
+  /// update of the vertex position in x (and symmetric in y) following
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
+  /// @f$|r|@f$ is the radial position (in the x/y-plane).
+  /// In a model file it is defined as:
+  /// @verbatim
+  /// Force::Cylinder 2 0
+  /// F direction_flag
+  /// @endverbatim
+  /// where F is the force magnitude and the direction_flag is 1 if forces are radially
+  /// (x,y) outwards and -1 for inwards.
+  ///
+  /// @note Used to be called CylinderForce
+  ///
+  class Cylinder : public BaseReaction {
+  public:
+    Cylinder(std::vector<double> &paraValue,
+	     std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
+  ///
+  /// @brief Applies a force outwards (or inwards) perpendicular to a SphereCylinder surface direction
+  ///
+  /// @details This reaction applies a force in the radial direction, where z>0 updates vertex positions
+  /// in x,y,z (sphere), and z<0 only x,y directions are updated (cylinder).
+  /// For z>0, the update of the vertex position in x (and symmetric in y and z) follows
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
+  /// @f$|r|@f$ is the radial position (in 3D (x,y,z)).
+  /// For z<0, the update of the vertex position in x (and symmetric in y) follows
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
+  /// @f$|r|@f$ is now the radial position in the x/y-plane.
+  /// In a model file it is defined as:
+  /// @verbatim
+  /// Force::SphereCylinder 2 0
+  /// F direction_flag
+  /// @endverbatim
+  /// where F is the force magnitude and the direction_flag is 1 if forces are radially
+  /// (x,y) outwards and -1 for inwards.
+  ///
+  /// @note Used to be called SphereCylinderForce
+  /// @see GrowthForce::SphereCylinder for generating vertex movement alonf the sphere-cylinder surface.
+  ///
+  class SphereCylinder : public BaseReaction {
+  public:
+    SphereCylinder(std::vector<double> &paraValue,
+		   std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
+  ///
+  /// @brief Applies a force perpendicular to a spherecylinder surface, outwards (inwards) if vertex is
+  /// inside (outside) a specified radius. 
+  ///
+  /// @details This reaction generates forces perpendicular to a sphere (if z>0) or cylinder (z<0) surface
+  /// of specified radius (@f$R=p_2@f$). 
+  /// For z>0, the update of the vertex position in x (and symmetric in y and z) follows
+  /// (if vertex inside of the radius)
+  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x $f]
+  /// where @f$p_0@f$ is the force and @f$p_2@f$ is the defined radius. If outside @f$p_1@f$ replaces @f$p_0@f$
+  /// and direction is inwards. @f$|r|@f$ is the radial position of the vertex (in 3D (x,y,z)).
+  /// For z<0, the update of the vertex position in x (and symmetric in y) follows
+  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x $f]
+  /// with same parameters and on the sphere, but
+  /// @f$|r|@f$ is now the radial position in the x/y-plane.
+  /// In a model file it is defined as:
+  /// @verbatim
+  /// Force::SphereCylinderRadius 3 0
+  /// F_out F_in R
+  /// @endverbatim
+  /// where F_out is the force magnitude applied (outwards) if the vertex is inside the specified radius (R),
+  /// and F_in is if it is outside (in inwards direction).
+  ///
+  /// @note Used to be called SphereCylinderForceFromRadius
+  /// @see GrowthForce::SphereCylinder applies forces along a spherecylinder surface.
+  ///  
+  class SphereCylinderRadius : public BaseReaction {
+  public:
+    SphereCylinderRadius(std::vector<double> &paraValue,
+			 std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+
+  ///
   /// @brief Applies a force perpendicular to a defined wall of infinite size, defined for a specific coordinate
   ///
   /// @details A spring force in a perpendicular direction to a specific coordinate is applied.
@@ -284,6 +394,108 @@ namespace Force {
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 		DataMatrix &vertexData, DataMatrix &cellDerivs,
 		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+
+  ///
+  /// @brief Updates list of vertices with a given force in direction provided by vector
+  ///
+  /// @details A force is given as parameters (1 parameter for x, 2 for x,y and 3 for x,y,z).
+  /// The update is given by (for dimensions i as specified by the parameters)
+  /// @f[ \frac{dx_i}{dt} = p_i @f]
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// VertexFromForce 1[/2/3] 1 (num vertices)
+  /// F_x [F_y F_z]
+  /// vertex_index_0
+  /// [vertex index_1]
+  /// [...]
+  /// @endverbatim
+  ///
+  /// @note Used to be called VertexFromForce
+  /// @see Force::VectorLinear Same as this reaction, but uses a 'ramping up' of the forces (linearly) over dT.
+  ///
+  class Vector : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Vector(std::vector<double> &paraValue,
+	   std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+
+  ///
+  /// @brief Updates list of vertices with a given force applied where the force
+  /// is linearly increased from zero across a given time span (deltaT).
+  ///
+  /// The update is given by (for dimensions i as specified by the parameters)
+  /// @f[ \frac{dx_i}{dt} = max{\frac{t}{T},1.0} p_i @f]
+  /// where @f$p_i@f$ are the forces and the factor in front is between 0 and 1
+  /// linear increasing between time (t) equals zero and t equals T.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Force::VectorLinear 2[/3/4] 1 (num vertices)
+  /// F_x [F_y F_z] T
+  /// vertex_index_0
+  /// [vertex index_1]
+  /// [...]
+  /// @endverbatim
+  ///
+  /// @note Used to be called VertexFromForceLinear.
+  /// @see Force::Vector Same as this reaction, but with Forces constant.
+  ///
+  class VectorLinear : public BaseReaction {
+  private:
+    double timeFactor_;    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    VectorLinear(std::vector<double> &paraValue,
+		 std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
   };
   
 } // end namespace Force

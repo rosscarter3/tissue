@@ -28,7 +28,7 @@
 #include "sisterVertex.h"
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
-#include "massAction.h"
+#include"massAction.h"
 
 BaseReaction::~BaseReaction(){}
 
@@ -191,12 +191,15 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
   // HJ: some yet needs to be moved from mechanical.h
-  else if(idValue=="CylinderForce")
-    return new CylinderForce(paraValue,indValue);
-  else if(idValue=="SphereCylinderForce")
-    return new SphereCylinderForce(paraValue,indValue);
-  else if(idValue=="SphereCylinderForceFromRadius")
-    return new SphereCylinderForceFromRadius(paraValue,indValue);
+  else if(idValue=="Force::Cylinder" ||
+	  idValue=="CylinderForce")
+    return new Force::Cylinder(paraValue,indValue);
+  else if(idValue=="Force::SphereCylinder" ||
+	  idValue=="SphereCylinderForce")
+    return new Force::SphereCylinder(paraValue,indValue);
+  else if(idValue=="Force::SphereCylinderRadius" ||
+	  idValue=="SphereCylinderForceFromRadius")
+    return new Force::SphereCylinderRadius(paraValue,indValue);
   else if(idValue=="Force::InfiniteWall" ||
 	  idValue=="InfiniteWallForce")
     return new Force::InfiniteWall(paraValue,indValue);
@@ -213,17 +216,19 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Force::CellIndexRadial(paraValue,indValue);
   else if(idValue=="Force::Axial")
     return new Force::Axial(paraValue,indValue);
-  else if(idValue=="VertexFromForce")
-    return new VertexFromForce(paraValue,indValue);
-  else if(idValue=="VertexFromForceLinear")
-    return new VertexFromForceLinear(paraValue,indValue);
+  else if(idValue=="Force::Vector" ||
+	  idValue=="VertexFromForce")
+    return new Force::Vector(paraValue,indValue);
+  else if(idValue=="Force::VectorLinear" ||
+	  idValue=="VertexFromForceLinear")
+    return new Force::VectorLinear(paraValue,indValue);
   else if(idValue=="VertexFromBall")
     return new VertexFromBall(paraValue,indValue);
   else if(idValue=="VertexFromParabolid")
     return new VertexFromParabolid(paraValue,indValue);
   else if(idValue=="VertexFromExternalWall")
     return new VertexFromExternalWall(paraValue,indValue);
-
+  
   // Growth by adding forces to vertices
   // GrowthForce.h(.cc)
   else if(idValue=="GrowthForce::Radial" ||
