@@ -171,25 +171,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromCellPlaneSphereCylinderConcentrationHill(paraValue, indValue);
   else if (idValue == "VertexFromCellPlaneTriangular")
     return new VertexFromCellPlaneTriangular(paraValue, indValue);
-
-  // calculate.h (.cc)
-  // namespace Calculate collecting some ad hoc rections for calculating useful
-  // information to be stored in cell or wall data 
-  else if(idValue=="Calculate::AngleVectors" ||
-	  idValue=="CalculateAngleVectors")
-    return new Calculate::AngleVectors(paraValue,indValue);
-  else if(idValue=="Calculate::AngleVectorXYplane" ||
-	  idValue=="CalculateAngleVectorXYplane")
-    return new Calculate::AngleVectorXYplane(paraValue,indValue);
-  else if(idValue=="Calculate::AngleVector" ||
-	  idValue=="AngleVector")
-    return new Calculate::AngleVector(paraValue,indValue);
-  else if(idValue=="Calculate::MaxVelocity" ||
-	  idValue=="maxVelocity")
-    return new Calculate::MaxVelocity(paraValue,indValue);
-  else if(idValue=="Calculate::TissueVolumeChange" ||
-	  idValue=="TemplateVolumeChange")
-    return new Calculate::TissueVolumeChange(paraValue,indValue);
   
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
@@ -499,6 +480,25 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue == "SisterVertex::CombineDerivatives")
     return new SisterVertex::CombineDerivatives(paraValue, indValue);
 
+    // calculate.h (.cc)
+  // namespace Calculate collecting some ad hoc rections for calculating useful
+  // information to be stored in cell or wall data 
+  else if(idValue=="Calculate::AngleVectors" ||
+	  idValue=="CalculateAngleVectors")
+    return new Calculate::AngleVectors(paraValue,indValue);
+  else if(idValue=="Calculate::AngleVectorXYplane" ||
+	  idValue=="CalculateAngleVectorXYplane")
+    return new Calculate::AngleVectorXYplane(paraValue,indValue);
+  else if(idValue=="Calculate::AngleVector" ||
+	  idValue=="AngleVector")
+    return new Calculate::AngleVector(paraValue,indValue);
+  else if(idValue=="Calculate::MaxVelocity" ||
+	  idValue=="maxVelocity")
+    return new Calculate::MaxVelocity(paraValue,indValue);
+  else if(idValue=="Calculate::TissueVolumeChange" ||
+	  idValue=="TemplateVolumeChange")
+    return new Calculate::TissueVolumeChange(paraValue,indValue);
+  
   //adhocReaction.h,adhocReaction.cc
   else if (idValue == "VertexNoUpdateFromPosition")
     return new VertexNoUpdateFromPosition(paraValue, indValue);
