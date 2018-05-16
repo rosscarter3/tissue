@@ -906,9 +906,9 @@ namespace WallGrowth {
           //} // if(cellData[cellIndex][36]==0)// hypocotyl 
         } // cells
         //std::cerr<<growthtime<<"  "<<totalAreatmp<<std::endl;
-      }
-      
+      }      
     }
+  
     //reserve begin
     // {
 
@@ -1403,7 +1403,356 @@ namespace WallGrowth {
  
     // }
     // reserve end
-         
+
+    VectorTRBS::
+    VectorTRBS(std::vector<double> &paraValue, 
+	       std::vector< std::vector<size_t> > 
+	       &indValue ) {
+      
+      // Do some checks on the parameters and variable indeces
+      //
+      if (paraValue.size()!=4) {
+	std::cerr << "WallGrowth::CenterTriangulation::VectorTRBS"
+		  << "VectorTRBS() "
+		  << "Uses four parameters k_growth, s_threshold, velocity_threshold "
+                  << "and double_edge_flag = one " 
+                  << "for the case of using two independent resting lengths for neigbours, "
+		  << "zero for using a single edge."
+                  << std::endl;
+	exit(EXIT_FAILURE);
+      }
+      if (paraValue[3]!=1) {
+	std::cerr << "WallGrowth::CenterTriangulation::VectorTRBS"
+		  << "VectorTRBS() "
+		  << "Fourth parameter needs curfrently be one, "
+                  << "i.e. double_edge_flag = one " 
+                  << "for the case of using two independent resting lengths for neigbours."
+                  << std::endl;
+	exit(EXIT_FAILURE);
+      }
+        
+      if( indValue.size() !=4 || 
+          indValue[0].size() !=1 || 
+          indValue[1].size() !=1 || 
+          indValue[2].size() !=1 ||
+	  indValue[3].size() !=3 ) {
+	std::cerr << "WallGrowth::CenterTriangulation::VectorTRBS"
+		  << "VectorTRBS() "
+                  << "wall length index is given in first level,"
+		  << "Start of additional Cell variable indices (center(x,y,z) "
+		  << "L_1,...,L_n, n=num vertex) is given in second level. " 
+		  << "In third level velocity_value_store_index is given (not used"
+		  << " if velocity_threshold parameter >=100."
+		  << "In 4th level the two vector magnitude indices and vector"
+		  << " start index is given."
+		  << std::endl;
+	exit(EXIT_FAILURE);
+      }
+      //Set the variable values
+      //
+      setId("WallGrowth::CenterTriangulation::VectorTRBS");
+      setParameter(paraValue);  
+      setVariableIndex(indValue);
+      
+      //Set the parameter identities
+      //
+      std::vector<std::string> tmp( numParameter() );
+      tmp.resize( numParameter() );
+      tmp[0] = "k_growth";
+      tmp[1] = "s_threshold";
+      tmp[2] = "velocity_threshold";
+      tmp[3] = "doubleFlag";      
+      setParameterId( tmp );
+    }
+    
+    void VectorTRBS::
+    update(Tissue &T,
+	   DataMatrix &cellData,
+	   DataMatrix &wallData,
+	   DataMatrix &vertexData,
+           double h )
+    {
+      size_t dimension = vertexData[0].size();
+      size_t numCells = T.numCell();
+      size_t numWalls = T.numWall();
+      size_t wallLengthIndex= variableIndex(0,0);
+      size_t comIndex = variableIndex(1,0);
+      size_t lengthInternalIndex = comIndex+dimension;
+      size_t velocityStoreIndex = variableIndex(2,0);
+      double strainThreshold=parameter(1);
+      double velocityThreshold=parameter(2);
+      
+      size_t growthVecInd=variableIndex(3,2);
+      size_t growthVal1Ind=variableIndex(3,0);;
+      size_t growthVal2Ind=variableIndex(3,1);;
+      
+      static double growthtime=0;
+      static double deltat=0;
+      deltat +=h; 
+      
+      bool equil=true;
+      if (velocityThreshold<=100) {
+	for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex){        
+	  if(cellData[cellIndex][velocityStoreIndex]>velocityThreshold)
+	    equil=false;
+	}
+      }
+
+      if(equil) {//close to equilibrium
+	
+        growthtime+=h;  
+	// ----------------------------------------
+	// Temporary elements for storing triangular growth contributions for
+	// external and internal edges (only used if single edge elements are used)
+        //std::vector<std::vector<double> > mainWalls(numWalls);
+        //std::vector<std::vector<std::vector<double> > > internalWalls(numCells);        
+        //for (size_t wallIndex=0 ; wallIndex<numWalls ; ++wallIndex)
+	//mainWalls[wallIndex].resize(2);
+        //for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex){
+	//size_t numCellWalls = T.cell(cellIndex).numWall();
+	//internalWalls[cellIndex].resize(numCellWalls);
+	//for (size_t cellWallIndex=0 ; cellWallIndex<numCellWalls ; ++cellWallIndex)
+	//  internalWalls[cellIndex][cellWallIndex].resize(2);
+        //}
+	// ----------------------------------------
+        
+        for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) {
+	  double growthVal1=cellData[cellIndex][growthVal1Ind];
+	  double growthVal2=cellData[cellIndex][growthVal2Ind];
+
+	  if (growthVal1>strainThreshold || growthVal2>strainThreshold) {// Growth n at least one direction 
+	    size_t numCellWalls = T.cell(cellIndex).numWall(); 
+	    
+	    for (size_t wallIndex=0; wallIndex<numCellWalls; ++wallIndex) { 
+	      
+	      // Extract the information for the vertices/edges to be used for this triangle/plate
+	      // ----------------------------------------
+	      size_t wallIndexPlusOneMod = (wallIndex+1)%numCellWalls;
+	      //size_t v1 = com;
+	      size_t v2 = T.cell(cellIndex).vertex(wallIndex)->index();
+	      size_t v3 = T.cell(cellIndex).vertex(wallIndexPlusOneMod)->index();
+	      //size_t w1 = internal edge
+	      size_t w2 = T.cell(cellIndex).wall(wallIndex)->index();
+	      //size_t w3 = internal edge+1
+	      
+	      DataMatrix position(3,vertexData[v2]);
+	      for (size_t d=0; d<dimension; ++d)
+		position[0][d] = cellData[cellIndex][comIndex+d]; // com position
+	      //position[1] = vertexData[v2]; // given by initiation
+	      position[2] = vertexData[v3];
+	      
+	      std::vector<double> restingLength(3);
+	      if(numParameter()>3 && parameter(3)==1){ // double resting length        
+		restingLength[0] = cellData[cellIndex][lengthInternalIndex + 2*wallIndex+1];
+		restingLength[2] = cellData[cellIndex][lengthInternalIndex + 2*wallIndexPlusOneMod];      
+		restingLength[1] = wallData[w2][wallLengthIndex]+
+		  cellData[cellIndex][lengthInternalIndex+2*numCellWalls+wallIndex];
+	      }
+	      else{           // single resting length
+		std::cerr << "WallGRowth::CenterTriangulation::VectorTRBS "
+			  << "Current implementation requires double resting lengths."
+			  << std::endl;
+		exit(EXIT_FAILURE);		
+		// ----------------------------------------
+		//restingLength[0] = cellData[cellIndex][lengthInternalIndex + wallIndex];
+		//restingLength[2] = cellData[cellIndex][lengthInternalIndex + wallIndexPlusOneMod];      
+		//restingLength[1] = wallData[w2][wallLengthIndex];
+		// ----------------------------------------
+	      } 
+            
+	      std::vector<double> length(3);
+	      length[0] = std::sqrt( (position[0][0]-position[1][0])*(position[0][0]-position[1][0]) +
+				     (position[0][1]-position[1][1])*(position[0][1]-position[1][1]) +
+				     (position[0][2]-position[1][2])*(position[0][2]-position[1][2]) );            
+	      length[1] = T.wall(w2).lengthFromVertexPosition(vertexData);
+	      length[2] = std::sqrt( (position[0][0]-position[2][0])*(position[0][0]-position[2][0]) +
+				     (position[0][1]-position[2][1])*(position[0][1]-position[2][1]) +
+				     (position[0][2]-position[2][2])*(position[0][2]-position[2][2]) );
+	      
+	      //Current shape local coordinate of the element  (counterclockwise ordering of nodes/edges)
+	      double CurrentAngle1=std::acos( (length[0]*length[0]+
+					       length[1]*length[1]-
+					       length[2]*length[2])/
+					      (length[0]*length[1]*2) );
+            
+	      double Qa=std::cos(CurrentAngle1)*length[0];
+	      double Qc=std::sin(CurrentAngle1)*length[0];
+	      double Qb=length[1];
+	      
+	      double RestingAngle1=std::acos(  (restingLength[0]*restingLength[0]+
+						restingLength[1]*restingLength[1]-
+						restingLength[2]*restingLength[2])/
+					       (restingLength[0]*restingLength[1]*2)    );
+            
+	      double Pa=std::cos(RestingAngle1)*restingLength[0];
+	      double Pc=std::sin(RestingAngle1)*restingLength[0];
+	      double Pb=restingLength[1];
+            
+	      // shape vector matrix in resting shape in local coordinate system  = 
+	      // inverse of coordinate matrix ( only first two elements i.e. ShapeVectorResting[3][2] )      
+	      double ShapeVectorResting[3][3]={ {  0   ,       1/Pc      , 0 }, 
+						{-1/Pb , (Pa-Pb)/(Pb*Pc) , 1 },       
+						{ 1/Pb ,     -Pa/(Pb*Pc) , 0 }  };
+            
+	      double positionLocal[3][2]={ {Qa , Qc}, 
+					   {0  , 0 },  
+					   {Qb , 0 }  };
+            
+	      double DeformGrad[2][2]={{0,0},{0,0}}; // F= Qi x Di
+	      for ( int ii=0 ; ii<3 ; ++ii ) {
+		DeformGrad[0][0]=DeformGrad[0][0]+positionLocal[ii][0]*ShapeVectorResting[ii][0];
+		DeformGrad[1][0]=DeformGrad[1][0]+positionLocal[ii][1]*ShapeVectorResting[ii][0];
+		DeformGrad[0][1]=DeformGrad[0][1]+positionLocal[ii][0]*ShapeVectorResting[ii][1];
+		DeformGrad[1][1]=DeformGrad[1][1]+positionLocal[ii][1]*ShapeVectorResting[ii][1];
+	      }
+            
+	      double growthCurrGlob[3]={cellData[cellIndex][growthVecInd  ],
+					cellData[cellIndex][growthVecInd+1],
+					cellData[cellIndex][growthVecInd+2] };
+	      
+	      double tempA=std::sqrt((position[2][0]-position[1][0])*(position[2][0]-position[1][0])+
+				     (position[2][1]-position[1][1])*(position[2][1]-position[1][1])+
+				     (position[2][2]-position[1][2])*(position[2][2]-position[1][2])  );
+	      
+	      double tempB=std::sqrt((position[0][0]-position[1][0])*(position[0][0]-position[1][0])+
+				     (position[0][1]-position[1][1])*(position[0][1]-position[1][1])+
+				     (position[0][2]-position[1][2])*(position[0][2]-position[1][2])  );
+            
+	      double Xcurrent[3]=      
+		{ (position[2][0]-position[1][0])/tempA,
+		  (position[2][1]-position[1][1])/tempA,
+		  (position[2][2]-position[1][2])/tempA
+		};
+	      
+	      double Bcurrent[3]=      
+		{ (position[0][0]-position[1][0])/tempB,
+		  (position[0][1]-position[1][1])/tempB,
+		  (position[0][2]-position[1][2])/tempB
+		};
+	      
+	      double Zcurrent[3]=      
+		{ Xcurrent[1]*Bcurrent[2]-Xcurrent[2]*Bcurrent[1],
+		  Xcurrent[2]*Bcurrent[0]-Xcurrent[0]*Bcurrent[2],
+		  Xcurrent[0]*Bcurrent[1]-Xcurrent[1]*Bcurrent[0]
+		};
+            
+	      tempA=std:: sqrt(Zcurrent[0]*Zcurrent[0]+Zcurrent[1]*Zcurrent[1]+Zcurrent[2]*Zcurrent[2]);
+	      Zcurrent[0]=Zcurrent[0]/tempA;
+	      Zcurrent[1]=Zcurrent[1]/tempA;
+	      Zcurrent[2]=Zcurrent[2]/tempA;
+	      
+	      double Ycurrent[3]=      
+		{ Zcurrent[1]*Xcurrent[2]-Zcurrent[2]*Xcurrent[1],
+		  Zcurrent[2]*Xcurrent[0]-Zcurrent[0]*Xcurrent[2],
+		  Zcurrent[0]*Xcurrent[1]-Zcurrent[1]*Xcurrent[0]
+		};
+	      
+	      double rotation[3][3]=
+		{ {Xcurrent[0] , Ycurrent[0] , Zcurrent[0] },
+		  {Xcurrent[1] , Ycurrent[1] , Zcurrent[1] },
+		  {Xcurrent[2] , Ycurrent[2] , Zcurrent[2] } };
+	      
+	      // rotating the growth vector from global coordinate system to the local one in the current shape
+	      // ----------------------------------------
+	      double growthCurrLocal[3]=
+		{  rotation[0][0]*growthCurrGlob[0]+
+		   rotation[1][0]*growthCurrGlob[1]+
+		   rotation[2][0]*growthCurrGlob[2],
+		   
+		   rotation[0][1]*growthCurrGlob[0]+
+		   rotation[1][1]*growthCurrGlob[1]+
+		   rotation[2][1]*growthCurrGlob[2],
+		   
+		   rotation[0][2]*growthCurrGlob[0]+
+		   rotation[1][2]*growthCurrGlob[1]+
+		   rotation[2][2]*growthCurrGlob[2]
+		};
+	      
+	      // transform the growth vector from current local to the resting local
+	      double growthRestLocal[2]={DeformGrad[1][1]*growthCurrLocal[0]-DeformGrad[0][1]*growthCurrLocal[1],
+					 -DeformGrad[1][0]*growthCurrLocal[0]+DeformGrad[0][0]*growthCurrLocal[1]};
+	      double tmpG=std::sqrt(growthRestLocal[0]*growthRestLocal[0]+growthRestLocal[1]*growthRestLocal[1]);
+	      growthRestLocal[0]/=tmpG;
+	      growthRestLocal[1]/=tmpG;
+	      
+	      std::vector<std::vector<double> > edgeRestLocal(3);
+	      for (size_t d=0; d< 3; ++d)
+		edgeRestLocal[d].resize(3);
+	      
+	      edgeRestLocal[0][0]= -Pa;   //positionLocal[][0]-positionLocal[][0];
+	      edgeRestLocal[0][1]= -Pc;   //positionLocal[][1]-positionLocal[][1];
+	      edgeRestLocal[1][0]= Pb;    //positionLocal[][0]-positionLocal[][0];
+	      edgeRestLocal[1][1]= 0;     //positionLocal[][1]-positionLocal[][1];            
+	      edgeRestLocal[2][0]= Pa-Pb; //positionLocal[][0]-positionLocal[][0];
+	      edgeRestLocal[2][1]= Pc;    //positionLocal[][1]-positionLocal[][1];
+	      
+	      std:: vector<double> cosTet(3);
+	      std:: vector<double> sinTet(3);
+	      for (size_t j=0; j< 3; ++j){
+		cosTet[j]=std::fabs((growthRestLocal[0]*edgeRestLocal[j][0]+
+				     growthRestLocal[1]*edgeRestLocal[j][1])/
+				    restingLength[j]);
+		sinTet[j]=std::sqrt(std::fabs(1-cosTet[j]*cosTet[j]));
+		
+		if(cosTet[j]<0 || cosTet[j]>1) {
+		  std::cerr<<"WallGrowth::CenterTriangulation::VectorTRBS cosTet is wrong, "
+			   <<cosTet[j]<<", in cell " << cellIndex << " and wall/triangle "
+			   << wallIndex << " and edge " << j << std::endl;
+		  exit(EXIT_FAILURE);
+		}
+	      }
+	      
+	      std::vector<std::vector<double> > restingComp(3);
+	      for (size_t j=0; j< 3; ++j)
+		restingComp[j].resize(2);
+	      
+	      for (size_t j=0; j< 3; ++j){
+		restingComp[j][0]=restingLength[j]*cosTet[j];
+		restingComp[j][1]=restingLength[j]*sinTet[j];
+	      }
+	      
+	      // Apply the growth update if applicable
+	      if (growthVal1>strainThreshold && growthVal2<strainThreshold){
+		//cellData[cellIndex][growthInd]+=1;              
+		double factor1=parameter(0)*h*(growthVal1-strainThreshold);		
+		for (size_t j=0; j< 3; ++j)
+		  restingComp[j][0]+=restingComp[j][0]*factor1;
+	      }
+	      if (growthVal1<strainThreshold && growthVal2>strainThreshold){
+		//cellData[cellIndex][growthInd]+=1;              
+		double factor2=parameter(0)*h*(growthVal2-strainThreshold);		
+		for (size_t j=0; j< 3; ++j)
+		  restingComp[j][1]+=restingComp[j][1]*factor2;
+	      }
+	      if (growthVal1>strainThreshold && growthVal2>strainThreshold){
+		//cellData[cellIndex][growthInd]+=2;
+		double factor1=parameter(0)*h*(growthVal1-strainThreshold);
+		double factor2=parameter(0)*h*(growthVal2-strainThreshold);		
+		for (size_t j=0; j< 3; ++j){
+		  restingComp[j][0]+=restingComp[j][0]*factor1;
+		  restingComp[j][1]+=restingComp[j][1]*factor2;
+		}
+	      }
+            
+	      double internalTemp=std::sqrt(restingComp[0][0]*restingComp[0][0]+
+					    restingComp[0][1]*restingComp[0][1]);
+	      
+	      double externalTemp=std::sqrt(restingComp[1][0]*restingComp[1][0]+
+					    restingComp[1][1]*restingComp[1][1]);
+	      
+	      double internalTempPlusOne=std::sqrt(restingComp[2][0]*restingComp[2][0]+
+						   restingComp[2][1]*restingComp[2][1]);
+	      
+	      cellData[cellIndex][lengthInternalIndex+2*numCellWalls+wallIndex]
+		=externalTemp-wallData[w2][wallLengthIndex];
+	      cellData[cellIndex][lengthInternalIndex + 2*wallIndex+1]=internalTemp;
+	      cellData[cellIndex][lengthInternalIndex + 2*wallIndexPlusOneMod]=internalTempPlusOne;
+	    } // walls
+	  } //if (growthVal1>strainThreshold || growthVal2>strainThreshold)
+        } // cells
+      } // if (equil)      
+    }// end update()
+
   } //CenterTriangulation namespace
   
   StressSpatial::

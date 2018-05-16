@@ -644,7 +644,8 @@ namespace WallGrowth {
     };
     
     ///
-    /// @brief 
+    /// @brief This reaction is currently using ad hoc additions/changes within the code and should
+    /// only be used by an expert, i.e. Behruz?
     ///
     /// In a model file the reaction is defined as
     ///
@@ -692,6 +693,76 @@ namespace WallGrowth {
 		  DataMatrix &cellDerivs,
 		  DataMatrix &wallDerivs,
 		  DataMatrix &vertexDerivs );
+      
+      void update(Tissue &T,
+		  DataMatrix &cellData,
+		  DataMatrix &wallData,
+		  DataMatrix &vertexData,
+                  double h );
+    };
+    
+    ///
+    /// @brief This reaction reads a vector representing e.g. strain or stress calculated elsewhere
+    /// as input for growth 
+    /// 
+    /// A vector t for example can be strain or stress rections and magnitudes are given as input to
+    /// this reaction, where the information is read from cell variables hence assuming that another
+    /// reaction is updating the values unless they are supposed to be constant.
+    ///
+    /// The reaction checks if the values are above a threshold value and then update edge elements
+    /// resting lengths accordingly. The reactions use the global input and for each triangle in the
+    /// cell 'project' the main directions down to the edge directions of the triangles to calculate
+    /// the contribution per edge. It follows the description in
+    /// @verbatim
+    /// Bozorg, Krupinski and Jonsson (2016) A continuous growth model for plant tissue.
+    /// Phys Biol 13:065002
+    /// @endverbatim
+    /// and is an implementation of the update in Eq. 32:
+    /// @f[\frac{dL_i}{dt} = k_g R(g_i-g_t) L_i @f]
+    /// where @f$L_i2f$ is the resting length of edge i, @f$k_g@f$ throw rate, @f$R@f$ is the ramp
+    /// function (linearly increasing if the argument is above zero (zero otherwise). @f$g_t@f$ is the
+    /// given threshold value and @f$g_i@f$ is the (e.g. strain) value in the direction of the edge.
+    /// The update is done in the update function (not derivs), such that it can be controlled
+    /// to only be done the elastic mechancs is in equilibrium. This will be done if the velocity_threshold
+    /// is parameter is larger than any vertex movement from mechanical updates (as stored in a cellData
+    /// variable provided). An option is to set the velocity_threshold>100, and then the relaxation requirement
+    /// is not applied.
+    /// In a model file the reaction is defined as
+    /// @verbatim
+    /// CenterTriangulation::WallGrowth::VectorTRBS 4 4 1 1 1 3
+    /// k_growth              # growth rate
+    /// g_threshold           # signal threshold above which there will be growth
+    /// velocity_threshold    # vertex movement threshold for when growth will be applied (>100 = each time)
+    /// double_edge_flag      # 0 single edge elements and 1 if double, i.e. indep edges for connected tri's
+    /// L_ij-index            # edge resting length wor wall-edge element (index in wallData, usually=0)
+    /// InternalVarStartIndex # center triangulation data (index in cellData)
+    /// VelocityStoreIndex    # cell index for velocity data (to check for equilibrium)
+    /// strain1_index         # 'signal' magnitue in first principal direction (index in cellData)
+    /// strain2_index         # 'signal' magnitue in second principal direction
+    /// strain_vector_index   # start index where principal direction stored (in cellData)  
+    /// @endverbatim
+    /// @note Strain value and direction calculated and updated from other (mechanical) reactions.
+    /// @see namespace (to come) TRBS, triangular spring plate elements
+    /// @see VertexFromTRBScenterTriangulation
+    ///
+    class VectorTRBS : public BaseReaction {
+      
+    public:
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///  
+      VectorTRBS(std::vector<double> &paraValue, 
+	     std::vector< std::vector<size_t> > 
+	     &indValue );
       
       void update(Tissue &T,
 		  DataMatrix &cellData,
