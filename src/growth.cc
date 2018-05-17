@@ -375,19 +375,19 @@ namespace WallGrowth {
       //Do some checks on the parameters and variable indeces
       //
       if( paraValue.size()!=2 && paraValue.size() !=3) {
-	std::cerr << "WallGrowth::CenterTriangulation::Constant::"
-		  << "Constant() "
-		  << "Two or three parameters used  k_growth, linearFlag, [L_trunc]"
-		  << std::endl;
-	exit(EXIT_FAILURE);
+	      std::cerr << "WallGrowth::CenterTriangulation::Constant::"
+		    << "Constant() "
+		    << "Two or three parameters used  k_growth, linearFlag, [L_trunc]"
+		    << std::endl;
+	      exit(EXIT_FAILURE);
       }
       if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-	std::cerr << "WallGrowth::CenterTriangulation::Const::"
-		  << "Const() "
-		  << "Start of additional Cell variable indices (center(x,y,z) "
-		  << "L_1,...,L_n, n=num vertex) is given in first level." 
-		  << std::endl;
-	exit(EXIT_FAILURE);
+	      std::cerr << "WallGrowth::CenterTriangulation::Const::"
+		    << "Const() "
+		    << "Start of additional Cell variable indices (center(x,y,z) "
+		    << "L_1,...,L_n, n=num vertex) is given in first level." 
+		    << std::endl;
+	      exit(EXIT_FAILURE);
       }
       //Set the variable values
       //
@@ -402,13 +402,13 @@ namespace WallGrowth {
       tmp[0] = "k_growth";
       tmp[1] = "linearFlag";
       if (numParameter()>2) {
-	tmp[1] = "L_trunc";
+	      tmp[1] = "L_trunc";
       }
       setParameterId( tmp );
     }
     
     void Constant::
-    derivs(Tissue &T,
+    derivs(Tissue &T, 
 	   DataMatrix &cellData,
 	   DataMatrix &wallData,
 	   DataMatrix &vertexData,
@@ -421,16 +421,17 @@ namespace WallGrowth {
       size_t lengthStartIndex = lengthIndex+3;//assuming 3D
       
       for (size_t i=0; i<numCells; ++i) {
-	for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
-	  double arg = parameter(0);
-	  if (parameter(1)==1) {//linearFlag (prop to length)
-	    arg *= cellData[i][k+lengthStartIndex];
-	  }
-	  if (numParameter()>2) {//truncated at maximal length
-	    arg *= (1 - cellData[i][k+lengthStartIndex]/parameter(2));
-	  }
-	  cellDerivs[i][k+lengthStartIndex] += arg;
-	}
+	      for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
+	        double arg = parameter(0);
+	        if (parameter(1)==1) {//linearFlag (prop to length)
+	          arg *= cellData[i][k+lengthStartIndex];
+	        }
+	        if (numParameter()>2) {//truncated at maximal length
+	          arg *= (1 - cellData[i][k+lengthStartIndex]/parameter(2));
+	        }
+	        cellDerivs[i][k+lengthStartIndex] += arg;
+          //std::cerr << "arg: " << arg << std::endl;
+	      }
       }
     }
     
@@ -633,10 +634,13 @@ namespace WallGrowth {
         if(cellData[cellIndex][velocityStoreIndex]>velocityThreshold)
           equil=false;
       }
-
-      if(equil && deltat<200) {// if limited growth time
-        // if(equil && deltat>0.01) {// if close to mechanical equilibrum        
-        
+      //std::cerr << "Deltat: " << deltat << std::endl;
+      // WHY THIS!?
+      // My parameters wehre always causing equil = false
+      //if(equil && deltat<200) {// if limited growth time
+      std::cerr << equil << std::endl;
+      if(equil && deltat>0.0) {// if close to mechanical equilibrum        
+      //if(true) {  
         growthtime+=h;  
         //std::cerr<<scaletmp<<std::endl;
         std::vector<std::vector<double> > mainWalls(numWalls);

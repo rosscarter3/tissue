@@ -701,7 +701,7 @@ void VertexFromCellPressureLinear::derivs(Tissue &T, DataMatrix &cellData,
       }
       factor *= wallLength;
 
-      factor *= 1.5 - cellData[cellI][11];
+      // factor *= 1.5 - cellData[cellI][11];
 
       // if(totaltime<100) for residual stress calculation
       for (size_t d = 0; d < dimension; ++d) {
@@ -718,8 +718,9 @@ void VertexFromCellPressureLinear::update(Tissue &T, DataMatrix &cellData,
   static double tt = 0;
   tt += h;
   totaltime = tt;
-  if (totaltime < 200)
-  // if(true)
+  // AGAIN, WHY THIS???
+  //if (totaltime < 200)
+  if(true)
   {
     if (timeFactor_ < 1.0) {
       timeFactor_ += h / parameter(numParameter() - 1);
