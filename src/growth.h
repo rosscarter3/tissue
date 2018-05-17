@@ -644,7 +644,8 @@ namespace WallGrowth {
     };
     
     ///
-    /// @brief 
+    /// @brief This reaction is currently using ad hoc additions/changes within the code and should
+    /// only be used by an expert, i.e. Behruz?
     ///
     /// In a model file the reaction is defined as
     ///
@@ -699,362 +700,90 @@ namespace WallGrowth {
 		  DataMatrix &vertexData,
                   double h );
     };
+    
+    ///
+    /// @brief This reaction reads a vector representing e.g. strain or stress calculated elsewhere
+    /// as input for growth 
+    /// 
+    /// A vector t for example can be strain or stress rections and magnitudes are given as input to
+    /// this reaction, where the information is read from cell variables hence assuming that another
+    /// reaction is updating the values unless they are supposed to be constant.
+    ///
+    /// The reaction checks if the values are above a threshold value and then update edge elements
+    /// resting lengths accordingly. The reactions use the global input and for each triangle in the
+    /// cell 'project' the main directions down to the edge directions of the triangles to calculate
+    /// the contribution per edge. It follows the description in
+    /// @verbatim
+    /// Bozorg, Krupinski and Jonsson (2016) A continuous growth model for plant tissue.
+    /// Phys Biol 13:065002
+    /// @endverbatim
+    /// and is an implementation of the update in Eq. 32:
+    /// @f[\frac{dL_i}{dt} = k_g R(g_i-g_t) L_i @f]
+    /// where @f$L_i2f$ is the resting length of edge i, @f$k_g@f$ throw rate, @f$R@f$ is the ramp
+    /// function (linearly increasing if the argument is above zero (zero otherwise). @f$g_t@f$ is the
+    /// given threshold value and @f$g_i@f$ is the (e.g. strain) value in the direction of the edge.
+    /// The update is done in the update function (not derivs), such that it can be controlled
+    /// to only be done the elastic mechancs is in equilibrium. This will be done if the velocity_threshold
+    /// is parameter is larger than any vertex movement from mechanical updates (as stored in a cellData
+    /// variable provided). An option is to set the velocity_threshold>100, and then the relaxation requirement
+    /// is not applied.
+    /// In a model file the reaction is defined as
+    /// @verbatim
+    /// CenterTriangulation::WallGrowth::VectorTRBS 4 4 1 1 1 3
+    /// k_growth              # growth rate
+    /// g_threshold           # signal threshold above which there will be growth
+    /// velocity_threshold    # vertex movement threshold for when growth will be applied (>100 = each time)
+    /// double_edge_flag      # 0 single edge elements and 1 if double, i.e. indep edges for connected tri's
+    /// L_ij-index            # edge resting length wor wall-edge element (index in wallData, usually=0)
+    /// InternalVarStartIndex # center triangulation data (index in cellData)
+    /// VelocityStoreIndex    # cell index for velocity data (to check for equilibrium)
+    /// strain1_index         # 'signal' magnitue in first principal direction (index in cellData)
+    /// strain2_index         # 'signal' magnitue in second principal direction
+    /// strain_vector_index   # start index where principal direction stored (in cellData)  
+    /// @endverbatim
+    /// @note Strain value and direction calculated and updated from other (mechanical) reactions.
+    /// @see namespace (to come) TRBS, triangular spring plate elements
+    /// @see VertexFromTRBScenterTriangulation
+    ///
+    class VectorTRBS : public BaseReaction {
+      
+    public:
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///  
+      VectorTRBS(std::vector<double> &paraValue, 
+	     std::vector< std::vector<size_t> > 
+	     &indValue );
+      
+      void update(Tissue &T,
+		  DataMatrix &cellData,
+		  DataMatrix &wallData,
+		  DataMatrix &vertexData,
+                  double h );
+    };
   } // namespace CenterTriangulation
 } // namespace WallGrowth
-
-///
-/// @brief Growth via vertex movement radially outwards
-///
-/// The tissue grows from vertex movement radially outwards. The update can be
-///
-/// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
-/// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
-///
-/// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
-/// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MoveVertexRadially 2 0
-/// p_0 p_1
-/// @endverbatim
-///
-class MoveVertexRadially : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveVertexRadially(std::vector<double> &paraValue,
-                       std::vector< std::vector<size_t> >
-                       &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-
-    void derivsWithAbs(Tissue &T,
-         DataMatrix &cellData,
-         DataMatrix &wallData,
-         DataMatrix &vertexData,
-         DataMatrix &cellDerivs,
-         DataMatrix &wallDerivs,
-         DataMatrix &vertexDerivs,
-         DataMatrix &sdydtCell,
-         DataMatrix &sdydtWall,
-         DataMatrix &sdydtVertex );
-};
-
-///
-/// @brief Growth via vertex movement radially outwards
-///
-/// The tissue grows the epidermal cells (cells bordering to the background)
-/// from vertex movement radially outwards. The update can be
-///
-/// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
-/// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
-///
-/// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
-/// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MoveVertexRadially 2 0
-/// p_0 p_1
-/// @endverbatim
-///
-class MoveEpidermalVertexRadially : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveEpidermalVertexRadially(std::vector<double> &paraValue,
-                       std::vector< std::vector<size_t> >
-                       &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-};
-
-///
-/// @brief Growth via vertex movement in the x-direction
-///
-/// The tissue grows from vertex movement outwards in the x-direction. The update can be
-///
-/// @f[ \frac{dx}{dt} = p_{0} @f] (if @f$ p_{1}=0 @f$) or
-/// @f[ \frac{dx}{dt} = p_{0} x @f] (if @f$ p_{1}=1 @f$)
-///
-/// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
-/// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used.
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MoveVerteX 2 0
-/// p_0 p_1
-/// @endverbatim
-///
-class MoveVerteX : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveVerteX(std::vector<double> &paraValue,
-               std::vector< std::vector<size_t> >
-               &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-
-    void derivsWithAbs(Tissue &T,
-         DataMatrix &cellData,
-         DataMatrix &wallData,
-         DataMatrix &vertexData,
-         DataMatrix &cellDerivs,
-         DataMatrix &wallDerivs,
-         DataMatrix &vertexDerivs,
-         DataMatrix &sdydtCell,
-         DataMatrix &sdydtWall,
-         DataMatrix &sdydtVertex );
-};
-
-///
-/// @brief Growth via vertex movement in the y-direction
-///
-/// The tissue grows from vertex movement outwards in the x-direction. The update can be
-///
-/// @f[ \frac{dy}{dt} = p_{0} @f] (if @f$ p_{1}=0 @f$) or
-/// @f[ \frac{dy}{dt} = p_{0} x @f] (if @f$ p_{1}=1 @f$)
-///
-/// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
-/// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used.
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MoveVertexY 2 0
-/// p_0 p_1
-/// @endverbatim
-///
-class MoveVertexY : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveVertexY(std::vector<double> &paraValue,
-               std::vector< std::vector<size_t> >
-               &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-
-    void derivsWithAbs(Tissue &T,
-         DataMatrix &cellData,
-         DataMatrix &wallData,
-         DataMatrix &vertexData,
-         DataMatrix &cellDerivs,
-         DataMatrix &wallDerivs,
-         DataMatrix &vertexDerivs,
-         DataMatrix &sdydtCell,
-         DataMatrix &sdydtWall,
-         DataMatrix &sdydtVertex );
-};
-
-///
-/// @brief Growth via vertex movement radially outwards
-///
-///  The tissue grows from vertex movement radially outwards,  and also
-/// includes moving the vertex defining the 'center' of the cells in the
-/// center triangulated mesh. The update is given by
-///
-/// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
-/// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
-///
-/// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
-/// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MoveVertexRadially 2 0
-/// p_0 p_1
-/// InternalVarStartIndex
-/// @endverbatim
-///
-/// @see MoveVertexRadially
-///
-class MoveVertexRadiallycenterTriangulation : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveVertexRadiallycenterTriangulation(std::vector<double> &paraValue,
-                                          std::vector< std::vector<size_t> >
-                                          &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-};
-
-///
-/// @brief Growth via vertex movement along sphereCylinder
-///
-/// The tissue grows from vertex movement outwards (from apex) along sphereCylinder.
-/// The update can be described by the angular (v) movement
-///
-/// dv/dt = p_0 (p_1=0) or
-/// dv/dt = p_0*r (p_1=1)
-///
-/// where
-///
-/// v is the angle from the apex
-/// r is the sphere radius
-/// p_0 is the rate,
-/// p_1 is a flag determining function.
-///
-/// On the cylinder the vertex is moved downwards (in -z direction).
-///
-class MoveVertexSphereCylinder : public BaseReaction {
-    
-public:
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    MoveVertexSphereCylinder(std::vector<double> &paraValue,
-                             std::vector< std::vector<size_t> >
-                             &indValue );
-    ///
-    /// @brief Derivative function for this reaction class
-    ///
-    /// @see BaseReaction::derivs(Tissue &T,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-};
 
 ///
 /// @brief Updates the water volume variable given osmotic and turgor
 /// potentials
 ///
-/// This function uses a constant osmotic potential and calculates the turgor
+/// @details This function uses a constant osmotic potential and calculates the turgor
 /// potential to calculate water intake into the cell according to
-///
 /// @f[ \frac{V_w}{dt} = p_0 A (p_1-p_2T) @f]
-///
 /// where V_w is the water volume, T is the turgor,p_0 is the rate, p_1 is the
 /// osmotic potential and p_2 is an scaling factor. Also p_3=denyShrink_flag
 /// and p_4=allowNegTurgor_flag can be set to restrict the behavior.
-///
-/// The turgor, T, is calculated as T=V_w-V.
+/// The turgor, T, is calculated as @f$T=V_w-V@f$.
 ///
 class WaterVolumeFromTurgor : public BaseReaction
 {

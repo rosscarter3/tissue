@@ -425,130 +425,71 @@ class TargetAreaFromPressure : public BaseReaction {
   TargetAreaFromPressure(std::vector<double> &paraValue,
                          std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-//! Updates vertices from cells via a power diagram potential
+///
+/// @brief Updates vertices from cells via a power diagram potential
+///
+/// @details Power diagrams is a version of voronoi-tesselation where different 'cells'
+/// are allowed to have different sizes. See e.g.
+/// F. AURENHAMMER (1987) POWER DIAGRAMS: PROPERTIES, ALGORITHMS AND APPLICATIONS
+/// SIAM J Computing 16:78-96.
+/// Given that cell sizes are stored, power diagrams can be used to calculate an 'optimal'
+/// position of a vertex connected to threee cells. This function then updates the vertex
+/// position towards this optimal position with a rate @f$p_0@f$. In the model file
+/// the reaction is given by
+/// @verbatim
+/// VertexFromCellPowerDiagram 1 1 1
+/// K_force
+/// cellSizeIndex
+/// @endverbatim
+///
+/// @note only works for 2D currently
+///
 class VertexFromCellPowerdiagram : public BaseReaction {
   public:
   VertexFromCellPowerdiagram(std::vector<double> &paraValue,
                              std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force towards or from origo on vertices specified by indices
-class VertexForceOrigoFromIndex : public BaseReaction {
-  public:
-  VertexForceOrigoFromIndex(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force towards or from origo on vertices of cells
-class CellForceOrigoFromIndex : public BaseReaction {
-  public:
-  CellForceOrigoFromIndex(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force towards or from a Cylinder surface
-class CylinderForce : public BaseReaction {
-  public:
-  CylinderForce(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
-
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
-/// @brief Applies a force towards or from a SphereCylinder surface
+/// @brief A cell 'pressure' reaction providing forces perpendicular to walls (with magnitude given by cell variable)
 ///
-class SphereCylinderForce : public BaseReaction {
-  public:
-  SphereCylinderForce(std::vector<double> &paraValue,
-                      std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force towards a spherecylinder surface with defined radius
-class SphereCylinderForceFromRadius : public BaseReaction {
-  public:
-  SphereCylinderForceFromRadius(std::vector<double> &paraValue,
-                                std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force perpendicular to a defined wall of infinite size
-/*! A spring force in a perpendicular direction is applied. Note, the
-  wall can only be defined along coordinate axes.
-*/
-class InfiniteWallForce : public BaseReaction {
-  public:
-  InfiniteWallForce(std::vector<double> &paraValue,
-                    std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-//! Applies a force on epidermal vertices
-/*! A spring force in a perpendicular direction is applied. Note, the
-  wall can only be defined along coordinate axes.
-*/
-class EpidermalVertexForce : public BaseReaction {
-  public:
-  EpidermalVertexForce(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-class EpidermalRadialForce : public BaseReaction {
-  public:
-  EpidermalRadialForce(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
 class PerpendicularWallPressure : public BaseReaction {
-  public:
+ public:
   PerpendicularWallPressure(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
-
+			    std::vector<std::vector<size_t>> &indValue);
+  
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+	      DataMatrix &vertexData, DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
-/// @brief Updates vertices from a 'pressure' term defined to act in the cell
-/// normal direction.
+/// @brief Updates vertices from an 'internal pressure' term defined to act in the cell
+/// (face) normal direction.
 ///
 /// @details This function calculates the area of a cell and then distribute a
 /// force 'outwards' among the cell vertices. It relies on that the PCA cell
@@ -574,6 +515,11 @@ class VertexFromCellPlane : public BaseReaction {
   VertexFromCellPlane(std::vector<double> &paraValue,
                       std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -665,6 +611,11 @@ class VertexFromCellPlaneLinearCenterTriangulation : public BaseReaction {
       std::vector<double> &paraValue,
       std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -692,6 +643,11 @@ class VertexFromCellPlaneSpatial : public BaseReaction {
   VertexFromCellPlaneSpatial(std::vector<double> &paraValue,
                              std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -725,6 +681,11 @@ class VertexFromCellPlaneConcentrationHill : public BaseReaction {
       std::vector<double> &paraValue,
       std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -735,6 +696,11 @@ class VertexFromCellPlaneNormalized : public BaseReaction {
   VertexFromCellPlaneNormalized(std::vector<double> &paraValue,
                                 std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -749,6 +715,11 @@ class VertexFromCellPlaneNormalizedSpatial : public BaseReaction {
       std::vector<double> &paraValue,
       std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -759,6 +730,11 @@ class VertexFromCellPlaneSphereCylinder : public BaseReaction {
   VertexFromCellPlaneSphereCylinder(std::vector<double> &paraValue,
                                     std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -770,6 +746,11 @@ class VertexFromCellPlaneSphereCylinderConcentrationHill : public BaseReaction {
       std::vector<double> &paraValue,
       std::vector<std::vector<size_t>> &indValue);
 
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -804,562 +785,11 @@ class VertexFromCellPlaneTriangular : public BaseReaction {
   VertexFromCellPlaneTriangular(std::vector<double> &paraValue,
                                 std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates list of vertices with a given force applied
-///
-/// @details In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromForce 1/2/3(dimension) 1 (no of vertices)
-/// Force component(s)
-/// 1st vertex index
-/// 2nd vertex index
-/// ...
-/// @endverbatim
-///
-class VertexFromForce : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromForce(std::vector<double> &paraValue,
-                  std::vector<std::vector<size_t>> &indValue);
-
   ///
   /// @brief Derivative function for this reaction class
   ///
   /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates list of vertices with a given force applied where the force
-/// is linearly increased from zero across a given time span (deltaT).
-///
-/// @details In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromForceLinear 1/2/3(dimension+1) 1 (no of vertices)
-/// Force component(s) deltaT
-/// 1st vertex index
-/// 2nd vertex index
-/// ...
-/// @endverbatim
-///
-class VertexFromForceLinear : public BaseReaction {
-  private:
-  double timeFactor_;
-
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromForceLinear(std::vector<double> &paraValue,
-                        std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Updates position of vertices assuming that a ball is moving with
-/// a given velocity vector into the ball.
-///
-/// @details The force applied outward respect to ball proportional to
-/// (overlap)^(3/2). In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromBall 5 0
-/// Radius Xc Yc Zc Kforce
-/// @endverbatim
-/// or
-/// @verbatim
-/// VertexFromBall 8 0
-/// Radius Xc Yc Zc Kforce dXc dYc dZc
-/// @endverbatim
-/// where radius is the size of the 'ball' pushing at the tissue, Xc,Yc,Zc is
-/// the center of the ball, and the optional dXc,dYc,dZc are the rates for
-/// moving the ball along the different directions (the movement is defined in
-/// the update function).
-///
-class VertexFromBall : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromBall(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Updates position of vertices assuming that a parabolid is moving with
-/// a given velocity(z) into the template.
-///
-/// @details The force applied outward respect to the parabolid.
-/// In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromParabolid 5 0
-/// a Xc Yc b Kforce
-///
-/// or
-///
-/// VertexFromParabolid 8 0
-/// a Xc Yc b Kforce VelocityZ
-/// @endverbatim
-/// where the parabolid is defined by z=a((x-xc)2 +(y-yc)2)+b radius is the size
-/// of the 'ball' pushing at the tissue, Xc,Yc,Zc is the center
-/// of the ball, and the optional dXc,dYc,dZc are the rates for moving the ball
-/// along the different directions (the movement is defined in the update
-/// function).
-///
-class VertexFromParabolid : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromParabolid(std::vector<double> &paraValue,
-                      std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Updates position of vertices assuming that an external wall is moving
-/// with a given velocity vector toward the meristem.
-///
-/// @details The force applied outward respect to wall proportional to
-/// (overlap)^(3/2) In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromExternalWall 12 0
-/// X0 Y0 Z0 nx ny nz Zmin Zmax dXc dYc dZc Kforce
-/// @endverbatim
-/// where n is the normal vector to the 'wall' pushing at the tissue, X0,Y0,Z0
-/// is a point on the wall and dXc,dYc,dZc are the rates for moving the wall
-/// along the different directions (the movement is defined in the update
-/// function).
-///
-class VertexFromExternalWall : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromExternalWall(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Calculates change in template volume and its time derivative
-/// and total Derivative and stores them in the given indices in cellData
-/// vector.
-///
-/// @details In a model file the reaction is defined as
-/// @verbatim
-/// TemplateVolumeChange 0 1 6
-/// cell-index-VolumeChange       component-index-VolumeChange
-/// cell-index-deltaVolumeChange  component-index-deltaVolumeChange
-/// cell-index-totalDerivative    component-index-totalDerivative
-/// @endverbatim
-///
-class TemplateVolumeChange : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
-  double VolumeChange;
-  double deltaVolumeChange;
-  double totalDerivative;
-
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  TemplateVolumeChange(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Reaction initiation applied before simulation starts
-  ///
-  /// @see BaseReaction::initiate(Tissue &T,...)
-  ///
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                DataMatrix &vertexData, DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Calculates abs(cos(...)) of angle between two 3d vectors
-/// (starting from given indices) in cellData vector and stores it in the given
-/// index in cellData vector.
-///
-/// @details This reaction uses no parameters. In a model file the
-/// reaction is defined as
-/// @verbatim
-/// CalculateAngleVectors 0 2 2 1
-/// start-index(1st vector)   start-index(2nd vector)
-/// store-index(angle-deg)
-/// @endverbatim
-///
-class CalculateAngleVectors : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
-  // double VolumeChange;
-  // double deltaVolumeChange;
-  // double totalDerivative;
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  CalculateAngleVectors(std::vector<double> &paraValue,
-                        std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Calculates abs(cos(...)) of angle between two a 3d vector
-/// (starting from given indices) in cellData vector and XY plane and stores it
-/// in the given index in cellData vector.
-///
-/// @details This reaction uses no parameters. In a model file the
-/// reaction is defined as:
-/// @verbatim
-/// CalculateAngleVectorXYplane 0 2 1 1
-/// start-index(vector)
-/// store-index(angle-deg)
-/// @endverbatim
-///
-class CalculateAngleVectorXYplane : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
-  // double VolumeChange;
-  // double deltaVolumeChange;
-  // double totalDerivative;
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  CalculateAngleVectorXYplane(std::vector<double> &paraValue,
-                              std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Calculates the angle between a 3d vector (starting from given
-/// indices) in cellData vector and a given axes(x,y,z).
-///
-/// @details Uses one parameter for specifying the axes, and two variable
-/// indices. The first index specifies the start of the vector and the second
-/// where the angle is stored.
-///
-/// In a model file the reaction is defined as:
-/// @verbatim
-/// AngleVector 1 2 1 1
-/// axes_flag (0:X, 1:Y, 2:Z)
-/// start-index(the vector)
-/// store-index(angle-deg)
-/// @endverbatim
-///
-class AngleVector : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
-  // double VolumeChange;
-  // double deltaVolumeChange;
-  // double totalDerivative;
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  AngleVector(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates position of vertices in an interwall on a cylinderical
-/// template due to the force applied axially and tensional to the regions with
-/// z between a and a+d(upward) and -a and -a-d(downward) resembling Hypocotyl
-/// axial growth.
-///
-/// @details In a model file the reaction is defined as:
-/// @verbatim
-/// VertexFromHypocotylGrowth 4 0
-/// Y0 a d F
-/// @endverbatim
-///
-class VertexFromHypocotylGrowth : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromHypocotylGrowth(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Calculates the maximum velocity of vertices
-/// and stores it in a given index in cellData vector
-/// to check the closeness to mechanical equilibrium
-///
-/// @details Uses no parameter
-/// The first index specifies the index for storage
-///
-/// In a model file the reaction is defined as:
-/// @verbatim
-/// maxVelocity 0 1 1
-/// velocity-store-index(angle-deg)
-/// @endverbatim
-///
-class maxVelocity : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
-  // double VolumeChange;
-  // double deltaVolumeChange;
-  // double totalDerivative;
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  maxVelocity(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-// Do not use this reaction. Restricted area (unless you are a developer).
-class DebugReaction : public BaseReaction {
-  public:
-  DebugReaction(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
-
   void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
               DataMatrix &vertexData, DataMatrix &cellDerivs,
               DataMatrix &wallDerivs, DataMatrix &vertexDerivs);

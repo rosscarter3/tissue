@@ -21,7 +21,8 @@ Example papers using these different approaches are:
 * Gruel et al (2016) <i>Science Advances</i>
 
 <h2>Tissue [this git repository]: </h2> 
-Used for simulating vertex-based cell geometries including finite element mechanical models. A cell wall (cell in 2.5D) is defined by a list of vertices defining a polygon. Example papers using this software are:
+See the [wiki page](https://gitlab.com/slcu/teamHJ/tissue/wikis/home) for extensive documentation and examples.
+Tissue is used for simulating vertex-based cell geometries including finite element mechanical models. A cell wall (cell in 2.5D) is defined by a list of vertices defining a polygon. Example papers using this software are:
 
 * Hamant, Heisler, Jönsson et al (2008) <i>Science</i>
 * Bozorg et al (2014) <i>PLoS Comp Biol</i>

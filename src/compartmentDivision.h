@@ -457,13 +457,77 @@ namespace Division {
   };
 
   ///
-  /// @brief Divides a cell when volume above a threshold, with New wall created at shortest
-  ///  path that divides the volume (not!) in equal parts. Using centerTriangulation and doubleLength 
-  /// formats are optional and can be done by setting the coresponding flags. 
-  /// 
+  /// @brief Divides a cell (in 2D) along the shortest path through center of mass (or random point).
   ///
+  /// @details Divides a cell in 2D when volume above a threshold, @f$V_{threshold}@f$
+  /// with new wall created at shortest path that divides the cell through COM
+  /// (almost Volume in equal parts), or through a random internal point.
+  /// Parameters and variable indices are standard and in addition a time
+  /// variable can be set and 'read' at division to measure time since previous division.
+  /// In a model file, the reaction is given by 
   /// @verbatim
+  /// Division::ShortestPath2D 4 2 K 1 
+  /// V_{threshold} 
+  /// L^{wall}_{frac} (relative of new wall)
+  /// L^{wall}_{threshold} (disallowed closeness)
+  /// centerCom flag(0:random, 1:COM)
   ///
+  /// I_k (optional volume (and other variables that should be divided with size) related index to be updated)
+  ///
+  /// cell time index (optional)
+  /// @endverbatim
+  /// @see Division::ShortestPath for 3D version also applicable for CenterTriangulation
+  ///
+  class ShortestPath2D : public BaseCompartmentChange
+  {
+  public:
+    struct Candidate {
+      double distance;
+      size_t wall1;
+      size_t wall2;
+      double px, py;
+      double qx, qy;
+    };
+    
+    ShortestPath2D(std::vector<double> &paraValue, 
+		   std::vector< std::vector<size_t> > &indValue);
+    
+    int flag(Tissue *T, size_t i,
+	     DataMatrix &cellData,
+	     DataMatrix &wallData,
+	     DataMatrix &vertexData,
+	     DataMatrix &cellDerivs,
+	     DataMatrix &wallDerivs,
+	     DataMatrix &vertexDerivs);
+    void update(Tissue* T, size_t i,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs);  
+    
+    std::vector<ShortestPath2D::Candidate> 
+      getCandidates(Tissue* T, size_t i,
+		    DataMatrix &cellData,
+		    DataMatrix &wallData,
+		    DataMatrix &vertexData,
+		    DataMatrix &cellDerivs,
+		    DataMatrix &wallDerivs,
+		    DataMatrix &vertexDerivs);
+    
+    double astar(double sigma, double A, double B);
+    double f(double a, double sigma, double A, double B);
+  };
+
+  ///
+  /// @brief Divides a cell along the shortest path through center of mass (or random point).
+  ///
+  /// @details Divides a cell when volume above a threshold, with New wall created at shortest
+  ///  path that divides the cell through COM (almost Volume in equal parts), or through a
+  /// random internal point. Using centerTriangulation and doubleLength 
+  /// formats are optional and can be done by setting the corresponding flags. 
+  /// @verbatim
   /// Division::ShortestPath 4 2 0/1 1 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
@@ -473,13 +537,9 @@ namespace Division {
   /// I1 (optional volume related index to be updated)
   ///
   /// cell time index(optional)
-  ///
   /// @endverbatim
-  ///
   /// or
-  ///
   /// @verbatim
-  ///
   /// Division::ShortestPath 6 3 0/1 1 2 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
@@ -496,7 +556,10 @@ namespace Division {
   /// restinglengthIndex
   ///
   /// @endverbatim
-  
+  ///
+  /// @see Division::ShortestPath2D for 2D version
+  /// @note Should also work for 2D, but needs to be checked
+  ///
   class ShortestPath : public BaseCompartmentChange
   {
   public:
@@ -509,7 +572,7 @@ namespace Division {
     };
     
     ShortestPath(std::vector<double> &paraValue, 
-			 std::vector< std::vector<size_t> > &indValue);
+		 std::vector< std::vector<size_t> > &indValue);
     
     int flag(Tissue *T, size_t i,
 	     DataMatrix &cellData,

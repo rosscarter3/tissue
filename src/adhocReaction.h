@@ -2048,4 +2048,15 @@ class CopyVariable : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+// Typically, this reaction should not be used (restricted use) unless you are a developer.
+class DebugReaction : public BaseReaction {
+  public:
+  DebugReaction(std::vector<double> &paraValue,
+                std::vector<std::vector<size_t>> &indValue);
+
+  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+              DataMatrix &vertexData, DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+};
+
 #endif  // ADHOCREACTION_H

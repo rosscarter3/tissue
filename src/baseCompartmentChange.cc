@@ -22,48 +22,72 @@ createCompartmentChange(std::vector<double> &paraValue,
   
   //Cell divisions
   //compartmentDivision.h,compartmentDivision.cc
-  if(idValue=="DivisionVolumeViaLongestWall")
+  if(idValue=="DivisionVolumeViaLongestWall" ||
+     idValue=="Division::VolumeViaLongestWall")
     return new Division::VolumeViaLongestWall(paraValue,indValue);
-  if(idValue=="DivisionVolumeViaLongestWallCenterTriangulation")
-    return new Division::VolumeViaLongestWallCenterTriangulation(paraValue,indValue);
-  if(idValue=="DivisionVolumeViaLongestWall3DCenterTriangulation")
-    return new Division::VolumeViaLongestWall3DCenterTriangulation(paraValue,indValue);
-  if(idValue=="Branching")
+  else if(idValue=="Branching" ||
+	  idValue=="Division::Branching")
     return new Division::Branching(paraValue,indValue);
-  if(idValue=="DivisionVolumeViaLongestWallSpatial")
+  else if(idValue=="DivisionVolumeViaLongestWallSpatial" ||
+	  idValue=="Division::VolumeViaLongestWallSpatial")
     return new Division::VolumeViaLongestWallSpatial(paraValue,indValue);
-  else if(idValue=="DivisionVolumeViaLongestWall3D")
+  else if(idValue=="DivisionVolumeViaLongestWall3D" ||
+	  idValue=="Division::VolumeViaLongestWall3D")
     return new Division::VolumeViaLongestWall3D(paraValue,indValue);
-  else if(idValue=="DivisionVolumeViaLongestWall3DSpatial")
+  else if(idValue=="DivisionVolumeViaLongestWall3DSpatial" ||
+	  idValue=="Division::VolumeViaLongestWall3DSpatial")
     return new Division::VolumeViaLongestWall3DSpatial(paraValue,indValue);
-  else if(idValue=="DivisionVolumeViaStrain")
+  else if(idValue=="DivisionVolumeViaStrain" ||
+	  idValue=="Division::VolumeViaStrain")
     return new Division::VolumeViaStrain(paraValue,indValue);
-  else if(idValue=="DivisionVolumeViaDirection")
+  else if(idValue=="DivisionVolumeViaDirection" ||
+	  idValue=="Division::VolumeViaDirection")
     return new Division::VolumeViaDirection(paraValue,indValue);
-  else if(idValue=="DivisionVolumeRandomDirection")
+  else if(idValue=="DivisionVolumeRandomDirection" ||
+	  idValue=="Division::VolumeRandomDirection")
     return new Division::VolumeRandomDirection(paraValue,indValue);
-  else if(idValue=="DivisionVolumeRandomDirectionCenterTriangulation")
+  // Division::CenterTriangulation::**
+  else if(idValue=="DivisionVolumeRandomDirectionCenterTriangulation" ||
+	  idValue=="Division::VolumeRandomDirectionCenterTriangulation")
     return new Division::VolumeRandomDirectionCenterTriangulation(paraValue,indValue);
-  else if(idValue=="DivisionVolumeViaShortestPath")
+  else if(idValue=="DivisionVolumeViaLongestWallCenterTriangulation" ||
+	  idValue=="Division::VolumeViaLongestWallCenterTriangulation")
+    return new Division::VolumeViaLongestWallCenterTriangulation(paraValue,indValue);
+  else if(idValue=="DivisionVolumeViaLongestWall3DCenterTriangulation" ||
+	  idValue=="Division::VolumeViaLongestWall3DCenterTriangulation")
+    return new Division::VolumeViaLongestWall3DCenterTriangulation(paraValue,indValue);
+
+  else if(idValue=="DivisionVolumeViaShortestPath" ||
+	  idValue=="Division::VolumeViaShortestPath")
     return new Division::VolumeViaShortestPath(paraValue,indValue);
-  else if (idValue == "DivisionForceDirection")
+  else if (idValue == "DivisionForceDirection" ||
+	   idValue == "Division::ForceDirection")
     return new Division::ForceDirection(paraValue, indValue);
-  else if (idValue == "DivisionShortestPath")
+  else if (idValue == "Division::ShortestPath2D")
+    return new Division::ShortestPath2D(paraValue, indValue);
+  else if (idValue == "DivisionShortestPath" ||
+	   idValue == "Division::ShortestPath")
     return new Division::ShortestPath(paraValue, indValue);
   else if (idValue == "Division::STAViaShortestPath")
     return new Division::STAViaShortestPath(paraValue, indValue);
   else if (idValue == "Division::FlagResetShortestPath")
     return new Division::FlagResetShortestPath(paraValue, indValue);
-  else if (idValue == "DivisionShortestPathGiantCells")
+  else if (idValue == "DivisionShortestPathGiantCells" ||
+	   idValue == "Division::ShortestPathGiantCells")
     return new Division::ShortestPathGiantCells(paraValue, indValue);
-  else if (idValue == "DivisionRandom")
+  else if (idValue == "DivisionRandom" ||
+	   idValue == "Division::Random")
     return new Division::Random(paraValue, indValue);
-  else if(idValue=="DivisionVolumeRandomDirectionGiantCells")
+  else if(idValue=="DivisionVolumeRandomDirectionGiantCells" ||
+	  idValue=="Division::VolumeRandomDirectionGiantCells")
     return new Division::VolumeRandomDirectionGiantCells(paraValue,indValue);
-  else if(idValue == "DivisionMainAxis")
+  else if(idValue == "DivisionMainAxis" ||
+	  idValue == "Division::MainAxis")
     return new Division::MainAxis(paraValue,indValue); 
-  if(idValue=="DivisionFlagResetViaLongestWall")
+  else if(idValue=="DivisionFlagResetViaLongestWall" ||
+	  idValue=="Division::FlagResetViaLongestWall")
     return new Division::FlagResetViaLongestWall(paraValue,indValue);
+  
   //compartmentRemoval.h,compartmentRemoval.cc
   else if(idValue=="RemovalIndex")
     return new RemovalIndex(paraValue,indValue);
@@ -91,14 +115,13 @@ createCompartmentChange(std::vector<double> &paraValue,
 
   //Default, if nothing found
   else {
-    std::cerr << "\nBaseCompartmentChange::createCompartmentChange()"
-							<< " WARNING: CompartmentChangetype " 
-							<< idValue << " not known, no compartmentChange created.\n\7";
-    exit(-1);
+    std::cerr << std::endl << "BaseCompartmentChange::createCompartmentChange()"
+	      << " WARNING: CompartmentChangetype " 
+	      << idValue << " not known, no compartmentChange created." << std::endl;
+    exit(EXIT_FAILURE);
   }
 }
 
-//!This creator reads from an open file and then calls for the main creator
 BaseCompartmentChange* 
 BaseCompartmentChange::createCompartmentChange(std::istream &IN ) {
   

@@ -4665,3 +4665,36 @@ void CopyVariable::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
     cellData[cellI][cIndex_output] = cellData[cellI][cIndex_input];
   }
 }
+
+DebugReaction::DebugReaction(std::vector<double> &paraValue,
+                             std::vector<std::vector<size_t>> &indValue) {}
+
+void DebugReaction::derivs(Tissue &T, DataMatrix &cellData,
+                           DataMatrix &wallData, DataMatrix &vertexData,
+                           DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+                           DataMatrix &vertexDerivs) {
+  for (size_t i = 0; i < T.numCell(); ++i) {
+    Cell cell = T.cell(i);
+
+    // 		std::cerr << "Cell " << cell.index() << std::endl;
+
+    // 		for (size_t i = 0; i < cell.numVertex(); ++i) {
+    // 			Vertex *vertex = cell.vertex(i);
+    // 			std::cerr << "   Vertex: " << i << std::endl;
+    // 			std::cerr << "      x = " << vertexData[vertex->index()][0] <<
+    // std::endl; 			std::cerr << "      y = " <<
+    // vertexData[vertex->index()][1] << std::endl;
+    // 			std::cerr << "      z = " << vertexData[vertex->index()][2] <<
+    // std::endl;
+    // 		}
+
+    // This calculation should now be done in reaction CalculatePCAPlane
+    // cell.calculatePCAPlane(vertexData);
+
+    std::vector<double> N = cell.getNormalToPCAPlane();
+
+    std::cerr << "x = " << N[0] << std::endl;
+    std::cerr << "y = " << N[1] << std::endl;
+    std::cerr << "z = " << N[2] << std::endl;
+  }
+}
