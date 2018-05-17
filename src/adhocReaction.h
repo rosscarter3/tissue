@@ -68,6 +68,31 @@ class VertexNoUpdateFromIndex : public BaseReaction {
 };
 
 ///
+/// @brief Sets positional derivatives in the Z direction to zero for vertices with listed indices
+///
+/// @details A list of vertex indices are specified for which vertex positions
+/// are not In the model file, the reaction is specified as:
+/// @verbatim
+/// VertexNoUpdateFromIndexHoldZ 0 1 N
+/// vertexIndex1 [vertexIndex2...vertexIndexN]
+/// @endverbatim
+/// where the list if indices are the vertices not to be updated in Z direction.
+///
+/// @note This function sets the derivatives in Z to zero, which means it has to be
+/// provided after reactions that update the vertex derivatives.
+///
+class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
+  public:
+  VertexNoUpdateFromIndexHoldZ(std::vector<double> &paraValue,
+                          std::vector<std::vector<size_t>> &indValue);
+
+  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+              DataMatrix &vertexData, DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+};
+
+
+///
 /// @brief Sets positional derivatives to zero for vertices with listed indices
 ///
 /// @details Freezes all of the vertices but the leading ones(at the tip).

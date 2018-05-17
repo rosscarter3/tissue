@@ -447,6 +447,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexNoUpdateFromPosition(paraValue, indValue);
   else if (idValue == "VertexNoUpdateFromIndex")
     return new VertexNoUpdateFromIndex(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateFromIndexHoldZ")
+    return new VertexNoUpdateFromIndexHoldZ(paraValue, indValue);
   else if (idValue == "VertexNoUpdateFromList")
     return new VertexNoUpdateFromList(paraValue, indValue);
   else if (idValue == "VertexRandTip")
