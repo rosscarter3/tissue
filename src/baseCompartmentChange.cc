@@ -34,6 +34,9 @@ createCompartmentChange(std::vector<double> &paraValue,
   else if(idValue=="DivisionVolumeViaLongestWall3D" ||
 	  idValue=="Division::VolumeViaLongestWall3D")
     return new Division::VolumeViaLongestWall3D(paraValue,indValue);
+  else if(idValue=="DivisionVolumeViaShortestWall3D" ||
+    idValue=="Division::VolumeViaShortestWall3D")
+    return new Division::VolumeViaShortestWall3D(paraValue,indValue);
   else if(idValue=="DivisionVolumeViaLongestWall3DSpatial" ||
 	  idValue=="Division::VolumeViaLongestWall3DSpatial")
     return new Division::VolumeViaLongestWall3DSpatial(paraValue,indValue);
