@@ -612,7 +612,7 @@ VertexFromCellPressureLinear::VertexFromCellPressureLinear(
   std::vector<std::string> tmp(numParameter());
   tmp[0] = "K_force";
   tmp[1] = "f_V_norm";
-  tmp[1] = "deltaT";
+  tmp[2] = "deltaT";
   timeFactor_ = 0.0;
   setParameterId(tmp);
 }
@@ -1195,11 +1195,14 @@ void VertexFromCellPlane::derivs(Tissue &T, DataMatrix &cellData,
     for (size_t k = 0; k < scalarProdSign.size(); ++k)
       scalarProdSignSum += scalarProdSign[k];
 
+
+
     if (scalarProdSignSum < 0) {
       numFlipNormal++;
       flipFlag = 1;
       for (size_t d = 0; d < dimension; ++d) normal[d] = -normal[d];
     } else if (scalarProdSignSum == 0) {
+      std::cerr << "scalarProdSignSum: " << scalarProdSignSum << std::endl;
       std::cerr << "Cell " << n
                 << " has no majority sign in right hand rule expression."
                 << std::endl;
@@ -1816,6 +1819,7 @@ void VertexFromCellPlaneSpatial::derivs(Tissue &T, DataMatrix &cellData,
       flipFlag = 1;
       for (size_t d = 0; d < dimension; ++d) normal[d] = -normal[d];
     } else if (scalarProdSignSum == 0) {
+      std::cerr << "scalarProdSignSum: " << scalarProdSignSum << std::endl;
       std::cerr << "Cell " << n
                 << " has no majority sign in right hand rule expression."
                 << std::endl;
@@ -2003,6 +2007,7 @@ void VertexFromCellPlaneConcentrationHill::derivs(
       flipFlag = 1;
       for (size_t d = 0; d < dimension; ++d) normal[d] = -normal[d];
     } else if (scalarProdSignSum == 0) {
+      std::cerr << "scalarProdSignSum: " << scalarProdSignSum << std::endl;
       std::cerr << "Cell " << n
                 << " has no majority sign in right hand rule expression."
                 << std::endl;

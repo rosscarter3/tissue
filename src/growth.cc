@@ -45,7 +45,7 @@ namespace WallGrowth {
     tmp[0] = "k_growth";
     tmp[1] = "linearFlag";
     if (numParameter()>2) {
-      tmp[1] = "L_trunc";
+      tmp[2] = "L_trunc";
     }
     setParameterId( tmp );
   }
@@ -402,7 +402,7 @@ namespace WallGrowth {
       tmp[0] = "k_growth";
       tmp[1] = "linearFlag";
       if (numParameter()>2) {
-	      tmp[1] = "L_trunc";
+	      tmp[2] = "L_trunc";
       }
       setParameterId( tmp );
     }
