@@ -504,6 +504,10 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexNoUpdateFromPosition(paraValue, indValue);
   else if (idValue == "VertexNoUpdateFromIndex")
     return new VertexNoUpdateFromIndex(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateFromIndexHoldX")
+    return new VertexNoUpdateFromIndexHoldX(paraValue, indValue);
+  else if (idValue == "VertexNoUpdateFromIndexHoldY")
+    return new VertexNoUpdateFromIndexHoldY(paraValue, indValue);
   else if (idValue == "VertexNoUpdateFromIndexHoldZ")
     return new VertexNoUpdateFromIndexHoldZ(paraValue, indValue);
   else if (idValue == "VertexNoUpdateFromList")

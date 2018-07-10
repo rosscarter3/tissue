@@ -68,6 +68,54 @@ class VertexNoUpdateFromIndex : public BaseReaction {
 };
 
 ///
+/// @brief Sets positional derivatives in the X direction to zero for vertices with listed indices
+///
+/// @details A list of vertex indices are specified for which vertex positions
+/// are not In the model file, the reaction is specified as:
+/// @verbatim
+/// VertexNoUpdateFromIndexHoldX 0 1 N
+/// vertexIndex1 [vertexIndex2...vertexIndexN]
+/// @endverbatim
+/// where the list if indices are the vertices not to be updated in X direction.
+///
+/// @note This function sets the derivatives in X to zero, which means it has to be
+/// provided after reactions that update the vertex derivatives.
+///
+class VertexNoUpdateFromIndexHoldX : public BaseReaction {
+  public:
+  VertexNoUpdateFromIndexHoldX(std::vector<double> &paraValue,
+                          std::vector<std::vector<size_t>> &indValue);
+
+  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+              DataMatrix &vertexData, DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+};
+
+///
+/// @brief Sets positional derivatives in the Y direction to zero for vertices with listed indices
+///
+/// @details A list of vertex indices are specified for which vertex positions
+/// are not In the model file, the reaction is specified as:
+/// @verbatim
+/// VertexNoUpdateFromIndexHoldY 0 1 N
+/// vertexIndex1 [vertexIndex2...vertexIndexN]
+/// @endverbatim
+/// where the list if indices are the vertices not to be updated in Y direction.
+///
+/// @note This function sets the derivatives in Y to zero, which means it has to be
+/// provided after reactions that update the vertex derivatives.
+///
+class VertexNoUpdateFromIndexHoldY : public BaseReaction {
+  public:
+  VertexNoUpdateFromIndexHoldY(std::vector<double> &paraValue,
+                          std::vector<std::vector<size_t>> &indValue);
+
+  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+              DataMatrix &vertexData, DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+};
+
+///
 /// @brief Sets positional derivatives in the Z direction to zero for vertices with listed indices
 ///
 /// @details A list of vertex indices are specified for which vertex positions
