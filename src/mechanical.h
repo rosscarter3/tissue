@@ -470,7 +470,8 @@ class VertexFromCellPowerdiagram : public BaseReaction {
 };
 
 ///
-/// @brief A cell 'pressure' reaction providing forces perpendicular to walls (with magnitude given by cell variable)
+/// @brief A cell 'pressure' reaction providing forces perpendicular to walls
+/// (with magnitude given by cell variable)
 ///
 class PerpendicularWallPressure : public BaseReaction {
  public:
@@ -488,311 +489,415 @@ class PerpendicularWallPressure : public BaseReaction {
 };
 
 ///
-/// @brief Updates vertices from an 'internal pressure' term defined to act in the cell
-/// (face) normal direction.
+/// @brief Collection of reactions or updating vertices via forces acting perpendicular
+/// to faces.
 ///
-/// @details This function calculates the area of a cell and then distribute a
-/// force 'outwards' among the cell vertices. It relies on that the PCA cell
-/// planes have been calculated. A cell contributes to a vertex update with
+/// @details Pressure forces acting perpendicular to faces (Cells in 2.5D). Forces
+/// are proportional to the face area, and several versions of normalisation or
+/// contribution from cell variables are provided. Importantly, except for the versions
+/// using CenterTriangulation, or Triangular, the normal to the plane is approximated
+/// via a PCA plane extraction and forces are perpendicular to this.
 ///
-/// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
+/// @see CalculatePCAPlane : required for those that applies forces on 3+vertex faces
+/// @note The reactions in this namespace used to be called VertexFromCellPlane* (Pressure3D::*).
 ///
-/// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
-/// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
-/// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
-/// the area factor if set to zero (normally it should be set to 1).
-///
-/// In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromCellPlane 2 0
-/// P A_flag
-/// @endverbatim
-///
-/// @see CalculatePCAPlane
-///
-class VertexFromCellPlane : public BaseReaction {
+namespace Pressure3D {
+  
+  ///
+  /// @brief Updates vertices from an 'internal pressure' term defined to act in the cell
+  /// (face) normal direction.
+  ///
+  /// @details This function calculates the area of a cell and then distribute a
+  /// force 'outwards' among the cell vertices. It relies on that the PCA cell
+  /// planes have been calculated. A cell contributes to a vertex update with
+  ///
+  /// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
+  ///
+  /// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
+  /// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
+  /// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
+  /// the area factor if set to zero (normally it is set to 1).
+  ///
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Pressure3D::Constant 2 0
+  /// P A_flag
+  /// @endverbatim
+  ///
+  /// @see Cell.getNormalToPCAPlane()
+  /// @note Used to be named VertexFromCellPlane
+  ///
+  class Constant : public BaseReaction {
   public:
-  VertexFromCellPlane(std::vector<double> &paraValue,
-                      std::vector<std::vector<size_t>> &indValue);
-
+    Constant(std::vector<double> &paraValue,
+	     std::vector<std::vector<size_t>> &indValue);   
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief Updates vertices from a 'pressure' term defined to act in the cell
+  /// (face) normal direction. The pressure is applied increasingly (linear incease
+  /// in a given time span).
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details This function calculates the area of a cell and then distribute a
+  /// force 'outwards' among the cell vertices. It relies on that the PCA cell
+  /// planes have been calculated. A cell contributes to a vertex update with
+  /// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
+  /// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
+  /// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
+  /// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
+  /// the area factor if set to zero (normally it should be set to 1).
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Pressure3D::Linear 3 0
+  /// P A_flag deltaT
+  /// @endverbatim
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates vertices from a 'pressure' term defined to act in the cell
-/// normal direction. The pressure is applied increasingly (... linear in a
-/// given time span).
-///
-/// @details This function calculates the area of a cell and then distribute a
-/// force 'outwards' among the cell vertices. It relies on that the PCA cell
-/// planes have been calculated. A cell contributes to a vertex update with
-///
-/// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
-///
-/// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
-/// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
-/// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
-/// the area factor if set to zero (normally it should be set to 1).
-///
-/// In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromCellPlaneLinear 3 0
-/// P A_flag deltaT
-/// @endverbatim
-///
-/// @see CalculatePCAPlane
-///
-class VertexFromCellPlaneLinear : public BaseReaction {
+  /// @see Cell.getNormalToPCAPlane()
+  /// @see Pressure3D::Constant
+  /// @see Pressure3D
+  /// @note Used to be called VertexFromCellPlaneLinear 
+  ///
+  class Linear : public BaseReaction {
   private:
-  double timeFactor_;
-
+    double timeFactor_;
+    
   public:
-  VertexFromCellPlaneLinear(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
+    Linear(std::vector<double> &paraValue,
+	   std::vector<std::vector<size_t>> &indValue);
+    
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, double h);
+  };
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
   ///
-  /// @brief Update function for this reaction class
+  /// @brief Updates vertices from a 'pressure' term defined to act in the cell
+  /// normal direction, similar to Pressure3D::Constant, but with the Force
+  /// depending on the distance from the maximal position in a given direction.
   ///
-  /// @see BaseReaction::update(Tissue &T,...)
+  /// @details This function calculates the area of a cell and then distribute a
+  /// force 'outwards' among the cell vertices. It is similar to Pressure3D::Constant
+  /// but the magnitude of the force has a
+  /// spatial dependence, implemented as a (decreasing) Hill function as a function
+  /// of the distance to a vertex with a maximal position in a given direction (e.g.
+  /// the distance to the tip of a meristem, where the tip is defined by the vertex
+  /// located with maximal z-value). It relies on that the PCA cell planes have been
+  /// calculated. The force is described by:
+  /// \f[
+  /// F = \frac{A_{cell}}{N_{vertex}}(p_{0} +
+  /// p_{1} \frac{p_{2}^{p_{3}}}{p_{2}^{p_{3}}+D^{p_{3}}}
+  /// \f]
+  /// where the area factor \f$A_{cell}\f$ is present if \f$p_{4}=1\f$,
+  /// and D is the the Euclidean distance to the vertex maximal in a
+  /// specified dimension.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Pressure3D::Spatial 5 1 1
+  /// P_const P_add K_H n_H A_flag
+  /// D_index
+  /// @endverbatim  
   ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Updates vertices from a 'pressure' term defined to act in the normal
-/// direction  to  triangular  elements  of  the cell.
-///
-/// @details The force for each triangular
-/// element is calculated according to  the  element's  current area and in the
-/// direction of normal  to each  triangular  element. The force is distributed
-/// equally on  nodes (including the centeral node). The  pressure  is  applied
-/// increasingly (... linear in a given time span).
-/// It does  not rely  on  PCA  plane  in contrast with VertexFromCellPlane and
-/// VertexFromCellPlaneLinear .
-///
-/// A cell contributes to a vertex update with
-///
-/// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / 3 @f]
-///
-/// where @f$p_{0}@f$ is a 'pressure' parameter, A is the triangular element
-/// area @f$n_{i}@f$ is the triangular element normal vector . An additional
-/// parameter @f$p_{2}@f$ can be used to not include the area factor if set to
-/// zero (normally it should be set to 1).
-///
-/// In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromCellPlaneLinearCenterTriangulation 3 1 1
-/// P
-/// Area_flag (0: no area, 1: area, 2: area and pressure only in z direction)
-/// deltaT
-///
-/// InternalVarStartIndex
-/// @endverbatim
-///
-/// @see CalculatePCAPlane
-///
-class VertexFromCellPlaneLinearCenterTriangulation : public BaseReaction {
+  /// @see Cell.getNormalToPCAPlane()
+  /// @see Pressure3D::Constant
+  /// @see Pressure3D
+  /// @note used to be called VertexFromCellPlaneSpatial
+  ///
+  class Spatial : public BaseReaction {
   private:
-  double timeFactor1, timeFactor2;
-
+    double Kpow_;
+    
   public:
-  VertexFromCellPlaneLinearCenterTriangulation(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
-
+    Spatial(std::vector<double> &paraValue,
+	    std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief Same as Pressure3D::Constant but with the Force magnitude
+  /// dependent on a molecular concentration
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details This class is the same 'pressure' from inside update as
+  /// Pressure3D::Constant with the difference that the strength of the
+  /// resulting force depends on the cellular concentration of a
+  /// molecule described with a Hill formalism (increasing with conc).
+  /// The force is described by:
+  /// \f[
+  /// F = \frac{A_{cell}}{N_{vertex}}(p_{0} +
+  /// p_{1} \frac{C^{p_{3}}}{p_{2}^{p_{3}}+C^{p_{3}}}
+  /// \f]
+  /// where the area factor \f$A_{cell}\f$ is present if \f$p_{4}=1\f$,
+  /// and C is the molecular concentration.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Pressure3D::ConcentrationHill 5 1 1
+  /// P_const P_add K_H n_H A_flag
+  /// C_index
+  /// @endverbatim  
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  /// @see Cell.getNormalToPCAPlane()
+  /// @see Pressure3D::Constant
+  /// @see Pressure3D
+  /// @note used to be called VertexFromCellPlaneConcentrationHill
   ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-};
-
-///
-/// @brief Updates vertices from a 'pressure' term defined to act in the cell
-/// normal direction.
-///
-/// @details This function calculates the area of a cell and then distribute a
-/// force 'outwards' among the cell vertices. It relies on that the PCA cell
-/// planes have been calculated. A cell contributes to a  ...............
-class VertexFromCellPlaneSpatial : public BaseReaction {
+  class ConcentrationHill : public BaseReaction {
   private:
-  double Kpow_;
-
+    double Kpow_;
+    
   public:
-  VertexFromCellPlaneSpatial(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue);
+    ConcentrationHill(std::vector<double> &paraValue,
+		      std::vector<std::vector<size_t>> &indValue);
 
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief PCA-plane independent forces normal to cell face 
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details In a model file the reaction is defined by:
+  /// @verbatim
+  /// Pressure3D::SphereCylinder 2 0
+  /// P A_flag
+  /// @endverbatim
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Same as VertexFromCellPlane but with the strength dependent
-/// on a molecular concentration
-///
-/// @details This class is the same 'pressure' from inside update as
-/// VertexFromCellPlane with the difference that the strength of the
-/// resulting force depends on the cellular concentration of a
-/// molecule described with a Hill formalism.
-///
-/// The force is described by:
-///
-/// \f[
-/// F = \frac{A_{cell}}{N_{vertex}}(p_{0} +
-/// p_{1} \frac{C^{p_{3}}}{p_{2}^{p_{3}}+C^{p_{3}}}
-/// \f]
-///
-/// where the area factor \f$A_{cell}\f$ is present if \f$p_{4}=1\f$,
-/// and C is the molecular concentration.
-///
-class VertexFromCellPlaneConcentrationHill : public BaseReaction {
+  /// @see Pressure3D
+  /// @see Pressure3D::Constant
+  /// @note used to be called VertexFromCellPlaneNormalized
+  ///
+  class Normalized : public BaseReaction {
+  public:
+    Normalized(std::vector<double> &paraValue,
+	       std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
+  ///
+  /// @brief PCA-plane independent forces to cell face with spatial component
+  /// 
+  /// @details In a model file the reaction is defined by:
+  /// @verbatim
+  /// Pressure3D::NormalizedSpatial 2 0
+  /// P_const P_add K_Hill n_Hill A_flag
+  /// @endverbatim
+  ///
+  /// @see Pressure3D
+  /// @see Pressure3D::Spatial
+  /// @note used to be called VertexFromCellPlaneNormalizedSpatial
+  ///
+  class NormalizedSpatial : public BaseReaction {
   private:
-  double Kpow_;
-
+    double Kpow_;
+    
   public:
-  VertexFromCellPlaneConcentrationHill(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
+    NormalizedSpatial(std::vector<double> &paraValue,
+		      std::vector<std::vector<size_t>> &indValue);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
 
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief PCA-plane independent force in SphereCylinder 'direction'
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details In a model file the reaction is defined by:
+  /// @verbatim
+  /// Pressure3D::SphereCylinder 2 0
+  /// P A_flag
+  /// @endverbatim
+  /// 
+  /// @see Pressure3D
+  /// @note used to be called VertexFromCellPlaneSphereCylinder
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-class VertexFromCellPlaneNormalized : public BaseReaction {
+  class SphereCylinder : public BaseReaction {
   public:
-  VertexFromCellPlaneNormalized(std::vector<double> &paraValue,
-                                std::vector<std::vector<size_t>> &indValue);
+    SphereCylinder(std::vector<double> &paraValue,
+		   std::vector<std::vector<size_t>> &indValue);
+
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
 
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief PCA-indpendent Force in SphereCylinder direction with a
+  /// concentration input 
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details In a model file the reaction is defined by:
+  /// @verbatim
+  /// Pressure3D::SphereCylinderConcentrationHill 5 1 1
+  /// P_const P_add K_Hill n_Hiil A_flag
+  /// Conc_index
+  /// @endverbatim
+  /// 
+  /// @see Pressure3D
+  /// @see Pressure3D::SphereCylinder
+  /// @see Pressure3D::ConcentrationHill
+  /// @note used to be called VertexFromCellPlaneSphereCylinderConcentrationHill
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-class VertexFromCellPlaneNormalizedSpatial : public BaseReaction {
-  private:
-  double Kpow_;
-
+  class SphereCylinderConcentrationHill : public BaseReaction {
   public:
-  VertexFromCellPlaneNormalizedSpatial(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
-
+    SphereCylinderConcentrationHill(std::vector<double> &paraValue,
+				    std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  
   ///
-  /// @brief Derivative function for this reaction class
+  /// @brief Updates vertices from a 'pressure' term defined to act in the cell
+  /// normal direction, for triangular cells only.
   ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  /// @details This function calculates the area of a cell and then distribute a
+  /// force 'outwards' among the cell vertices. It relies on that the cells are
+  /// triangular. A cell contributes to a vertex update with
+  /// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
+  /// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
+  /// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
+  /// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
+  /// the area factor if set to zero (normally it should be set to 1). As an
+  /// indication for equilibrium state in case of elastic deformations the
+  /// function calculates the volume between template and Z=Z0 plane.this volume
+  /// is not used in calculations so Z0 value can be choosen arbitrarily.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Pressure3D::Triangular 3 0
+  /// P A_flag Z0
+  /// @endverbatim
+  /// or
+  /// @verbatim
+  /// Pressure3D::Triangular 6 0
+  /// P A_flag Z0 V_eq Vf_decrease Pf_increase 
+  /// @endverbatim
   ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-class VertexFromCellPlaneSphereCylinder : public BaseReaction {
+  /// @see Pressure3D
+  /// @see Pressure3D::CenterTriangulation::Linear
+  /// @note used to be called VertexFromCellPlaneTriangular
+  ///
+  class Triangular : public BaseReaction {
   public:
-  VertexFromCellPlaneSphereCylinder(std::vector<double> &paraValue,
-                                    std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-class VertexFromCellPlaneSphereCylinderConcentrationHill : public BaseReaction {
-  public:
-  VertexFromCellPlaneSphereCylinderConcentrationHill(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
-
-///
-/// @brief Updates vertices from a 'pressure' term defined to act in the cell
-/// normal direction for triangular cells only.
-///
-/// @details This function calculates the area of a cell and then distribute a
-/// force 'outwards' among the cell vertices. It relies on that the cells are
-/// triangular. A cell contributes to a vertex update with
-///
-/// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / N_{vertex} @f]
-///
-/// where @f$p_{0}@f$ is a 'pressure' parameter, A is the cell area @f$n_{i}@f$
-/// is the cell normal component and @f$N_{vertex}@f$ is the number of vertices
-/// for the cell. An additional parameter @f$p_{2}@f$ can be used to not include
-/// the area factor if set to zero (normally it should be set to 1). As an
-/// indication for equilibrium state in case of elastic deformations the
-/// function calculates the volume between template and Z=Z0 plane.this volume
-/// is not used in calculations so Z0 value can be choosen arbitrarily.
-///
-/// In a model file the reaction is defined as
-/// @verbatim
-/// VertexFromCellPlaneTriangular 3 0
-/// P A_flag Z0
-/// @endverbatim
-///
-class VertexFromCellPlaneTriangular : public BaseReaction {
-  public:
-  VertexFromCellPlaneTriangular(std::vector<double> &paraValue,
-                                std::vector<std::vector<size_t>> &indValue);
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-};
+    Triangular(std::vector<double> &paraValue,
+	       std::vector<std::vector<size_t>> &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
+  namespace CenterTriangulation { 
+    ///
+    /// @brief Updates vertices from a 'pressure' term defined to act in the normal
+    /// direction  to  triangular elements of the cell.
+    ///
+    /// @details The force for each triangular
+    /// element is calculated according to  the  element's  current area and in the
+    /// direction of normal  to each  triangular  element. The force is distributed
+    /// equally on  nodes (including the centeral node). The  pressure  is  applied
+    /// increasingly (... linear in a given time span).
+    /// It does  not rely  on  PCA  plane  in contrast with VertexFromCellPlane and
+    /// VertexFromCellPlaneLinear.
+    /// A cell contributes to a vertex update with
+    /// @f[ \frac{dx_{i}}{dt} = p_{0} A n_{i} / 3 @f]
+    /// where @f$p_{0}@f$ is a 'pressure' parameter, A is the triangular element
+    /// area @f$n_{i}@f$ is the triangular element normal vector . An additional
+    /// parameter @f$p_{2}@f$ can be used to not include the area factor if set to
+    /// zero (normally it should be set to 1).
+    /// In a model file the reaction is defined as
+    /// @verbatim
+    /// Pressure3D::CenterTriangulation::Linear 3 1 1
+    /// P (pressure)
+    /// Area_flag (0: no area, 1: area, 2: area and pressure only in z direction)
+    /// deltaT (time to increase force from 0 to P)
+    ///
+    /// InternalVarStartIndex
+    /// @endverbatim
+    ///
+    /// @see CalculatePCAPlane
+    /// @see Pressure3D
+    /// @see Pressure3D::Linear
+    /// @note used to be called VertexFromCellPlaneCenterTriangulation
+    ///
+    class Linear : public BaseReaction {
+    private:
+      double timeFactor1, timeFactor2;
+      
+    public:
+      Linear(std::vector<double> &paraValue,
+	     std::vector<std::vector<size_t>> &indValue);
+      
+      ///
+      /// @brief Derivative function for this reaction class
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		  DataMatrix &vertexData, DataMatrix &cellDerivs,
+		  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+      ///
+      /// @brief Update function for this reaction class
+      ///
+      /// @see BaseReaction::update(Tissue &T,...)
+      ///
+      void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+		  DataMatrix &vertexData, double h);
+    };
+  } // end namespace CenterTriangulation
+} // end nespace Pressure3D
 
 #endif
