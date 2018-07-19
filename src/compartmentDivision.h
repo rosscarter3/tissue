@@ -255,6 +255,35 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
+  /// @brief Divides a cell when volume above a threshold in 3D
+  /// Divides a cell when volume above a threshold. Same as
+  /// Division::VolumeViaLongestWall but used for surfaces in 3D.
+  
+  class VolumeViaShortestWall3D : public BaseCompartmentChange {
+    
+  public:
+    
+    VolumeViaShortestWall3D(std::vector<double> &paraValue, 
+           std::vector< std::vector<size_t> > 
+           &indValue );
+    
+    int flag(Tissue *T,size_t i,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs );
+    void update(Tissue* T,size_t i,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs );  
+  };
+
+
   ///
   /// @brief Divides a cell when volume above a threshold in 3D and distance to apex smaller than th
   ///

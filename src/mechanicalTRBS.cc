@@ -3523,10 +3523,11 @@ derivs(Tissue &T,
          StrainAlmansi[0][1] != StrainAlmansi[0][1] ||
          StrainAlmansi[1][0] != StrainAlmansi[1][0] ) 
         std::cerr << std::endl << "VertexFromTRBScenterTriangulationMT::derivs() WARNING!" << std::endl
-		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
-		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
-		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
-		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
+		  << "StrainAlmansi is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
+		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0] << std::endl
+		  << "Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2] << std::endl
+		  << "P " << Pa << " " << Pb << " " << Pc << std::endl
+      << "Resting Angle: "<< RestingAngle1 <<std::endl;
       double atEa=AnisoRestLocal[0]*AnisoRestLocal[0]*Egreen[0][0]
         +AnisoRestLocal[0]*AnisoRestLocal[1]*(Egreen[0][1]+Egreen[1][0])
         +AnisoRestLocal[1]*AnisoRestLocal[1]*Egreen[1][1];
@@ -4574,7 +4575,8 @@ update(Tissue &T,
 		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
 		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
 		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
-		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
+		  << "    P " << Pa << " " << Pb << " " << Pc
+      << "Resting Angles: " << RestingAngle1 << std::endl;
       }
 
       double atEa=AnisoRestLocal[0]*AnisoRestLocal[0]*Egreen[0][0]
@@ -7611,7 +7613,8 @@ double StRot[2][2]=
 		  << "strain is wrong " << StrainAlmansi[0][0] << " " << StrainAlmansi[1][1] << " "
 		  << " " << StrainAlmansi[0][1] << " " << StrainAlmansi[1][0]
 		  << "   Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2]
-		  << "    P " << Pa << " " << Pb << " " << Pc <<std::endl;
+		  << "    P " << Pa << " " << Pb << " " << Pc 
+      << "Resting Anlge: "<< RestingAngle1 <<std::endl;
       }
       //HJ: removed due to unused variable warning
       //double areaFactor=restingArea/Area; // 1/detF

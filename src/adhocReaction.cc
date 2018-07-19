@@ -116,6 +116,130 @@ void VertexNoUpdateFromIndex::derivs(Tissue &T, DataMatrix &cellData,
   }
 }
 
+VertexNoUpdateFromIndexHoldX::VertexNoUpdateFromIndexHoldX(
+    std::vector<double> &paraValue,
+    std::vector<std::vector<size_t>> &indValue) {
+  // Do some checks on the parameters and variable indeces
+  //
+  if (paraValue.size() != 0) {
+    std::cerr << "VertexNoUpdateFromIndexHoldX::"
+              << "VertexNoUpdateFromIndexHoldX() "
+              << "Uses no parameters." << std::endl;
+    exit(0);
+  }
+  if (indValue.size() != 1 || indValue[0].size() < 1) {
+    std::cerr << "VertexNoUpdateFromIndexHoldX::"
+              << "VertexNoUpdateFromIndexHoldX() "
+              << "Vertex indices in first level." << std::endl;
+    exit(0);
+  }
+  // Set the variable values
+  //
+  setId("VertexNoUpdateFromIndexHoldX");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  //
+}
+
+void VertexNoUpdateFromIndexHoldX::derivs(Tissue &T, DataMatrix &cellData,
+                                     DataMatrix &wallData,
+                                     DataMatrix &vertexData,
+                                     DataMatrix &cellDerivs,
+                                     DataMatrix &wallDerivs,
+                                     DataMatrix &vertexDerivs) {
+  // Check the cancelation for vertices with given indices
+  for (size_t i = 0; i < numVariableIndex(0); ++i) {
+    size_t k = variableIndex(0, i);
+    assert(k < vertexData.size());
+    vertexDerivs[k][0] = 0.0;
+  }
+}
+
+VertexNoUpdateFromIndexHoldY::VertexNoUpdateFromIndexHoldY(
+    std::vector<double> &paraValue,
+    std::vector<std::vector<size_t>> &indValue) {
+  // Do some checks on the parameters and variable indeces
+  //
+  if (paraValue.size() != 0) {
+    std::cerr << "VertexNoUpdateFromIndexHoldY::"
+              << "VertexNoUpdateFromIndexHoldY() "
+              << "Uses no parameters." << std::endl;
+    exit(0);
+  }
+  if (indValue.size() != 1 || indValue[0].size() < 1) {
+    std::cerr << "VertexNoUpdateFromIndexHoldY::"
+              << "VertexNoUpdateFromIndexHoldY() "
+              << "Vertex indices in first level." << std::endl;
+    exit(0);
+  }
+  // Set the variable values
+  //
+  setId("VertexNoUpdateFromIndexHoldY");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  //
+}
+
+void VertexNoUpdateFromIndexHoldY::derivs(Tissue &T, DataMatrix &cellData,
+                                     DataMatrix &wallData,
+                                     DataMatrix &vertexData,
+                                     DataMatrix &cellDerivs,
+                                     DataMatrix &wallDerivs,
+                                     DataMatrix &vertexDerivs) {
+  // Check the cancelation for vertices with given indices
+  for (size_t i = 0; i < numVariableIndex(0); ++i) {
+    size_t k = variableIndex(0, i);
+    assert(k < vertexData.size());
+    vertexDerivs[k][1] = 0.0;
+  }
+}
+
+
+VertexNoUpdateFromIndexHoldZ::VertexNoUpdateFromIndexHoldZ(
+    std::vector<double> &paraValue,
+    std::vector<std::vector<size_t>> &indValue) {
+  // Do some checks on the parameters and variable indeces
+  //
+  if (paraValue.size() != 0) {
+    std::cerr << "VertexNoUpdateFromIndexHoldZ::"
+              << "VertexNoUpdateFromIndexHoldZ() "
+              << "Uses no parameters." << std::endl;
+    exit(0);
+  }
+  if (indValue.size() != 1 || indValue[0].size() < 1) {
+    std::cerr << "VertexNoUpdateFromIndexHoldZ::"
+              << "VertexNoUpdateFromIndexHoldZ() "
+              << "Vertex indices in first level." << std::endl;
+    exit(0);
+  }
+  // Set the variable values
+  //
+  setId("VertexNoUpdateFromIndexHoldZ");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  //
+}
+
+void VertexNoUpdateFromIndexHoldZ::derivs(Tissue &T, DataMatrix &cellData,
+                                     DataMatrix &wallData,
+                                     DataMatrix &vertexData,
+                                     DataMatrix &cellDerivs,
+                                     DataMatrix &wallDerivs,
+                                     DataMatrix &vertexDerivs) {
+  // Check the cancelation for vertices with given indices
+  for (size_t i = 0; i < numVariableIndex(0); ++i) {
+    size_t k = variableIndex(0, i);
+    assert(k < vertexData.size());
+    vertexDerivs[k][2] = 0.0;
+  }
+}
+
 VertexNoUpdateFromList::VertexNoUpdateFromList(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t>> &indValue) {

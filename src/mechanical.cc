@@ -612,7 +612,7 @@ VertexFromCellPressureLinear::VertexFromCellPressureLinear(
   std::vector<std::string> tmp(numParameter());
   tmp[0] = "K_force";
   tmp[1] = "f_V_norm";
-  tmp[1] = "deltaT";
+  tmp[2] = "deltaT";
   timeFactor_ = 0.0;
   setParameterId(tmp);
 }
@@ -701,7 +701,7 @@ void VertexFromCellPressureLinear::derivs(Tissue &T, DataMatrix &cellData,
       }
       factor *= wallLength;
 
-      factor *= 1.5 - cellData[cellI][11];
+      // factor *= 1.5 - cellData[cellI][11];
 
       // if(totaltime<100) for residual stress calculation
       for (size_t d = 0; d < dimension; ++d) {
@@ -718,8 +718,9 @@ void VertexFromCellPressureLinear::update(Tissue &T, DataMatrix &cellData,
   static double tt = 0;
   tt += h;
   totaltime = tt;
-  if (totaltime < 200)
-  // if(true)
+  // AGAIN, WHY THIS???
+  //if (totaltime < 200)
+  if(true)
   {
     if (timeFactor_ < 1.0) {
       timeFactor_ += h / parameter(numParameter() - 1);
@@ -1099,7 +1100,6 @@ void PerpendicularWallPressure::derivs(Tissue &T, DataMatrix &cellData,
     exit(EXIT_FAILURE);
   }
 }
-
 namespace Pressure3D {
   Constant::
   Constant(std::vector<double> &paraValue,
@@ -1275,8 +1275,7 @@ namespace Pressure3D {
       // cellData[cell.index()][d] = normal[d];
     }
     // std::cerr << numFlipNormal << " cells out of " << T.numCell() << " has
-    // flipped normal."
-    //	      << std::endl;
+    // flipped normal." << std::endl;
   }
   
   Linear::
