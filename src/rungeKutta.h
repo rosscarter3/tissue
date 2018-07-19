@@ -6,7 +6,7 @@
 ///
 /// @brief A fifth order Runge-Kutta solver for ODEs
 ///
-/// This method follows the Numerical Recipes implementation with added cell division functionality.
+/// @details This method follows the Numerical Recipes implementation with added cell division functionality.
 /// Between each RK step, updates can be made and cell divisions can be implemented. The starting step
 /// is also used as a maximal step.
 ///
@@ -26,17 +26,15 @@ public:
 	///
 	/// @brief Reads the parameters used by the RK5Adaptive algorithm
 	///
-	/// This function is responsible for reading parameters used by the fifth
+	/// @details This function is responsible for reading parameters used by the fifth
 	/// order Runge-Kutta algorithm. The parameter file sent to the simulator
 	/// binary looks like:
-	///
 	/// @verbatim 
 	/// RK5Adaptive
 	/// T_start T_end 
 	/// printFlag printNum 
 	/// h1 eps 
 	/// @verbatim
-	///
 	/// where RK5Adaptive is the identity string used by BaseSolver::getSolver
 	/// to identify that the RK5Adaptive algorithm should be used. T_start
 	/// (T_end) is the start (end) time for the simulation, printFlag is an
@@ -44,12 +42,12 @@ public:
 	/// printNum is the number of equally spread time points to be printed. h1
 	/// is the maximal (and initial) step size for each RK5 step, and eps sets
 	/// the error threshold (should be <<1.0).
-	///
-	/// Comments can be included in the parameter file by starting the line with
-	/// an #. Caveat: No check on the validity of the read data is applied.
+	///  Comments can be included in the parameter file by starting the line with
+	/// an #. 
 	///
 	/// @see BaseSolver::getSolver()
 	/// @see BaseSolver::print()
+	/// @note Caveat: No check on the validity of the read data is applied.
 	///
 	void readParameterFile(std::ifstream &IN);
 	
@@ -134,29 +132,27 @@ class RK4 : public BaseSolver {
   ///
   /// @brief Reads the parameters used by the RK4 algorithm
   ///
-  /// This function is responsible for reading parameters used by the fourth
+  /// @details This function is responsible for reading parameters used by the fourth
   /// order Runge-Kutta algorithm. The parameter file sent to the simulator
   /// binary looks like:
-  ///
   /// @verbatim 
   /// RK4 
   /// T_start T_end 
   /// printFlag printNum 
   /// h 
   /// @verbatim
-  ///
   /// where RK4 is the identity string used by BaseSolver::getSolver to
   /// identify that the RK4 algorithm should be used. T_start (T_end) is the
   /// start (end) time for the simulation, printFlag is an integer which sets
   /// the output format (read by BaseSolver::print()), printNum is the number
   /// of equally spread time points to be printed, and h is the step size for
   /// each RK4 step.
-  ///
-  /// Comments can be included in the parameter file by starting the line with
-  /// an #. Caveat: No check on the validity of the read data is applied.
+  ///  Comments can be included in the parameter file by starting the line with
+  /// an #. 
   ///
   /// @see BaseSolver::getSolver()
   /// @see BaseSolver::print()
+  /// @note Caveat: No check on the validity of the read data is applied.
   ///
   void readParameterFile(std::ifstream &IN);
   
@@ -181,4 +177,4 @@ class RK4 : public BaseSolver {
   double maxDerivative();
 };
 
-#endif /* RUNGEKUTTA_H */
+#endif // RUNGEKUTTA_H

@@ -169,7 +169,7 @@ void RK5Adaptive::simulate(size_t verbose)
   }
   
   // Go
-  //////////////////////////////////////////////////////////////////////
+  //
   t_ = startTime_;
   numOk_ = numBad_ = 0;
   for (unsigned int nstp = 0;; nstp++) {

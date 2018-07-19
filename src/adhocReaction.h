@@ -1026,39 +1026,41 @@ class VertexFromRotationalForceLinear : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+///
+/// @brief Switches an output variable from 0 to 1 if an input variable is
+/// above a threshold.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// ThresholdSwitch 2 2 1 1   # number of parameters is set to two (threshold
+/// and switch_type)
+/// threshold		      # threshold above which a variable is reset to zero.
+/// switch_type		      # the switch_type parameter takes the values 0 and 1
+///                           # for defining the reversible and irreversible
+///                           # switch, respectively.
+/// index_var   	      # index of the index variable upstream the switch.
+/// index_var_out  	      # list of updated indices - for the moment it can
+///                           # be just one index - where the output of
+///                           # the switch is written.
+/// @endverbatim
+///
+/// @note This function makes a downstream species reversibly or irreversibly
+/// switch from 0 to 1, upon being above a certain threshold of an upstream
+/// variable.
+///
 class ThresholdSwitch : public BaseReaction {
   public:
   ///
-  /// @brief Switches an output variable from 0 to 1 if an input variable is
-  /// above a threshold.
+  /// @brief Main constructor
   ///
-  /// This is the main constructor which checks and sets the parameters and
+  /// @details This is the main constructor which checks and sets the parameters and
   /// variable indices that defines the reaction.
   ///
   /// @param paraValue vector with parameters
-  ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// ThresholdSwitch 2 2 1 1   # number of parameters is set to two (threshold
-  /// and switch_type)
-  /// threshold		 		  # threshold above which a variable is reset to
-  /// zero.
-  /// switch_type		 		  # the switch_type parameter takes the values 0 and 1
-  /// for defining the reversible and irreversible switch, respectively.
-  /// index_var   	 		  # index of the index variable upstream the
-  /// switch.
-  /// index_var_out  			  # list of updated indices - for the moment it can
-  /// be just one index - where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species reversibly or irreversibly
-  /// switch from 0 to 1, upon being above a certain threshold of an upstream
-  /// variable.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   ThresholdSwitch(std::vector<double> &paraValue,
                   std::vector<std::vector<size_t>> &indValue);
 
@@ -1085,35 +1087,33 @@ class ThresholdSwitch : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+///
+/// @brief This logical gate function makes a downstream species reversibly or
+/// irreversibly switch from 0 to 1 if the two input variables are 1.
+/// 
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndGate 1 2 2 1   	 	 # number of parameters is set to one
+/// (gate_type)
+/// gate_type		 		  # the gate_type parameter takes the values 0 and 1 for
+/// defining the reversible and irreversible gate, respectively. index_var1
+/// # index of the fist variable upstream the gate.
+/// index_var2   	 		  # index of the second variable upstream the
+/// gate.
+/// index_var_out  			  # updated index where the output of the gate is
+/// written.
+/// @endverbatim
+///
 class AndGate : public BaseReaction {
   public:
   ///
   /// @brief Main constructor
   ///
-  /// This is the main constructor which checks and sets the parameters and
+  /// @details This is the main constructor which checks and sets the parameters and
   /// variable indices that defines the reaction.
   ///
   /// @param paraValue vector with parameters
-  ///
   /// @param indValue vector of vectors with variable indices
-  ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndGate 1 2 2 1   	 	 # number of parameters is set to one
-  /// (gate_type)
-  /// gate_type		 		  # the gate_type parameter takes the values 0 and 1 for
-  /// defining the reversible and irreversible gate, respectively. index_var1
-  /// # index of the fist variable upstream the gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species reversibly or
-  /// irreversibly switch from 0 to 1 if the two input variables are 1.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   AndGate(std::vector<double> &paraValue,
           std::vector<std::vector<size_t>> &indValue);

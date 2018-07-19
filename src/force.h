@@ -26,7 +26,7 @@ namespace Force {
   ///
   /// @details This reaction applies a force in the radial (x,y) direction with
   /// update of the vertex position in x (and symmetric in y) following
-  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} @f]
   /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
   /// @f$|r|@f$ is the radial position (in the x/y-plane).
   /// In a model file it is defined as:
@@ -59,11 +59,11 @@ namespace Force {
   /// @details This reaction applies a force in the radial direction, where z>0 updates vertex positions
   /// in x,y,z (sphere), and z<0 only x,y directions are updated (cylinder).
   /// For z>0, the update of the vertex position in x (and symmetric in y and z) follows
-  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} @f]
   /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
   /// @f$|r|@f$ is the radial position (in 3D (x,y,z)).
   /// For z<0, the update of the vertex position in x (and symmetric in y) follows
-  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} $f]
+  /// @f[ \frac{dx}{dt} = p_0 p_1 \frac{x}{|r|} @f]
   /// where @f$p_0@f$ is the force and @f$p_1@f$ sets the direction (1 outwards, -1 inwards).
   /// @f$|r|@f$ is now the radial position in the x/y-plane.
   /// In a model file it is defined as:
@@ -99,11 +99,11 @@ namespace Force {
   /// of specified radius (@f$R=p_2@f$). 
   /// For z>0, the update of the vertex position in x (and symmetric in y and z) follows
   /// (if vertex inside of the radius)
-  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x $f]
+  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x @f]
   /// where @f$p_0@f$ is the force and @f$p_2@f$ is the defined radius. If outside @f$p_1@f$ replaces @f$p_0@f$
   /// and direction is inwards. @f$|r|@f$ is the radial position of the vertex (in 3D (x,y,z)).
   /// For z<0, the update of the vertex position in x (and symmetric in y) follows
-  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x $f]
+  /// @f[ \frac{dx}{dt} = p_0 \frac{p_2-|r|}{|r|} x @f]
   /// with same parameters and on the sphere, but
   /// @f$|r|@f$ is now the radial position in the x/y-plane.
   /// In a model file it is defined as:

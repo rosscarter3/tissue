@@ -11,6 +11,7 @@
 #include"baseReaction.h"
 
 namespace WallGrowth {
+  
   Constant::
   Constant(std::vector<double> &paraValue, 
 	   std::vector< std::vector<size_t> > 
