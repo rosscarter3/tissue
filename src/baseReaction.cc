@@ -29,6 +29,7 @@
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
 #include "massAction.h"
+#include "hypocotyl3D.h"
 
 BaseReaction::~BaseReaction(){}
 
@@ -491,7 +492,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue == "SisterVertex::CombineDerivatives")
     return new SisterVertex::CombineDerivatives(paraValue, indValue);
 
-    // calculate.h (.cc)
+  // calculate.h (.cc)
   // namespace Calculate collecting some ad hoc rections for calculating useful
   // information to be stored in cell or wall data 
   else if(idValue=="Calculate::AngleVectors" ||
@@ -672,6 +673,10 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue=="MassAction::TwoToOneWall")
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
+  //hypocotyl3D.h
+  else if (idValue=="Hypocotyl3D::VertexFromTRBScenterTriangulationMT")
+    return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
+  
   // Obselete reactions
   if(idValue == "WallGrowthExponentialTruncated" ) {
     std::cerr << "BaseReaction::createReaction() EXITING: "
