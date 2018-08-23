@@ -838,39 +838,6 @@ class copyCellVector : public BaseReaction {
 
 ///
 /// @brief scales the template by a factor via Initiate
-/// copies vectors from one index to another in the cell vector
-/// ( 4 component after the indices will be copied)
-///
-/// @details In the model file the reaction is defined as:
-/// @verbatim
-/// limitZdis 0 1 2
-/// copy_from_index
-/// copy_to_index
-/// @endverbatim
-///
-class limitZdis : public BaseReaction {
-  public:
-  limitZdis(std::vector<double> &paraValue,
-            std::vector<std::vector<size_t>> &indValue);
-
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                DataMatrix &vertexData, DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-
-  private:
-  std::vector<size_t> topVertices;     // holds the vertex indices at the top
-  std::vector<size_t> bottomVertices;  // holds the vertex indices at the bottom
-};
-
-///
-/// @brief scales the template by a factor via Initiate
 /// randomizes the MT direction of the cells within the cell plane
 ///
 /// @details In the model file the reaction is defined as:

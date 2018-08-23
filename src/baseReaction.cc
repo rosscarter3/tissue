@@ -570,8 +570,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new scaleTemplate(paraValue, indValue);
   else if (idValue == "copyCellVector")
     return new copyCellVector(paraValue, indValue);
-  else if (idValue == "limitZdis")
-    return new limitZdis(paraValue, indValue);
   else if (idValue == "randomizeMT")
     return new randomizeMT(paraValue, indValue);
   else if (idValue == "restrictVertexRadially")
@@ -674,6 +672,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
   //hypocotyl3D.h
+  else if (idValue == "Hypocotyl3D::limitZdis")
+    return new Hypocotyl3D::limitZdis(paraValue, indValue);
   else if (idValue=="Hypocotyl3D::VertexFromTRBScenterTriangulationMT")
     return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
   

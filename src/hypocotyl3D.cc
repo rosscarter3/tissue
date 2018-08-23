@@ -14,6 +14,83 @@
 
 namespace Hypocotyl3D {
 
+  limitZdis::limitZdis(std::vector<double> &paraValue, 
+		       std::vector< std::vector<size_t> > &indValue)
+  {
+    if (paraValue.size() != 0) {
+      std::cerr << "Hypocotyl3D::limitZdis::limitZdis() "
+		<< "Uses no parameter, distributes the forces at the "
+		<< "two ends of a cylinder correctly for treatment of boundaries."
+		<< " Uses hard coded collection of vertex indices "
+		<< "and geometries defined "
+		<< " only for hypocotyl paper (Bou Daher et al (2018)."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    if (indValue.size() != 1 || indValue[0].size() != 2) {
+      std::cerr << "Hypocotyl3D::limitZdis::limitZdis() "
+		<< "one index level with 2 indices."
+		<< " Uses hard coded collection of vertex indices "
+		<< "and geometries defined "
+		<< " only for hypocotyl paper (Bou Daher et al (2018)."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    setId("Hypocotyl3D::limitZdis");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+  }
+  
+  void limitZdis::initiate(Tissue &T,
+			   DataMatrix &cellData,
+			   DataMatrix &wallData,
+			   DataMatrix &vertexData,
+			   DataMatrix &cellDerivs,
+			   DataMatrix &wallDerivs,
+			   DataMatrix &vertexDerivs)
+  {
+    size_t numCells = T.numCell();
+    for (size_t cellIndex= 0; cellIndex< numCells; ++cellIndex)
+      if(cellData[cellIndex][38]==-1 && (cellData[cellIndex][37]==-4 ||cellData[cellIndex][37]==0) ) // for hypocotyl
+	{ size_t numWalls = T.cell(cellIndex).numWall();      
+	  for (size_t wallindex=0; wallindex<numWalls; ++wallindex) { 
+	    size_t vInd= T.cell(cellIndex).vertex(wallindex)->index();
+	    if(vertexData[vInd][2]>-50)
+	      topVertices.push_back(vInd);
+	    if(vertexData[vInd][2]<-50)
+	      bottomVertices.push_back(vInd);
+	  }
+	}
+  }
+
+  void limitZdis::derivs(Tissue &T,
+			 DataMatrix &cellData,
+			 DataMatrix &wallData,
+			 DataMatrix &vertexData,
+			 DataMatrix &cellDerivs,
+			 DataMatrix &wallDerivs,
+			 DataMatrix &vertexDerivs) 
+  {
+    size_t numTop=topVertices.size();
+    size_t numBottom=bottomVertices.size();
+    
+    double tmpZforce=0;
+    for (size_t i= 0; i< numTop; ++i)
+      tmpZforce+=vertexDerivs[topVertices[i]][2];
+    tmpZforce/=numTop;
+    for (size_t i= 0; i< numTop; ++i)
+      vertexDerivs[topVertices[i]][2]=tmpZforce;
+    
+    tmpZforce=0;
+    for (size_t i= 0; i< numBottom; ++i)
+      tmpZforce+=vertexDerivs[bottomVertices[i]][2];
+    tmpZforce/=numBottom;
+    for (size_t i= 0; i< numBottom; ++i)
+      vertexDerivs[bottomVertices[i]][2]=tmpZforce;
+  }
+
   VertexFromTRBScenterTriangulationMT::
   VertexFromTRBScenterTriangulationMT(std::vector<double> &paraValue, 
 				      std::vector< std::vector<size_t> > 
@@ -195,13 +272,6 @@ derivs(Tissue &T,
       exit(-1);
     }
     
-  
- 
-   
- 
-
-   
-
     double youngL=1;
     double youngT=1;
     
