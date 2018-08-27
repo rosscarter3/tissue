@@ -17,19 +17,23 @@
 #'make clean' 	removes all .o, executables and .d 
 
 SHELL = /bin/sh
-#Compilers and flags
+# Compilers and flags
 CXX = g++
-CXXFLAGS = -g -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-LDFLAGS = -g -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-CXXFLAGS = -g -O3 -DNDEBUG -Wall -pedantic   -std=c++11 -stdlib=libc++ -I/sw/include/
-LDFLAGS = -g -O3 -DNDEBUG -Wall -pedantic
-#CXXFLAGS = -g -Wall -pedantic -ansi
-#LDFLAGS = -g -Wall -pedantic -ansi 
-#
-# uncomment two rows below for MAC OS X
-#
-CXXFLAGS = -g -O3 -DNDEBUG -Wall -pedantic -std=c++11 -I/sw/include/ -I/opt/local/include/
-LDFLAGS = -g -O3 -DNDEBUG -Wall -pedantic
+
+# Make flags OS independent (note, not yet for Windows or debug or gprof options)
+UNAME_S := $(shell uname -s)
+
+# Linux (assume default)
+#ifeq ($(UNAME_S),Linux) 
+CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+#endif
+
+# Mac OS X
+ifeq ($(UNAME_S),Darwin)
+	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
+endif
 
 #Sourcefiles etc.
 SIM_SRC = simulator/simulator.cc
