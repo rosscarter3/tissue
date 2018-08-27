@@ -1,7 +1,5 @@
 *sublime*
 
-.DS_Store
-
 # Prerequisites
 *.d
 
@@ -9,17 +7,15 @@
 *.o
 bin/*
 
-# Some standard directories
+# Some standard (e.g. Documentation) directories
 doc/html/*
 doc/latex/*
 results/*
-
-tools/plot/doc/html/*
-tools/plot/doc/latex/*
-
-tools/auto/auto
 
 # Editor files
 *.swp
 src/tags
 *~
+
+# Mac OS X
+.DS_Store
