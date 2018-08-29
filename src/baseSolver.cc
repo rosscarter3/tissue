@@ -1697,6 +1697,67 @@ void BaseSolver::print(std::ostream &os) {
     //   }
     // }
   }
+
+  // For Hypocotyl paper Bou Daher (2018)
+  // 70 and 71, should not be changed unless
+  // gitlab.com/slcu/teamhj/behruz/3DHypocotyl is
+  // updated as well
+  else if( printFlag_==70 ) { //printFlag for hypocotyl paper, vtk format and length and strain aniso data
+    int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
+
+    std::string pvdFile = vtkOutputFolder + std::string("/tissue.pvd");
+    std::string cellFile = vtkOutputFolder + std::string("/VTK_cells.vtu");
+    std::string wallFile = vtkOutputFolder + std::string("/VTK_walls.vtu");
+
+    static size_t numCellVar = T_->cell(0).numVariable();
+    setTissueVariables(numCellVar);
+    if( tCount==0 ) {
+      PVD_file::writeFullPvd(pvdFile,cellFile,wallFile,numPrint_);
+    }
+    PVD_file::write(*T_,cellFile,wallFile,tCount);
+    double avStrainAniso=0;
+    size_t numCellsOut=0;
+    for (size_t cellind = 0 ; cellind < cellData_.size() ;cellind++)
+      if (cellData_[cellind][37]==-1 && cellData_[cellind][36]==0)//outer walls not boundary cells
+	{ avStrainAniso+=cellData_[cellind][17];
+	  numCellsOut++;
+	}
+    avStrainAniso/=numCellsOut;
+    os << vertexData_[0][2]-vertexData_[898][2]<<" "
+       << avStrainAniso<<" "
+       <<std::endl;
+  }
+  // For Hypocotyl paper Bou Daher (2018)
+  // 70 and 71, should not be changed unless
+  // gitlab.com/slcu/teamhj/behruz/3DHypocotyl is
+  // updated as well
+  else if( printFlag_==71 ) { //printFlag for hypocotyl paper, vtk format and length and strain aniso data at the end
+    int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
+    std::string pvdFile = vtkOutputFolder + std::string("/tissue.pvd");
+    std::string cellFile = vtkOutputFolder + std::string("/VTK_cells.vtu");
+    std::string wallFile = vtkOutputFolder + std::string("/VTK_walls.vtu");
+
+    static size_t numCellVar = T_->cell(0).numVariable();
+    setTissueVariables(numCellVar);
+    if( tCount==0 ) {
+      PVD_file::writeFullPvd(pvdFile,cellFile,wallFile,numPrint_);
+    }
+    PVD_file::write(*T_,cellFile,wallFile,tCount);
+    if(tCount==numPrint_){
+      double avStrainAniso=0;
+      size_t numCellsOut=0;
+      for (size_t cellind = 0 ; cellind < cellData_.size() ;cellind++)
+	if (cellData_[cellind][37]==-1 && cellData_[cellind][36]==0)//outer walls not boundary cells
+	  { avStrainAniso+=cellData_[cellind][17];
+	    numCellsOut++;
+	  }
+      avStrainAniso/=numCellsOut;
+      os << vertexData_[0][2]-vertexData_[898][2]<<" "
+	 << avStrainAniso<<" "
+	 <<std::endl;
+    }
+  }
+  
   else if (printFlag_==77) { //print cell information in simple format
     for (size_t cellind = 0; cellind < cellData_.size(); cellind++) {
       std::vector<double> o;
