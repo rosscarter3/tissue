@@ -639,7 +639,7 @@ namespace WallGrowth {
       // WHY THIS!?
       // My parameters wehre always causing equil = false
       //if(equil && deltat<200) {// if limited growth time
-      std::cerr << equil << std::endl;
+      //std::cerr << equil << std::endl;
       if(equil && deltat>0.0) {// if close to mechanical equilibrum        
       //if(true) {  
         growthtime+=h;  
