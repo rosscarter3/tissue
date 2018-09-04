@@ -218,7 +218,7 @@ namespace Hypocotyl3D {
       
       for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) 
 	
-	if(parameter(3)!=-1 || (parameter(3)!=-1 && cellData[cellIndex][36]==0))// hypocotyl boundary should not grow
+	if(parameter(3)!=-1 || (parameter(3)==-1 && cellData[cellIndex][36]==0))// hypocotyl boundary should not grow
 	  {
 	    if(numParameter()>4){//domain dependent growth threshold
 	      double conc=cellData[cellIndex][variableIndex(2,1)];
