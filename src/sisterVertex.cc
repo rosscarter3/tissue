@@ -122,7 +122,7 @@ namespace SisterVertex {
     // Go through all pairs of vertices and put close ones into the sisterVertex vector
     size_t N = T.numVertex();
     double dimension = T.vertex(0).numPosition();
-
+    int count = 0;
     for (size_t i=0; i<N; ++i) {
       for (size_t j=i+1; j<N; ++j) {
 	double distance = 0.0;
@@ -132,11 +132,14 @@ namespace SisterVertex {
 	distance = std::sqrt(distance);
 	if (distance<=parameter(0)) {//add pair to sisterVertex vector
 	  T.addSisterVertex(i,j);
-	  std::cerr << "SisterVertex::InitiateFromDistance::initiate() added sisters "
-		    << i << " " << j << std::endl;
+	  count++;
+	  //std::cerr << "SisterVertex::InitiateFromDistance::initiate() added sisters "
+	  //	    << i << " " << j << std::endl;
 	}
       }
     }
+    std::cerr << "SisterVertex::InitiateFromDistance::initiate() added "
+	      << count << " sisters by distance rule."
   }    
 
   void InitiateFromDistance::
