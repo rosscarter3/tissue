@@ -29,6 +29,7 @@
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
 #include "massAction.h"
+#include "hypocotyl3D.h"
 
 BaseReaction::~BaseReaction(){}
 
@@ -125,7 +126,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 
   //Mechanical interactions between vertices
   //mechanical.h,mechanical.cc
-  // namespace Pressure2D
+  // Namespace Pressure2D for forces generated perpendicular to edges (along faces)
  else if(idValue=="Pressure2D::AreaPotential")
    return new Pressure2D::AreaPotential(paraValue,indValue);
  else if(idValue=="Pressure2D::AreaPotentialTri")
@@ -149,28 +150,39 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
    return new TargetAreaFromPressure(paraValue, indValue);
  else if(idValue=="VertexFromCellPowerdiagram")
    return new VertexFromCellPowerdiagram(paraValue,indValue);
-
-  // HJ: create namespace FacePressure for these and create documentation
-  else if (idValue == "VertexFromCellPlane")
-    return new VertexFromCellPlane(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneLinear")
-    return new VertexFromCellPlaneLinear(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneLinearCenterTriangulation")
-    return new VertexFromCellPlaneLinearCenterTriangulation(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneSpatial")
-    return new VertexFromCellPlaneSpatial(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneConcentrationHill")
-    return new VertexFromCellPlaneConcentrationHill(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneNormalized")
-    return new VertexFromCellPlaneNormalized(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneNormalizedSpatial")
-    return new VertexFromCellPlaneNormalizedSpatial(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneSphereCylinder")
-    return new VertexFromCellPlaneSphereCylinder(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneSphereCylinderConcentrationHill")
-    return new VertexFromCellPlaneSphereCylinderConcentrationHill(paraValue, indValue);
-  else if (idValue == "VertexFromCellPlaneTriangular")
-    return new VertexFromCellPlaneTriangular(paraValue, indValue);
+  
+  // Namespace Pressure3D for forces generated perpendicular to faces
+ else if (idValue == "Pressure3D::Constant" ||
+	  idValue == "VertexFromCellPlane")
+   return new Pressure3D::Constant(paraValue, indValue);
+ else if (idValue == "Pressure3D::Linear" ||
+	  idValue == "VertexFromCellPlaneLinear")
+   return new Pressure3D::Linear(paraValue, indValue);
+ else if (idValue == "Pressure3D::Spatial" ||
+	  idValue == "VertexFromCellPlaneSpatial")
+   return new Pressure3D::Spatial(paraValue, indValue);
+ else if (idValue == "Pressure3D::ConcentrationHill" ||
+	  idValue == "VertexFromCellPlaneConcentrationHill")
+   return new Pressure3D::ConcentrationHill(paraValue, indValue);
+ else if (idValue == "Pressure3D::Normalized" ||
+	  idValue == "VertexFromCellPlaneNormalized")
+   return new Pressure3D::Normalized(paraValue, indValue);
+ else if (idValue == "Pressure3D::NormalizedSpatial" ||
+	  idValue == "VertexFromCellPlaneNormalizedSpatial")
+   return new Pressure3D::NormalizedSpatial(paraValue, indValue);
+ else if (idValue == "Pressure3D::SphereCylinder" ||
+	  idValue == "VertexFromCellPlaneSphereCylinder")
+   return new Pressure3D::SphereCylinder(paraValue, indValue);
+ else if (idValue == "Pressure3D::SphereCylinderConcentrationHill" ||
+	  idValue == "VertexFromCellPlaneSphereCylinderConcentrationHill")
+   return new Pressure3D::SphereCylinderConcentrationHill(paraValue, indValue);
+ else if (idValue == "Pressure3D::Triangular" ||
+	  idValue == "VertexFromCellPlaneTriangular")
+   return new Pressure3D::Triangular(paraValue, indValue);
+ else if (idValue == "Pressure3D::CenterTriangulation::Linear" ||
+	  idValue == "CenterTriangulation::Pressure3D::Linear" ||
+	  idValue == "VertexFromCellPlaneLinearCenterTriangulation")
+   return new Pressure3D::CenterTriangulation::Linear(paraValue, indValue);
   
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
@@ -480,7 +492,7 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue == "SisterVertex::CombineDerivatives")
     return new SisterVertex::CombineDerivatives(paraValue, indValue);
 
-    // calculate.h (.cc)
+  // calculate.h (.cc)
   // namespace Calculate collecting some ad hoc rections for calculating useful
   // information to be stored in cell or wall data 
   else if(idValue=="Calculate::AngleVectors" ||
@@ -558,8 +570,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new scaleTemplate(paraValue, indValue);
   else if (idValue == "copyCellVector")
     return new copyCellVector(paraValue, indValue);
-  else if (idValue == "limitZdis")
-    return new limitZdis(paraValue, indValue);
   else if (idValue == "randomizeMT")
     return new randomizeMT(paraValue, indValue);
   else if (idValue == "restrictVertexRadially")
@@ -661,6 +671,14 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue=="MassAction::TwoToOneWall")
       return new MassAction::TwoToOneWall(paraValue, indValue);
 
+  //hypocotyl3D.h
+  else if (idValue == "Hypocotyl3D::limitZdis")
+    return new Hypocotyl3D::limitZdis(paraValue, indValue);
+  else if (idValue == "Hypocotyl3D::StrainTRBS")
+    return new Hypocotyl3D::StrainTRBS(paraValue, indValue);
+  else if (idValue=="Hypocotyl3D::VertexFromTRBScenterTriangulationMT")
+    return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
+  
   // Obselete reactions
   if(idValue == "WallGrowthExponentialTruncated" ) {
     std::cerr << "BaseReaction::createReaction() EXITING: "
