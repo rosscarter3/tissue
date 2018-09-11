@@ -2699,6 +2699,7 @@ derivs(Tissue &T,
         youngL = youngMatrix+youngFiber;
         youngT = youngMatrix; 
         
+        // ADHOC!
         if(cellData[cellIndex][40]==100){
         youngL = youngMatrix+youngFiber/2;
         youngT = youngMatrix+youngFiber/2;

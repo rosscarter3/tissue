@@ -420,8 +420,16 @@ namespace WallGrowth {
       size_t lengthIndex = variableIndex(0,0);
       size_t lengthStartIndex = lengthIndex+3;//assuming 3D
       
+      //std::cerr << "====================" << std::endl;
+
+      //std::cerr << "wallData[0]: " << wallData[0][0] << std::endl;
+      //for (size_t j=0; j < T.cell(0).numVertex(); ++j) {
+      //  std::cerr << j+lengthStartIndex << ": " << cellData[0][j+lengthStartIndex] << std::endl;
+      //}
+
+
       for (size_t i=0; i<numCells; ++i) {
-	      for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
+	           for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
 	        double arg = parameter(0);
 	        if (parameter(1)==1) {//linearFlag (prop to length)
 	          arg *= cellData[i][k+lengthStartIndex];
@@ -430,7 +438,7 @@ namespace WallGrowth {
 	          arg *= (1 - cellData[i][k+lengthStartIndex]/parameter(2));
 	        }
 	        cellDerivs[i][k+lengthStartIndex] += arg;
-          //std::cerr << "arg: " << arg << std::endl;
+          // std::cerr << "arg: " << arg << std::endl;
 	      }
       }
     }
