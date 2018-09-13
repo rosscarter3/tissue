@@ -52,7 +52,7 @@ class VertexNoUpdateFromPosition : public BaseReaction {
 /// VertexNoUpdateFromIndex 0 1 N
 /// vertexIndex1 [vertexIndex2...vertexIndexN]
 /// @endverbatim
-/// where the list if indices are the vertices not to be updated.
+/// where the list of indices are the vertices not to be updated.
 ///
 /// @note This function sets the derivatives to zero, which means it has to be
 /// provided after reactions that update the vertex derivatives.
