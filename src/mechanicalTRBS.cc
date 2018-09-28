@@ -3786,7 +3786,6 @@ derivs(Tissue &T,
         if (std::abs(1-cosAngle[0])<0.0001 || std::abs(1-cosAngle[1])<0.0001 ||  std::abs(1-cosAngle[2])<0.0001) {
           //RC: if triangle is a sliver just update derivs with values from previous step
 
-          std::cerr<<" sliver in "<<cellIndex;
           double tmp1=cellDerivs[cellIndex][comIndex  ]+vertexDerivs[v2][0]+vertexDerivs[v3][0],
                  tmp2=cellDerivs[cellIndex][comIndex+1]+vertexDerivs[v2][1]+vertexDerivs[v3][1],
                  tmp3=cellDerivs[cellIndex][comIndex+2]+vertexDerivs[v2][2]+vertexDerivs[v3][2];
@@ -3805,7 +3804,7 @@ derivs(Tissue &T,
 
           isSliver=true;
           std::cerr<<"VertexFromTRBScenterTriangulationMT::derivs() WARNING!" << std::endl 
-          <<" there is a sliver in cell: "<< cellIndex<<" and wall:  "<< wallindex << std::endl;
+          <<" there is a sliver in cell: "<< cellIndex << std::endl;
         }  
         
         // adding TRBSMT forces to the total vertexDerives
@@ -7193,7 +7192,7 @@ derivs(Tissue &T,
                        ( length[0]+length[1]-length[2]);
       
       if (sq_area < 0){
-        std::cerr << "Heron's formual for area unstable for a triangle in cell: "<< cellIndex << std::cerr; 
+        std::cerr << "Heron's formual for area unstable for a triangle in cell: " << cellIndex << std::endl; 
       }
 
       //Area of the element (using Heron's formula)                                      
@@ -7684,7 +7683,6 @@ double StRot[2][2]=
 
         bool isSliver=false;
         if (std::abs(1-cosAngle[0])<0.0001 || std::abs(1-cosAngle[1])<0.0001 ||  std::abs(1-cosAngle[2])<0.0001) {
-          std::cerr<<" sliver in "<<cellIndex;
           double tmp1 = cellDerivs[cellIndex][comIndex  ] + vertexDerivs[v2][0] + vertexDerivs[v3][0],
                  tmp2 = cellDerivs[cellIndex][comIndex+1] + vertexDerivs[v2][1] + vertexDerivs[v3][1],
                  tmp3 = cellDerivs[cellIndex][comIndex+2] + vertexDerivs[v2][2] + vertexDerivs[v3][2];
