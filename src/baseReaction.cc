@@ -85,7 +85,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromWallSpringMTnew(paraValue,indValue);
   else if(idValue=="VertexFromWallBoundarySpring")
     return new VertexFromWallBoundarySpring(paraValue,indValue);
-  else if(idValue=="CenterTriangulation::EdgeSpring")
+  else if(idValue=="CenterTriangulation::EdgeSpring" ||
+	  idValue=="CenterTriangulation::Spring")
     return new CenterTriangulation::EdgeSpring(paraValue,indValue);
   else if(idValue=="VertexFromDoubleWallSpring")
     return new VertexFromDoubleWallSpring(paraValue,indValue);
