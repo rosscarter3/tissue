@@ -1,0 +1,35 @@
+# Example file for two connected 2D square cells in 2D where independent edges are used for the middle edge
+2 8 8	       # NumCell NumWall NumVertex
+0 0 -1 0 1     # connections: edge_label cell1 cell2 vertex1 vertex2
+1 0 -1 0 2
+2 0 -1 1 3
+3 0 -1 2 3
+4 1 -1 7 5
+5 1 -1 5 4
+6 1 -1 4 6
+7 1 -1 6 7
+
+8 2	       # NumVertex Dimension
+0.0 0.0        # Positions of vertices
+1.0 0.0 
+0.0 1.0 
+1.0 1.0
+0.0 2.0
+1.0 2.0
+0.0 1.0 
+1.0 1.0
+
+8 1 4		# NumEdge NumLength NumVariable
+1.0 0.0 0.0 0 0 # RestLength variable1 .. vN
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+1.0 0.0	0.0 0 0
+
+2 10		# NumCell NumVariable
+0.0 1.0 1.0 1.0 0.0 0 0 0 0 1 #variable0 .. vN
+0.0 1.0 1.0 1.0 0.0 0 0 0 0 0
+ 
