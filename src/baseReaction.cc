@@ -674,6 +674,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   //hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")
     return new Hypocotyl3D::limitZdis(paraValue, indValue);
+  else if (idValue == "Hypocotyl3D::StrainTRBS")
+    return new Hypocotyl3D::StrainTRBS(paraValue, indValue);
   else if (idValue=="Hypocotyl3D::VertexFromTRBScenterTriangulationMT")
     return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
   
