@@ -13,8 +13,8 @@
 //RC: getting undefined uint error on cygwin
 #include <cstdint>
 
-#ifndef Uint
-#define Uint unsigned int
+#ifndef uint
+#define uint unsigned int
 #else
 #error
 #endif
