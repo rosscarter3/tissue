@@ -24,10 +24,16 @@ CXX = g++
 UNAME_S := $(shell uname -s)
 
 # Linux (assume default)
-#ifeq ($(UNAME_S),Linux) 
-CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+ifeq ($(UNAME_S),Linux)
+    CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
 LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
-#endif
+endif
+
+# Cygwin 10.0
+ifeq ($(UNAME_S),CYGWIN_NT-10.0)
+    CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+    LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+endif
 
 # Mac OS X
 ifeq ($(UNAME_S),Darwin)
