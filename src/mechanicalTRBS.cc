@@ -585,7 +585,7 @@ derivs(Tissue &T,
       rotation[1][2]=Zcurrent[1];
       rotation[2][2]=Zcurrent[2];      
 
-      // rotariong strain tensor to the global coordinate system
+      // rotating strain tensor to the global coordinate system
       double tempR[3][3]={{0,0,0},{0,0,0},{0,0,0}};
       for (int r=0 ; r<3 ; r++) {
         for (int s=0 ; s<3 ; s++) {
@@ -859,7 +859,7 @@ derivs(Tissue &T,
     
 
 
-      // storing normal dirrection to  strain in cellData  
+      // storing normal direction to  strain in cellData
      
       // normal to the cell plane in global direction is Zcurrent[], vector product gives the perpendicular strain direction
      
