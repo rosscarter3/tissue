@@ -1,0 +1,10 @@
+# This file is setting the parameters for the solver to use in the
+# simulations. See documentation for availble solvers.
+#
+# Contact: henrik.jonsson@slcu.cam.ac.uk
+#
+RK5Adaptive   # solver
+0 1000        # start time, end time 0 100000
+77 	      # output format (2=vtk)
+1	      # number of output points
+0.5 1e-5     # max step, error tolerance
