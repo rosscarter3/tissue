@@ -25,7 +25,7 @@ namespace CenterTriangulation
   ///
   /// @details This reaction does not update the tissue. It only initiates a central triangulation of cells
   /// and add variables to cellData at initiation. This is mainly used for triangular biquadratic
-  /// spring models. One parameter (flag) can be provided and is setr to one if the central point and
+  /// spring models. One parameter (flag) can be provided and is set to one if the central point and
   /// internal edges should be initiated from scratch even if they have been provided to the tissue
   /// when reading the init. One variable index is provided for compability with an old version, and
   /// should represents the end of the cellData vector (cell(i).numVariable()). 

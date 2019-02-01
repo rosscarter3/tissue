@@ -9,6 +9,16 @@
 #include <iostream>
 #include <vector>
 #include <map>
+
+//RC: getting undefined uint error on cygwin
+#include <cstdint>
+
+#ifndef uint
+#define uint unsigned int
+#else
+#error
+#endif
+
 class Tissue;
 class Vertex;
 //-----------------------------------------------------------------------------

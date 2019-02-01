@@ -11,6 +11,8 @@ const double WALL_RELATIVE_THICKNESS = 0.1;
 using namespace IO;
 //-----------------------------------------------------------------------------
 
+// RC: this is failing to compile on cygwin under windows
+
 Point::Point ( Vertex const& vv ) : x ( 0.0 ), y ( 0.0 ), z ( 0.0 )
 {
     Vertex &v = const_cast<Vertex &> ( vv );

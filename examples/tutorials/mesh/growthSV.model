@@ -1,0 +1,17 @@
+# Example model file for growing edges with springs where independent edges are used
+4 0 0	  	# 2 reactions are used (no division rules or face direction rules)
+
+WallGrowth::Constant 2 1 1  # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1		       	    # growth rate
+1		    	    # 1 means growth depends on length (exponential)
+0			    # resting length index
+
+WallMechanics::Spring 2 1 1 # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1		      	    # k_spring
+1.0		      	    # k_spring_factor only applied if spring is compressed
+0			    # resting length index
+
+SisterVertex::InitiateFromDistance 1 0 # 1 parameter used (no variable indices)
+0.01				       # max distance to become sister vertices
+
+SisterVertex::CombineDerivatives 0 0   # no parameters or indices needed

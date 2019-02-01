@@ -2317,7 +2317,7 @@ void BaseSolver::printInitCenterTri(std::ostream &os) const {
       for (size_t j = 0; j < cellData_[i].size(); ++j)
         os << cellData_[i][j] << " ";
       if (cellData_[i].size() == T_->cell(i).numVariable()) {
-        // create new center triangulation data and print (x,y,x,l_i,...)
+        // create new center triangulation data and print (x,y,z,l_i,...)
         std::vector<double> com(vertexData_[0].size());
         size_t numInternalWall = T_->cell(i).numVertex();
         com = T_->cell(i).positionFromVertex(vertexData_);

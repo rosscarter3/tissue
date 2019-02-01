@@ -165,6 +165,14 @@ namespace SisterVertex {
   /// SisterVertex::Spring 1 0
   /// k_{spring}
   /// @endverbatim
+  /// or
+  /// @verbatim
+  /// SisterVertex::Spring 2 0
+  /// k_{spring}
+  /// break_dist
+  /// @endverbatim
+  /// where the second parameter allows for defining a maximal length of the spring
+  /// before it breaks.
   ///
   class Spring : public BaseReaction {
     

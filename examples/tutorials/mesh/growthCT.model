@@ -1,0 +1,25 @@
+# Example model file for growing edges with springs
+5 0 0	  	# 2 reactions are used (no division rules or face direction rules)
+
+WallGrowth::Constant 2 1 1  # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1		       	    # growth rate
+1		    	    # 1 means growth depends on length (exponential)
+0			    # resting length index
+
+WallMechanics::Spring 2 1 1 # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1		      	    # k_spring
+1.0		      	    # k_spring_factor only applied if spring is compressed
+0			    # resting length index
+
+CenterTriangulation::Initiate 0 1 1 # no parameters and one index provided
+10			      	    # The init file is expected to have 10 cell/face variables
+
+CenterTriangulation::WallGrowth::Constant 2 1 1  # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1		       	    		      	 # growth rate
+1		    	    			 # 1 means growth depends on length (exponential)
+10			    			 # (to find) resting length indices, (10 original cell/face vars)
+
+CenterTriangulation::Spring 2 1 1 # 2 parameters are used, and 1 wall variable index (of 1 type)
+0.1			      	  # k_spring
+1.0				  # k_spring_factor only applied if spring is compressed
+10				  # The init file is expected to have 10 cell/face variables

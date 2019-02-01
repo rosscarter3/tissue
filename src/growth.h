@@ -497,12 +497,12 @@ namespace WallGrowth {
     /// In a model file the reaction is defined as
     ///
     /// @verbatim
-    /// WallGrowth::Constant 2/3 1 1
+    /// CenterTriangulation::WallGrowth::Constant 2/3 1 1
     /// k_growth linear_flag [L_trunc]
     /// index
     /// @endverbatim
     ///
-    /// @see WallGrowth::Constant (for same update of 1D walls)
+    /// @see WallGrowth::Constant (for same update of edges/2D walls)
     ///
     class Constant : public BaseReaction {
       

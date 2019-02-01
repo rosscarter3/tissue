@@ -33,6 +33,7 @@ AreaPotential::AreaPotential(std::vector<double> &paraValue,
     exit(EXIT_FAILURE);
   }
 
+
   // Set the variable values
   //
   setId("Pressure2D::AreaPotential");
@@ -1219,7 +1220,7 @@ namespace Pressure3D {
 	else {
 	  // Print all walls and exit
 	  std::cerr << "#Pressure3D::Constant::derivs() failed finding normal direction, "
-		    << "prinitng the wall information." << std::endl;
+		    << "printing the wall information." << std::endl;
 	  std::vector<double> center = cell.positionFromVertex(vertexData);
 	  for (size_t k = 0; k < cell.numWall(); ++k) {
 	    std::cerr << "0 ";

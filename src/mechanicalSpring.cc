@@ -903,7 +903,7 @@ namespace CenterTriangulation {
 	 DataMatrix &wallDerivs,
 	 DataMatrix &vertexDerivs ) {
     
-    //Do the update for each internal edge for eache cell
+    //Do the update for each internal edge for each cell
     size_t numCells = T.numCell();
     size_t posIndex = variableIndex(0,0);
     size_t dimension = vertexData[0].size();
