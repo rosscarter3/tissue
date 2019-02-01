@@ -2702,12 +2702,11 @@ namespace Pressure3D {
       
       for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex)
 	
-	// if(cellData[cellIndex][27]!=-10)  // everywhere except l3 bottom
-	
-	// if(cellData[cellIndex][27]==-2) // only epidermis (L1 top)
-	
+	// if(cellData[cellIndex][27]!=-10)  // everywhere except l3 bottom	
+	// if(cellData[cellIndex][27]==-2) // only epidermis (L1 top)	
 	// if(cellData[cellIndex][28]==1 && cellData[cellIndex][29]==2) // only L2
 	// top)  if(cellData[cellIndex][38]==-1) // for hypocotyl
+
 	if (true) {
 	  size_t numWalls = T.cell(cellIndex).numWall();
 	  // Cell cell = T.cell(n);

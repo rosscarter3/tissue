@@ -139,7 +139,7 @@ namespace SisterVertex {
       }
     }
     std::cerr << "SisterVertex::InitiateFromDistance::initiate() added "
-	      << count << " sisters by distance rule.";
+	      << count << " sisters by distance rule." << std::endl;
   }    
 
   void InitiateFromDistance::
