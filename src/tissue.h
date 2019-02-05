@@ -910,6 +910,17 @@ class Tissue {
   void printVertexAndWall(DataMatrix &wallData,
 			  DataMatrix &vertexData,
 			  std::ostream &os=std::cout);  
+  ///
+  /// @brief Function to convert a tissue to a SisterVertex version (see Namespace SisterVertex)
+  ///
+  /// @details This function converts the tissue into a tissue where cells are decoupled, i.e.
+  /// each face have independent edges and vertices (from other cells). The new SisterVertex tissue
+  /// is created in T2, an empty tissue object supplied. If SisterVertex is applied to the new tissue
+  /// the cells can be coupled by the defined SisterVertices. This function is used by the converter tool.
+  ///
+  /// @see namespace SisterVertex
+  ///
+  void convertToSisterVertexTissue(Tissue &T2, size_t verbose=0); 
 };
 
 inline std::string Tissue::id() const { return id_; }

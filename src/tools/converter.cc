@@ -56,6 +56,8 @@ int main ( int argc,char *argv[] )
                   << "vtu1 (vtk format with single wall compartment variables), " << std::endl
                   << "vtu2 (vtk format with two wall compartment variables)." << std::endl
                   << "ply (ply format for exchange between plant modellers using vertex-based geometries)." << std::endl
+                  << "sisterVertexTissue (tissue format where vertices and edges have been split to " << std::endl
+		  << "  be independent, see Namespace SisterVertex)." << std::endl
                   << std::endl;
         std::cerr << "-verbose flag - Set flag for verbose (flag=1, default) more verbose (2) or "
                   << "silent (0) output mode to stderr." << std::endl << std::endl;
@@ -224,6 +226,10 @@ int main ( int argc,char *argv[] )
     }
     else if ( outputFormat.compare ( "pvd" ) ==0 )
     {
+        if ( verboseFlag )
+        {
+            std::cerr << "Printing output using pvd format." << std::endl;
+        }
         std::cout << "<?xml version=\"1.0\"?> " << std::endl;
         std::cout << "<VTKFile type=\"Collection\" version=\"0.1\" > " << std::endl;
         std::cout << "<Collection> " << std::endl;
@@ -247,10 +253,19 @@ int main ( int argc,char *argv[] )
         vtuos.close();
         vtu_f.close();
     }
+    else if (outputFormat.compare("sisterVertexTissue")==0) {
+      if (verboseFlag) {
+	std::cerr << "Printing output using sisterVertexTissue format." << std::endl;
+      }
+      Tissue T2;
+      T.convertToSisterVertexTissue(T2);
+      T2.printInit();
+    }
     else
     {
         std::cerr << "Warning: main() - Format " << outputFormat << " not recognized. "
                   << "No outputwritten." << std::endl;
+	exit(EXIT_FAILURE);
     }
     if ( verboseFlag )
     {

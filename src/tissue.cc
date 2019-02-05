@@ -7634,3 +7634,124 @@ printVertexAndWall(DataMatrix &wallData,
        << std::endl;
   }
 }	
+
+void Tissue::
+convertToSisterVertexTissue(Tissue &T2, size_t verbose) {
+
+  if (T2.numCell()) {
+    std::cerr << "Tissue::convertToSisterVertexTissue() ERROR" << std::endl
+	      << "Tissue supplied as reference needs to be empty." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  // counters for how many vertices and edges added 
+  size_t vertexIndex=0;
+  size_t edgeIndex=0;
+  
+  // Add cell by cell from T to T2 and count total number of vertices=edges
+  size_t numEdgeVertex = 0;
+  for (size_t i=0; i<numCell(); ++i) {
+    Cell tmpCell = cell(i);
+    T2.addCell(tmpCell);
+    numEdgeVertex += cell(i).numVertex(); //=numEdges
+  }
+  //setId( idVal );
+  //setNumCell( numCellVal ); //done during copying above
+  setNumWall( numEdgeVertex );
+  setNumVertex( numEdgeVertex );
+
+  assert( T2.numCell() );
+  assert( T2.numWall() );
+  assert( T2.numVertex() );
+  
+  // Set all indices to the position in the vectors
+  //for( size_t i=0 ; i<T2.numCell() ; ++i ) //done in copying above
+  //cell(i).setIndex(i);
+  for( size_t i=0 ; i<T2.numWall() ; ++i )
+    T2.wall(i).setIndex(i);
+  for( size_t i=0 ; i<T2.numVertex() ; ++i )
+    T2.vertex(i).setIndex(i);
+    
+  // add new vertices and edges to each cell 
+  for (size_t i=0; i<numCell(); ++i) {
+    size_t K=T2.cell(i).numVertex();
+
+    // Add new vertices to T2, and connect to (cell, background) and each other
+    for (size_t k=0; k<K; ++k) {
+      Vertex *tmpVertex = &(T2.vertex(vertexIndex));
+      std::vector<double> tmpPos = cell(i).vertex(k)->position();
+      for (size_t d=0; d<tmpPos.size(); ++d) {
+	tmpVertex->setPosition(d,tmpPos[d]);
+      }
+      tmpVertex->addCell(&(T2.cell(i)));
+      tmpVertex->addCell(T2.background());
+      //T2.setVertex(vertexIndex,tmpVertex);
+      T2.cell(i).setVertex(k,&(T2.vertex(vertexIndex++)));
+    }
+    
+    // Add new edges and connect to cell, background and vertices
+    for (size_t k=0; k<K; ++k) {
+      Wall *tmpEdge = &(T2.wall(edgeIndex));
+      tmpEdge->setLength(cell(i).wall(k)->length());
+      size_t numVar = cell(i).wall(k)->numVariable();
+      std::vector<double> variable(numVar);
+      for (size_t j=0; j<numVar; ++j) {
+	variable[j] = cell(i).wall(k)->variable(j);
+      }
+      tmpEdge->setVariable(variable);
+      tmpEdge->setCell1(&(T2.cell(i)));
+      tmpEdge->setCell2(T2.background());
+      tmpEdge->setVertex1(T2.cell(i).vertex(k));
+      tmpEdge->setVertex2(T2.cell(i).vertex((k+1)%K));
+      //T2.setEdge(edgeIndex,tmpEdge);
+      T2.cell(i).setWall(k,&(T2.wall(edgeIndex++)));
+    }
+    // Add edges to vertices
+    for (size_t k=0; k<K; ++k) {
+      T2.cell(i).vertex(k)->addWall(T2.cell(i).wall(k));
+      if (k>0) {
+	T2.cell(i).vertex(k)->addWall(T2.cell(i).wall(k-1));
+      }
+      else {
+	T2.cell(i).vertex(k)->addWall(T2.cell(i).wall(K-1));
+      }
+    }
+    // (FROM READINIT) Make the connections by first extracting the pointers
+    //Wall *wp = &(wall(w));
+    //Vertex *v1p = &(vertex(v1)),*v2p=&(vertex(v2));
+    //Cell *c1p,*c2p;
+    //c2p = &(cell(c2));
+    //c2p = &(background_);
+    ////vertex-wall
+    //wall(w).setVertex( v1p,v2p );
+    //vertex(v1).addWall( wp );
+    //vertex(v2).addWall( wp );
+    ////cell-wall
+    //wall(w).setCell(c1p,c2p);
+    //cell(c1).addWall( wp );
+    //cell(c2).addWall( wp );
+    ////cell-vertex
+    //if( !cell(c1).hasVertex(v1p) ) {
+    //  cell(c1).addVertex( v1p );
+    //  vertex(v1).addCell( c1p );
+    //}
+    //if( !cell(c1).hasVertex(v2p) ) {
+    //  cell(c1).addVertex( v2p );
+    //  vertex(v2).addCell( c1p );
+    //}
+    //if( c2 != static_cast<size_t>(-1) ) {
+    //  if( !cell(c2).hasVertex(v1p) ) {
+    //	cell(c2).addVertex( v1p );
+    //	vertex(v1).addCell( c2p );
+    //}
+    //if( !cell(c2).hasVertex(v2p) ) {
+    //	cell(c2).addVertex( v2p );
+    //	vertex(v2).addCell( c2p );
+    //}
+  }	
+  //Sort all cellWalls and cellVertices to comply with area calculations
+  //and plotting
+  sortCellWallAndCellVertex();
+  checkConnectivity(verbose);
+}
+
+    
