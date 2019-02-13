@@ -490,6 +490,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new SisterVertex::InitiateFromDistance(paraValue, indValue);
   else if (idValue == "SisterVertex::Spring")
     return new SisterVertex::Spring(paraValue, indValue);
+  else if (idValue == "SisterVertex::SpringCellConc")
+    return new SisterVertex::SpringCellConc(paraValue, indValue);
   else if (idValue == "SisterVertex::CombineDerivatives")
     return new SisterVertex::CombineDerivatives(paraValue, indValue);
 

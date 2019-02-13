@@ -216,6 +216,83 @@ namespace SisterVertex {
 		DataMatrix &vertexData,
 		double h);  
   };
+
+  /// 
+  /// @brief A mechanical spring between sister vertices connecting cells with non-zero concentrations of
+  /// defined variable
+  ///
+  /// @details A simple spring force is added between sister vertices with a factor coming from a cell variable;
+  ///  their spatial directions are updated according to
+  ///
+  /// @f[ \frac{dx_i}{dt} = - k_{spring} \frac{c_1+c_2}{2} (x_{i}-x_{j}) @f]
+  /// 
+  /// where @f$i,j@f$ are the two sister vertices and it is done in all 
+  /// spatial directions (assuming resting length 0). c1 and c2 are the values read from
+  /// the cell, as specified in the variable index value.
+  /// In a model file the reaction is given as
+  /// 
+  /// @verbatim
+  /// SisterVertex::SpringCellConc 1 1 1
+  /// k_{spring}
+  /// cellIndex
+  /// @endverbatim
+  /// or
+  /// @verbatim
+  /// SisterVertex::SpringCellConc 2 1 1
+  /// k_{spring}
+  /// break_dist
+  /// cellIndex
+  /// @endverbatim
+  /// where the second parameter allows for defining a maximal length of the spring
+  /// before it breaks. The update is identical to the SisterVertex::Spring update but selecting special cells,
+  /// either by continuous factors, or using a boolean 1/0 cell variable will select application only to the
+  /// sisterVertices connected to these specific cells (can e.g. give extra strength to adhesion between
+  /// epidermal cells if these are 'marked' by 1 in the specified cell variable.
+  ///
+  /// @see SisterVertex::Spring
+  ///
+  class SpringCellConc : public BaseReaction {
+    
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SpringCellConc(std::vector<double> &paraValue, 
+		   std::vector< std::vector<size_t> > 
+		   &indValue );
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		double h);  
+  };
   
   /// 
   /// @brief Combines (adds) the derivatives for two sister vertices

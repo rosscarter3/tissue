@@ -257,6 +257,120 @@ namespace SisterVertex {
     }
   }
 
+  SpringCellConc::
+  SpringCellConc(std::vector<double> &paraValue, 
+	 std::vector< std::vector<size_t> > 
+	 &indValue )
+  {
+    //Do some checks on the parameters and variable indices
+    //
+    if (paraValue.size()!=1 && paraValue.size()!=2) {
+      std::cerr << "SisterVertex::SpringCellConc::"
+		<< "SpringCellConc() "
+		<< "Uses one or two parameters, k_spring and [lengthFractionBreak]." 
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+      std::cerr << "SisterVertex::SpringCellConc::"
+		<< "SpringCellConc() "
+		<< "One cell variable index needs to be provided." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("SisterVertex::SpringCellConc");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "K_spring";
+    if (numParameter()==2)
+      tmp[1] = "BreakLength";
+    setParameterId( tmp );
+  }
+
+  void SpringCellConc::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs )
+  {
+    size_t N = T.numSisterVertex();
+    size_t dimension = T.vertex(0).numPosition();
+    for (size_t i=0; i<N; ++i) {
+      //check if either cell has non-zero value (assuming each sistervertex is connected to one cell and bg)
+      size_t cell1 = T.vertex(T.sisterVertex(i,0)).cell(0) != T.background() ?
+	T.vertex(T.sisterVertex(i,0)).cell(0)->index() : T.vertex(T.sisterVertex(i,0)).cell(1)->index();
+      size_t cell2 = T.vertex(T.sisterVertex(i,1)).cell(0) != T.background() ?
+	T.vertex(T.sisterVertex(i,1)).cell(0)->index() : T.vertex(T.sisterVertex(i,1)).cell(1)->index();
+
+      if (cellData[cell1][variableIndex(0,0)] > 0.0 || cellData[cell1][variableIndex(0,0)] > 0.0) { 
+	double factor = 0.5*(cellData[cell1][variableIndex(0,0)]+cellData[cell2][variableIndex(0,0)])*parameter(0);
+	//double factor = parameter(0); //alternative binary option
+	for (size_t d=0; d<dimension; ++d) {
+	  double derivs = -factor*(vertexData[T.sisterVertex(i,0)][d] - vertexData[T.sisterVertex(i,1)][d]);
+	  vertexDerivs[T.sisterVertex(i,0)][d] += derivs; 
+	  vertexDerivs[T.sisterVertex(i,1)][d] -= derivs;	
+	}
+      }
+    }  
+  }
+  void SpringCellConc::
+  update(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 double h)
+  {
+    if (numParameter()==2) {
+      std::vector<size_t> remove;
+      size_t N=T.numSisterVertex();
+      size_t dimension = vertexData[0].size();
+      // Mark sister vertex pairs for removal
+      for (size_t i=0; i<N; ++i) {
+	double distance = 0.0;
+	for (size_t d=0; d<dimension; ++d) {
+	  distance += (vertexData[T.sisterVertex(i,0)][d] - vertexData[T.sisterVertex(i,1)][d])*
+	    (vertexData[T.sisterVertex(i,0)][d] - vertexData[T.sisterVertex(i,1)][d]);
+	}
+	distance = std::sqrt(distance);
+	if (distance>parameter(1)) {
+	  remove.push_back(i);
+	  //std::cerr << "SisterVertex::SpringCellConc::update() Marked for removal sisterVertex between "
+	  //	    << T.sisterVertex(i,0) << " " << T.sisterVertex(i,1) << " " << i << std::endl;
+
+	}
+      }
+      // Remove sistervertex pairs marked
+      if (remove.size()) {
+	for (int k=remove.size()-1; (k>=0 && k<remove.size()); --k) {
+	  size_t i = remove[k];
+	  size_t NN = T.numSisterVertex()-1;
+	  // If last element, remove it
+	  if (i==NN) {
+	    //std::cerr << "SisterVertex::SpringCellConc::update() Removed (last) sisterVertex between "
+	    //	      << T.sisterVertex(i,0) << " " << T.sisterVertex(i,1) << std::endl;
+	    T.sisterVertexPopBack();	    
+	  }
+	  else {
+	    // If not last element, copy last element to i and then remove last element
+	    //std::cerr << "SisterVertex::SpringCellConc::update() Remove sisterVertex between "
+	    //	      << T.sisterVertex(i,0) << " " << T.sisterVertex(i,1) << std::endl;
+	    T.setSisterVertex(i,0,T.sisterVertex(NN,0));
+	    T.setSisterVertex(i,1,T.sisterVertex(NN,1));
+	    T.sisterVertexPopBack();	    
+	  }
+	}
+      }
+    }
+  }
+
   CombineDerivatives::
   CombineDerivatives(std::vector<double> &paraValue, 
 		     std::vector< std::vector<size_t> > 
