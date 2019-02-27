@@ -7656,13 +7656,12 @@ convertToSisterVertexTissue(Tissue &T2, size_t verbose) {
   }
   //setId( idVal );
   //setNumCell( numCellVal ); //done during copying above
-  setNumWall( numEdgeVertex );
-  setNumVertex( numEdgeVertex );
+  T2.setNumWall( numEdgeVertex );
+  T2.setNumVertex( numEdgeVertex );
 
   assert( T2.numCell() );
   assert( T2.numWall() );
   assert( T2.numVertex() );
-  
   // Set all indices to the position in the vectors
   //for( size_t i=0 ; i<T2.numCell() ; ++i ) //done in copying above
   //cell(i).setIndex(i);
@@ -7670,24 +7669,21 @@ convertToSisterVertexTissue(Tissue &T2, size_t verbose) {
     T2.wall(i).setIndex(i);
   for( size_t i=0 ; i<T2.numVertex() ; ++i )
     T2.vertex(i).setIndex(i);
-    
+
   // add new vertices and edges to each cell 
   for (size_t i=0; i<numCell(); ++i) {
     size_t K=T2.cell(i).numVertex();
-
     // Add new vertices to T2, and connect to (cell, background) and each other
     for (size_t k=0; k<K; ++k) {
       Vertex *tmpVertex = &(T2.vertex(vertexIndex));
       std::vector<double> tmpPos = cell(i).vertex(k)->position();
-      for (size_t d=0; d<tmpPos.size(); ++d) {
-	tmpVertex->setPosition(d,tmpPos[d]);
-      }
+      tmpVertex->setPosition(tmpPos);
+      
       tmpVertex->addCell(&(T2.cell(i)));
       tmpVertex->addCell(T2.background());
       //T2.setVertex(vertexIndex,tmpVertex);
       T2.cell(i).setVertex(k,&(T2.vertex(vertexIndex++)));
     }
-    
     // Add new edges and connect to cell, background and vertices
     for (size_t k=0; k<K; ++k) {
       Wall *tmpEdge = &(T2.wall(edgeIndex));
