@@ -3268,7 +3268,7 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
       //           <<centerTmp[0]<<" "
       //           <<centerTmp[1]<<" "
       //           <<centerTmp[2]<<std::endl;
-    }
+    } // end if (vertex[0].size==3)
     
     //  // Find intersection with another wall
     //  //
@@ -3362,8 +3362,7 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
       // these positions might be out of walls but close, depending on the
       // flatness of the cell plane
       
-      for (size_t k = 0; k < cell.numVertex();
-	   ++k) {  // copying back the original positions
+      for (size_t k = 0; k < cell.numVertex(); ++k) {  // copying back the original positions
 	size_t Vind = cell.vertex(k)->index();
 	for (size_t ii = 0; ii < 3; ++ii)
 	  vertexData[Vind][ii] = verticesPosition[k][ii];
@@ -3442,7 +3441,7 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
 	std::cerr << " in DivisionShortestPath q is wrong" << std::endl;
 	exit(0);
       }
-    }
+    } // end if (vertexData[0].size()==3)
     
     // std::cerr<<" before:: "<<std::endl;
     // for(size_t k=0; k< cellData[cell.index()].size(); ++k)

@@ -306,6 +306,7 @@ class Tissue {
   /// @verbatim
   ///  ...
   /// ...
+
   /// @endverbatim
   /// Available (time) update rules and division rules for directions can be 
   /// found in classes inheriting BaseDirectionUpdate and 
@@ -864,7 +865,7 @@ class Tissue {
   void printInit(DataMatrix &cellData,
 		 DataMatrix &wallData,
 		 DataMatrix &vertexData,
-		 std::ostream &os);
+		 std::ostream &os=std::cout);
   /// 
   /// @brief Prints init in Pawels FEM format
   ///
