@@ -60,8 +60,8 @@ void PLY_reader::read ( PLY_file const&f, Tissue &t )
     else
         set_cell_wall_connectivity ( t );
 #ifndef NDEBUG_OUTPUT
-    std::cout << "n_cell = " << t.numCell() << ", n_wall = " << t.numWall() << ", n_vertex = " << t.numVertex() << "\n";
-    std::cout << "vertices size = " << m_vertices.size() << "\n";
+    std::cerr << "n_cell = " << t.numCell() << ", n_wall = " << t.numWall() << ", n_vertex = " << t.numVertex() << "\n";
+    std::cerr << "vertices size = " << m_vertices.size() << "\n";
 #endif
 }
 //----------------------------------------------------------------------------
