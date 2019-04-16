@@ -230,11 +230,6 @@ public:
 	      DataMatrix &vertexDerivs );
 };
 
-
-
-
-
-
 ///
 /// @brief A cell to cell transport reaction
 ///
@@ -267,6 +262,53 @@ class ActiveTransportCellEfflux  : public BaseReaction {
   ActiveTransportCellEfflux(std::vector<double> &paraValue, 
 			  std::vector< std::vector<size_t> > 
 			  &indValue );
+  
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
+
+///
+/// @brief A cell to cell transport reaction with passive and active transport with option to save the (total) flux
+///
+/// @details A reaction for transport molecules from cell to cell with one passive (diffusionLike) term and one
+/// dependent on a membrane localised efflux carrier. The transport is between neighboring cells
+/// is described by:
+///  
+///  @f[ \frac{dA_i}{dt} =  \sum_{neigh} ((p_{0} + p_{1}P_{ni}) A_n - (p_{0} + p_{1} P_{in}) A_i) @f] 
+///
+///  
+/// where p_0 is the passive tranport rate, p_1 is the active rate, i is the cell, n is the neighboring cell and
+/// in/ni are the neighboring membrane sections.
+///  
+/// In a model file the reaction is defined as
+///
+/// @verbatim
+/// DiffusionActiveTransportCell 2 2[3] 1 1 [1]
+/// p_0(D) p_1(T)
+/// A_{cellIndex}
+/// P_{wallindex}
+/// [fluxSave_{wallIndex}]
+/// @endverbatim
+///
+/// where the reaction assumes that each wall keeps two variables per membrane molecule.
+///
+class DiffusionActiveTransportCell : public BaseReaction {
+  
+ public:
+  
+  DiffusionActiveTransportCell(std::vector<double> &paraValue, 
+			       std::vector< std::vector<size_t> > 
+			       &indValue );
   
   ///
   /// @brief Derivative function for this reaction class
