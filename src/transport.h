@@ -302,6 +302,9 @@ class ActiveTransportCellEfflux  : public BaseReaction {
 ///
 /// where the reaction assumes that each wall keeps two variables per membrane molecule.
 ///
+/// @see DiffusionSimple
+/// @see ActiveTransportCellEfflux
+///
 class DiffusionActiveTransportCell : public BaseReaction {
   
  public:
