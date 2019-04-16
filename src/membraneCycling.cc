@@ -11,8 +11,6 @@
 
 namespace MembraneCycling {
   
-
-
 Constant::
 Constant(std::vector<double> &paraValue, 
 	      std::vector< std::vector<size_t> > 
@@ -444,8 +442,8 @@ CellUpTheGradientNonLinear(std::vector<double> &paraValue,
   if( indValue.size() != 2 || indValue[0].size() != 2 || indValue[1].size() != 1 ) {
     std::cerr << "CellUpTheGradientNonlinear::"
 	      << "CellUpTheGradientNonLinear() "
-	      << "One cell variable indices (first row) and One wall variable"
-	      << " indices are used (PIN)." << std::endl;
+	      << "Two cell variable indices (first row) and One wall variable"
+	      << " index are used (PIN)." << std::endl;
     exit(0);
   }
   //Set the variable values
@@ -515,10 +513,6 @@ derivs(Tissue &T,
     }
   }
  }
-
-
-
-
 
 CellUpTheGradientLinear::
 CellUpTheGradientLinear(std::vector<double> &paraValue, 
