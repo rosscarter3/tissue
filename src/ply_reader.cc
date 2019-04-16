@@ -60,8 +60,8 @@ void PLY_reader::read ( PLY_file const&f, Tissue &t )
     else
         set_cell_wall_connectivity ( t );
 #ifndef NDEBUG_OUTPUT
-    std::cout << "n_cell = " << t.numCell() << ", n_wall = " << t.numWall() << ", n_vertex = " << t.numVertex() << "\n";
-    std::cout << "vertices size = " << m_vertices.size() << "\n";
+    std::cerr << "n_cell = " << t.numCell() << ", n_wall = " << t.numWall() << ", n_vertex = " << t.numVertex() << "\n";
+    std::cerr << "vertices size = " << m_vertices.size() << "\n";
 #endif
 }
 //----------------------------------------------------------------------------
@@ -359,22 +359,22 @@ void PLY_reader::set_cell_wall_connectivity ( Tissue &t )
         std::sort ( v2_cells.begin(), v2_cells.end() );
         std::vector<size_t>::iterator it;
 #ifndef NDEBUG_OUTPUT
-        std::cout << "v1 : ";
+        std::cerr << "v1 : ";
         for ( it = v1_cells.begin(); it != v1_cells.end(); ++it )
-            std::cout << *it << " ";
-        std::cout <<"(" << v1_cells.size() << ")\n";
-        std::cout << "v2 : ";
+            std::cerr << *it << " ";
+        std::cerr <<"(" << v1_cells.size() << ")\n";
+        std::cerr << "v2 : ";
         for ( it = v2_cells.begin(); it != v2_cells.end(); ++it )
-            std::cout << *it << " ";
-        std::cout <<"(" << v1_cells.size() << ")\n";
+            std::cerr << *it << " ";
+        std::cerr <<"(" << v1_cells.size() << ")\n";
 #endif
         it=std::set_intersection ( v1_cells.begin(), v1_cells.end(), v2_cells.begin(), v2_cells.end(), v1_cells.begin() );
         v1_cells.resize ( it-v1_cells.begin() );
 #ifndef NDEBUG_OUTPUT
-        std::cout << "intersection : ";
+        std::cerr << "intersection : ";
         for ( it = v1_cells.begin(); it != v1_cells.end(); ++it )
-            std::cout << *it << " ";
-        std::cout <<"(" << v1_cells.size() << ")\n";
+            std::cerr << *it << " ";
+        std::cerr <<"(" << v1_cells.size() << ")\n";
 #endif
         //set wall cells and cell walls acordingly
         assert ( v1_cells.size() <= 2 );
