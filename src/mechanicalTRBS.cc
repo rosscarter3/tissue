@@ -305,10 +305,10 @@ derivs(Tissue &T,
       restingLength[1] = wallData[w2][wallLengthIndex];
       restingLength[2] = cellData[cellIndex][lengthInternalIndex + kPlusOneMod];
       
-      std::cerr << "resting lengths  " << std::endl;
-      std::cerr << restingLength[0] << std::endl;
-      std::cerr << restingLength[1] << std::endl;
-      std::cerr << restingLength[2] << std::endl;
+      // std::cerr << "resting lengths  " << std::endl;
+      // std::cerr << restingLength[0] << std::endl;
+      // std::cerr << restingLength[1] << std::endl;
+      // std::cerr << restingLength[2] << std::endl;
 
       // Lengths are from com-vertex(k), vertex(k)-vertex(k+1) (wall(k)), com-vertex(k+1)
       std::vector<double> length(numWalls);
@@ -344,11 +344,11 @@ derivs(Tissue &T,
                                     (-1*(a_he - b_he) + c_he )*
                                     (   (a_he - b_he) + c_he )*
                                     (   (b_he - c_he) + a_he   ) )*0.25;
-      std::cerr << "resting area squared" << std::endl;
-      std::cerr << ( (   (b_he + c_he) + a_he )*
-                     (-1*(a_he - b_he) + c_he )*
-                     (   (a_he - b_he) + c_he )*
-                     (   (b_he - c_he) + a_he   ) ) << std::endl;
+      //std::cerr << "resting area squared" << std::endl;
+      //std::cerr << ( (   (b_he + c_he) + a_he )*
+      //               (-1*(a_he - b_he) + c_he )*
+      //               (   (a_he - b_he) + c_he )*
+      //               (   (b_he - c_he) + a_he   ) ) << std::endl;
 
       // Original implementation
       // resting Area of the element (using Heron's formula)                                      
@@ -501,8 +501,8 @@ derivs(Tissue &T,
       StressTensor[0][1]=(Area/restingArea)*((lambda*trE-mio/2)*LeftCauchy[0][1]+(mio/2)*B2[0][1]);
       StressTensor[1][1]=(Area/restingArea)*((lambda*trE-mio/2)*LeftCauchy[1][1]+(mio/2)*B2[1][1]);
 
-      std::cerr << "restingArea" << std::endl;
-      std::cerr << restingArea << std::endl << std::endl;
+      // std::cerr << "restingArea" << std::endl;
+      // std::cerr << restingArea << std::endl << std::endl;
 
       // std::cerr <<"stress tensor cell frame" << std::endl;
       // std::cerr <<" Sxx  "<< StressTensor[0][0] <<" Sxy  "<< StressTensor[0][1] <<" Sxz  "<< StressTensor[0][2] << std::endl
@@ -853,8 +853,8 @@ derivs(Tissue &T,
           maximalStressValue=StressCellGlobal[2][2];
           Istress=2;
         }
-      std::cerr<<"maximal Stress direction "<< eigenVectorStress[0][Istress] <<" "<< eigenVectorStress[1][Istress] <<" "<< eigenVectorStress[2][Istress] <<std::endl;  
-      std::cerr<<"maximal Stress value "<< maximalStressValue <<std::endl;  
+      // std::cerr<<"maximal Stress direction "<< eigenVectorStress[0][Istress] <<" "<< eigenVectorStress[1][Istress] <<" "<< eigenVectorStress[2][Istress] <<std::endl;  
+      // std::cerr<<"maximal Stress value "<< maximalStressValue <<std::endl;  
       
     
 
@@ -3488,9 +3488,9 @@ derivs(Tissue &T,
           std::cerr << StrainAlmansi[0][0] << " " << StrainAlmansi[0][1] << std::endl;
 		      std::cerr << StrainAlmansi[1][0] << " " << StrainAlmansi[1][1] << std::endl;
 
-		      std::cerr << "Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2] << std::endl;
-		      std::cerr << "P " << Pa << " " << Pb << " " << Pc << std::endl;
-          std::cerr << "Resting Angle: "<< RestingAngle1 << std::endl;
+		      // std::cerr << "Q " << restingLength[0] << " " << restingLength[1] << " " << restingLength[2] << std::endl;
+		      // std::cerr << "P " << Pa << " " << Pb << " " << Pc << std::endl;
+          // std::cerr << "Resting Angle: "<< RestingAngle1 << std::endl;
       }
 
       double atEa=AnisoRestLocal[0]*AnisoRestLocal[0]*Egreen[0][0]
