@@ -2598,10 +2598,14 @@ void InitiateWallMesh::initiate(Tissue &T, DataMatrix &cellData,
     size_t c1I = T.wall(i).cell1()->index();
     size_t c2I = T.wall(i).cell2()->index();
     for (size_t k = 0; k < numMesh; ++k) {
-      T.cell(c1I).addWall(T.wallP(numWall + k));
-      T.cell(c2I).addWall(T.wallP(numWall + k));
-      T.cell(c1I).addVertex(T.vertexP(numVertex + k));
-      T.cell(c2I).addVertex(T.vertexP(numVertex + k));
+      if (T.wall(i).cell1() != T.background()) {
+	T.cell(c1I).addWall(T.wallP(numWall + k));
+	T.cell(c1I).addVertex(T.vertexP(numVertex + k));
+      }
+      if (T.wall(i).cell2() != T.background()) {
+	T.cell(c2I).addWall(T.wallP(numWall + k));
+	T.cell(c2I).addVertex(T.vertexP(numVertex + k));
+      }
     }
     // Adjust wall connections
     T.wall(i).setVertex2(T.vertexP(numVertex));
