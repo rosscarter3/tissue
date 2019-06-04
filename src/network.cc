@@ -3996,7 +3996,7 @@ derivs(Tissue &T,
   size_t xI = variableIndex(0,2);
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  xI<cellData[0].size() &&);
+	  xI<cellData[0].size() );
   
   if (numVariableIndexLevel()==2) {
     assert(variableIndex(1,0)<wallData[0].size());
