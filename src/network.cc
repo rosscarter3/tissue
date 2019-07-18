@@ -3322,7 +3322,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size() );
 
  for (size_t i=0; i<numCells; ++i) {
@@ -3445,7 +3444,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size() );
 
  for (size_t i=0; i<numCells; ++i) {
@@ -3572,7 +3570,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size() );
 
  for (size_t i=0; i<numCells; ++i) {
@@ -3702,7 +3699,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size()  &&
 	  mwI<wallData[0].size() );
 
@@ -4000,7 +3996,7 @@ derivs(Tissue &T,
   size_t xI = variableIndex(0,2);
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  xI<cellData[0].size() &&);
+	  xI<cellData[0].size() );
   
   if (numVariableIndexLevel()==2) {
     assert(variableIndex(1,0)<wallData[0].size());
@@ -4135,7 +4131,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size()  &&
 	  mwI<wallData[0].size() );
 
@@ -4284,7 +4279,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size()  &&
 	  mwI<wallData[0].size() );
 
@@ -4430,7 +4424,6 @@ derivs(Tissue &T,
     
     assert( aI<cellData[0].size() &&
            pI<cellData[0].size() &&
-           awI<wallData[0].size() &&
            pwI<wallData[0].size()  &&
            mwI<wallData[0].size() );
     
@@ -4578,7 +4571,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size()  &&
 	  mwI<wallData[0].size() );
 
@@ -4691,7 +4683,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size() );
 
  for (size_t i=0; i<numCells; ++i) {
@@ -5184,7 +5175,6 @@ derivs(Tissue &T,
 
   assert( aI<cellData[0].size() &&
 	  pI<cellData[0].size() &&
-	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size()  &&
 	  mwI<wallData[0].size() );
 

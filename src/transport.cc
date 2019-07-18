@@ -750,7 +750,6 @@ derivs(Tissue &T,
   size_t pwI = variableIndex(1,1);//PIN (membrane/wall)
 
   assert( aI<cellData[0].size() &&
-	  pI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  awI<wallData[0].size() &&
 	  pwI<wallData[0].size() );

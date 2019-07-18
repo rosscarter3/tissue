@@ -2825,7 +2825,7 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
     T->divideCell(&cell, winner.wall1, winner.wall2, p, q, cellData, wallData,
 		  vertexData, cellDerivs, wallDerivs, vertexDerivs,
 		  variableIndex(0), parameter(2));
-    
+    size_t numWallTmp = wallData.size();
     assert(numWallTmp + 3 == T->numWall());
     
     //  std::cerr<<"  after::  "<<std::endl;
@@ -3472,7 +3472,7 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
       T->divideCell(&cell, winner.wall1, winner.wall2, p, q, cellData, wallData,
 		    vertexData, cellDerivs, wallDerivs, vertexDerivs,
 		    variableIndex(0), parameter(2));
-    
+    size_t numWallTmp = wallData.size();
     assert(numWallTmp + 3 == T->numWall());
     
     //  std::cerr<<"  after::  "<<std::endl;
