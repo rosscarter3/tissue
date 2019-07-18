@@ -344,24 +344,7 @@ derivs(Tissue &T,
                                     (-1*(a_he - b_he) + c_he )*
                                     (   (a_he - b_he) + c_he )*
                                     (   (b_he - c_he) + a_he   ) )*0.25;
-      //std::cerr << "resting area squared" << std::endl;
-      //std::cerr << ( (   (b_he + c_he) + a_he )*
-      //               (-1*(a_he - b_he) + c_he )*
-      //               (   (a_he - b_he) + c_he )*
-      //               (   (b_he - c_he) + a_he   ) ) << std::endl;
 
-      // Original implementation
-      // resting Area of the element (using Heron's formula)                                      
-      // double restingArea=std::sqrt( ( restingLength[0]+restingLength[1]+restingLength[2])*
-      //                               (-restingLength[0]+restingLength[1]+restingLength[2])*
-      //                               ( restingLength[0]-restingLength[1]+restingLength[2])*
-      //                               ( restingLength[0]+restingLength[1]-restingLength[2])  )*0.25;
-      
-      // std::cerr << "resting area squared" << std::endl;
-      // std::cerr <<  ( restingLength[0]+restingLength[1]+restingLength[2])*
-      //               (-restingLength[0]+restingLength[1]+restingLength[2])*
-      //               ( restingLength[0]-restingLength[1]+restingLength[2])*
-      //               ( restingLength[0]+restingLength[1]-restingLength[2]) << std::endl;
 
       //Angles of the element ( assuming the order: 0,L0,1,L1,2,L2 )
       std::vector<double> Angle(3);
@@ -446,7 +429,7 @@ derivs(Tissue &T,
       //double Rcirc2=(0.25*restingLength[0]*restingLength[1]*restingLength[2]/Area)*(0.25*restingLength[0]*restingLength[1]*restingLength[2]/Area);  
       
 
- // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> STRAIN and STRESS TENSOR (BEGIN) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> STRAIN and STRESS TENSOR (BEGIN) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
       
       // deformation gradiant tensor F =Sigma i=1,2,3 Qi x Di
       // strain tensor in resting shape E=0.5(FtF-I)
@@ -594,6 +577,8 @@ derivs(Tissue &T,
           }
         }
       }
+
+
       for (int r=0 ; r<3 ; r++) {
         for (int s=0 ; s<3 ; s++) {
           StrainTensor[r][s]=0;
@@ -1040,7 +1025,7 @@ derivs(Tissue &T,
     
     double young = parameter(0) + 
       parameter(1)*Kpow/( Kpow+std::pow(cellData[cellIndex][concIndex],parameter(4)) );
-    double poisson =parameter(1);
+    double poisson =parameter(2);
     
     // One triangle per 'vertex' in cyclic order
     for (size_t k=0; k<numWalls; ++k) { 
@@ -10732,7 +10717,7 @@ void VertexFromTRBScenterTriangulationMTOpt::update(Tissue &T,
                         DataMatrix &cellData,
                         DataMatrix &wallData,
                         DataMatrix &vertexData, 
-                                                    double h){
+                        double h){
   std::cout << totalEnergy << "  " << mechIsEn << "  " << mechAnEn<<"  " << PEn << std::endl;
 }
 
