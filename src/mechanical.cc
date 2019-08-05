@@ -2854,15 +2854,15 @@ namespace Pressure3D {
       static double deltat = 0;
       deltat += h;
       
-      if (parameter(1) == 1) {
-	if (timeFactor1 < 1.0) timeFactor1 += h / parameter(numParameter() - 1);
+      if (parameter(1) == 1 || parameter(1) == 0) {
+	if (timeFactor1 < 1.0) timeFactor1 += h / parameter(2);
 	
 	if (timeFactor1 > 1.0) timeFactor1 = 1.0;
       }
       
       // if(parameter(1)==2 && deltat>800)
       if (parameter(1) == 2) {
-	if (timeFactor2 < 1.0) timeFactor2 += h / parameter(numParameter() - 1);
+	if (timeFactor2 < 1.0) timeFactor2 += h / parameter(2);
 	
 	if (timeFactor2 > 1.0) timeFactor2 = 1.0;
       }
