@@ -2816,9 +2816,9 @@ namespace Pressure3D {
 	    // update the vertex derivatives
 	    if (parameter(1) == 0.0 || parameter(1) == 1.0) {
 	      double coeff = timeFactor1 * parameter(0) * A;
-	      // cellDerivs[cellIndex][comIndex  ] +=   coeff * normal[0];
-	      // cellDerivs[cellIndex][comIndex+1] +=  coeff * normal[1];
-	      // cellDerivs[cellIndex][comIndex+2] +=  coeff * normal[2];
+	      cellDerivs[cellIndex][comIndex  ] +=  coeff * normal[0];
+	      cellDerivs[cellIndex][comIndex+1] +=  coeff * normal[1];
+	      cellDerivs[cellIndex][comIndex+2] +=  coeff * normal[2];
 	      
 	      vertexDerivs[v2][0] += coeff * normal[0];
 	      vertexDerivs[v2][1] += coeff * normal[1];
@@ -2827,19 +2827,11 @@ namespace Pressure3D {
 	      vertexDerivs[v3][0] += coeff * normal[0];
 	      vertexDerivs[v3][1] += coeff * normal[1];
 	      vertexDerivs[v3][2] += coeff * normal[2];
-	      
-	      // vertexDerivs[v2][0] +=  2*coeff * normal[0];
-	      // vertexDerivs[v2][1] +=  2*coeff * normal[1];
-	      // vertexDerivs[v2][2] +=  0.1*coeff * normal[2];
-	      
-	      // vertexDerivs[v3][0] +=  2*coeff * normal[0];
-	      // vertexDerivs[v3][1] +=  2*coeff * normal[1];
-	      // vertexDerivs[v3][2] +=  0.1*coeff * normal[2];
 	    }
 	    
 	    if (parameter(1) == 2.0) {
 	      double coeff = timeFactor2 * parameter(0) * A;
-	      // cellDerivs[cellIndex][comIndex+2] +=  coeff * normal[2];	      
+	      cellDerivs[cellIndex][comIndex+2] +=  coeff * normal[2];	      
 	      vertexDerivs[v2][2] += coeff * normal[2];	      
 	      vertexDerivs[v3][2] += coeff * normal[2];
 	    }
