@@ -7755,13 +7755,15 @@ findExpressionNeighboursRecursive(size_t cellI,size_t cellCol,std::vector<size_t
 {
   // recursively add neighbours
   for (size_t k=0; k<cell(cellI).numWall(); k++) {
-    size_t neighI = cell(cellI).wall(k)->index(); 
-    if(cellData[neighI][cellCol]==0)
-      cellVisited[neighI]=1;
-    else {
-      cellVisited[neighI]=1;
-      colony.push_back(neighI);
-      findExpressionNeighboursRecursive(neighI,cellCol,cellVisited,colony,cellData);
+    size_t neighI = cell(cellI).cellNeighbor(k)->index(); 
+    if (cell(cellI).cellNeighbor(k) != background() && !cellVisited[neighI] ) {
+      if(cellData[neighI][cellCol]<0.5)
+	cellVisited[neighI]=1;
+      else {
+	cellVisited[neighI]=1;
+	colony.push_back(neighI);
+	findExpressionNeighboursRecursive(neighI,cellCol,cellVisited,colony,cellData);
+      }
     }
   }
 }
