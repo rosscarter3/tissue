@@ -1386,12 +1386,56 @@ void BaseSolver::print(std::ostream &os) {
     }
   }
 
-  //
-  //
+  // Hijacked from printing only cell 0 and variables 4, 5, 12...
+  // Finds cell colonies, i.e. patches where variable 4 (ad hoc) is on
+  // and calculate some statistics
   //
   else if (printFlag_ == 50) {
-    os << cellData_[0][4] << " " << cellData_[0][5] << " " << cellData_[0][12]
-       << std::endl;
+    size_t Nc = cellData_.size();
+    static size_t initialCellNum = Nc;
+    size_t cellCol=4; // very ad hoc for now
+    std::vector< std::vector<size_t> > colonies;
+    std::vector<size_t> cellVisited(Nc);
+    for (size_t i = 0; i < Nc; ++i) {
+      if (!cellVisited[i]) {
+	cellVisited[i]=1; // cell marked
+	if (cellData_[i][cellCol]==1) {
+	  std::vector<size_t> tmp(1,i);
+	  size_t colIndex = colonies.size();
+	  colonies.push_back(tmp);
+	  // recursively add neighbours
+	  for (size_t k=0; k<T_->cell(i).numWall(); k++) {
+	    size_t neighI = T_->cell(i).wall(k)->index(); 
+	    if(cellData_[neighI][cellCol]==0)
+	      cellVisited[neighI]=1;
+	    else {
+	      cellVisited[neighI]=1;
+	      colonies[colIndex].push_back(neighI);
+	      T_->findExpressionNeighboursRecursive(neighI,cellCol,cellVisited,colonies[colIndex],cellData_);
+	    }
+	  }
+	}
+      }
+    }
+    // Collect and print statistics
+    std::vector<size_t> numSizeColonies(7); //count up to 6 and the rest in the seventh
+    size_t numCellInCol=0;
+    for (size_t c=0; c<colonies.size(); c++) {
+      size_t cSize = colonies[c].size(); 
+      numCellInCol+=cSize;
+      if (cSize<7)
+	numSizeColonies[cSize-1]++;
+      else
+	numSizeColonies[cSize-1]++;
+    }
+    os << (Nc-initialCellNum)/initialCellNum << " " << T_->reaction(0)->parameter(0) << " " << numCellInCol/Nc << " " << colonies.size();
+    for (size_t numSC=0 ; numSC<numSizeColonies.size(); numSC++)
+      os << " " << numSizeColonies[numSC]/colonies.size();
+    os << std::endl;		 
+	  
+    printFlag_ = 2;
+    print(os);
+    printFlag_ = 50;
   }
   //
   //
