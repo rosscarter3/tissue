@@ -1386,12 +1386,103 @@ void BaseSolver::print(std::ostream &os) {
     }
   }
 
-  //
-  //
+  // Hijacked from printing only cell 0 and variables 4, 5, 12...
+  // Finds cell colonies, i.e. patches where variable 4 (ad hoc) is on
+  // and calculate some statistics
   //
   else if (printFlag_ == 50) {
-    os << cellData_[0][4] << " " << cellData_[0][5] << " " << cellData_[0][12]
-       << std::endl;
+    size_t Nc = cellData_.size();
+    static size_t initialCellNum = Nc;
+    size_t cellCol=4; // very ad hoc for now
+    std::vector< std::vector<size_t> > colonies;
+    std::vector<size_t> cellVisited(Nc,0);
+    for (size_t i = 0; i < Nc; ++i) {
+      if (!cellVisited[i]) {
+	cellVisited[i]=1; // cell marked					 
+	if (cellData_[i][cellCol]>0.5) {
+	  std::vector<size_t> tmp(1,i);
+	  size_t colIndex = colonies.size();
+	  colonies.push_back(tmp);
+	  // recursively add neighbours
+	  for (size_t k=0; k<T_->cell(i).numWall(); k++) {
+	    size_t neighI = T_->cell(i).cellNeighbor(k)->index(); 
+	    if (T_->cell(i).cellNeighbor(k) != T_->background() && !cellVisited[neighI]) {
+	      if(cellData_[neighI][cellCol]<0.5)
+		cellVisited[neighI]=1;
+	      else {
+		cellVisited[neighI]=1;
+		colonies[colIndex].push_back(neighI);
+		T_->findExpressionNeighboursRecursive(neighI,cellCol,cellVisited,colonies[colIndex],cellData_);
+	      }
+	    }
+	  }
+	}
+      }
+    }
+    // Collect and print statistics
+    //
+    // Print the colonies for basic consistency checks
+    //std::cerr << "BaseSolver.print(), expressing cell colonies:" << std::endl;
+    //for (size_t ii=0; ii<colonies.size(); ii++) {
+    //for (size_t jj=0; jj<colonies[ii].size(); jj++)
+    //	std::cerr << colonies[ii][jj] << " ";
+    //std::cerr << std::endl;
+    //}
+    // Calculate size statistics
+    size_t maxColSizeAnalysis = 7; //count up to size 6 and the rest in the seventh
+    double averageSizeAll = 0.0;
+    std::vector<size_t> numSizeColonies(maxColSizeAnalysis); 
+    size_t numCellInCol=0;
+    for (size_t c=0; c<colonies.size(); c++) {
+      size_t cSize = colonies[c].size(); 
+      numCellInCol += cSize;
+      if (cSize<maxColSizeAnalysis)
+	numSizeColonies[cSize-1]++;
+      else
+	numSizeColonies[cSize-1]++;
+      averageSizeAll += cSize;
+    }
+    averageSizeAll /= double(colonies.size());
+
+    // Calculate neighbourhood statistics
+    double averageNeighAll=0.0;
+    std::vector<double> averageNeighPerColSize(maxColSizeAnalysis,0.0);// avoid 1-clusters (no neighbours) and count up to maximal size 
+    for (size_t c=0; c<colonies.size(); c++) {
+      if (colonies[c].size()>1) {//avoid the 1-size colonies
+	for (size_t cc=0; cc<colonies[c].size(); cc++) {
+	  //find number expressing neighbours
+	  size_t cellI=colonies[c][cc];
+	  for (size_t k=0; k<T_->cell(cellI).numWall(); k++) {
+	    size_t neighI = T_->cell(cellI).cellNeighbor(k)->index(); 
+	    if (T_->cell(cellI).cellNeighbor(k) != T_->background() && cellData_[neighI][cellCol]>0.5) {
+	      if (colonies[c].size()<maxColSizeAnalysis) 
+		averageNeighPerColSize[colonies[c].size()-1] += 1.0 / double (colonies[c].size()*numSizeColonies[colonies[c].size()-1]);
+	      else
+		averageNeighPerColSize[maxColSizeAnalysis-1] += 1.0 / double (colonies[c].size()*numSizeColonies[maxColSizeAnalysis-1]);
+	      averageNeighAll += 1.0 / double (colonies[c].size());
+	    }
+	  }
+	}
+      }
+    }
+    averageNeighAll /= double(colonies.size()-numSizeColonies[0]); //divide by number of colonies larger than 1
+    // Print stat per colony size
+    for (size_t numSC=0 ; numSC<numSizeColonies.size(); numSC++) {
+      os << Nc << " " << double(Nc-initialCellNum) / double(initialCellNum) << " " << T_->reaction(0)->parameter(0)
+	 << " " << double(numCellInCol)/double(Nc) << " " << numSizeColonies[numSC] << " " << (numSC+1);
+      os << " " << double(numSizeColonies[numSC]) / double(colonies.size())
+	 << " " << averageNeighPerColSize[numSC] << std::endl;
+    }
+    os << std::endl;
+      
+    // Print total averages
+    os << Nc << " " << double(Nc-initialCellNum) / double(initialCellNum) << " " << T_->reaction(0)->parameter(0)
+       << " " << double(numCellInCol)/double(Nc) << " " << colonies.size() << " " << -1;
+    os << " " << averageSizeAll << " " << averageNeighAll << std::endl << std::endl;
+
+    printFlag_ = 2;
+    print(os);
+    printFlag_ = 50;
   }
   //
   //

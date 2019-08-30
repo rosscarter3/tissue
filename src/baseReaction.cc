@@ -20,6 +20,7 @@
 #include "grn.h"
 #include "growth.h"
 #include "growthForce.h"
+#include "initiation.h"
 #include "mechanical.h"
 #include "mechanicalSpring.h"
 #include "mechanicalTRBS.h"
@@ -674,9 +675,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue=="MassAction::OneToTwoWall")
       return new MassAction::OneToTwoWall(paraValue, indValue);
   else if (idValue=="MassAction::TwoToOneWall")
-      return new MassAction::TwoToOneWall(paraValue, indValue);
+    return new MassAction::TwoToOneWall(paraValue, indValue);
 
-  //hypocotyl3D.h
+  // Namespace Initiation, initiation.h
+  else if (idValue=="Initiation::RandomBoolean")
+    return new Initiation::RandomBoolean(paraValue, indValue);
+
+  // Namespace Hypocotyl3D, hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")
     return new Hypocotyl3D::limitZdis(paraValue, indValue);
   else if (idValue == "Hypocotyl3D::StrainTRBS")

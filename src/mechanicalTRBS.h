@@ -14,7 +14,7 @@
 
 ///
 /// @brief Triangular spring model for plates (2D walls) assuming
-/// triangular walls/cells.
+/// triangular faces (cells).
 ///
 /// @details The update (in all dimensions) are given by
 ///

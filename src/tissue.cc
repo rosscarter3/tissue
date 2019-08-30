@@ -7750,4 +7750,20 @@ convertToSisterVertexTissue(Tissue &T2, size_t verbose) {
   checkConnectivity(verbose);
 }
 
-    
+void Tissue::
+findExpressionNeighboursRecursive(size_t cellI,size_t cellCol,std::vector<size_t> &cellVisited,std::vector<size_t> &colony, DataMatrix &cellData)
+{
+  // recursively add neighbours
+  for (size_t k=0; k<cell(cellI).numWall(); k++) {
+    size_t neighI = cell(cellI).cellNeighbor(k)->index(); 
+    if (cell(cellI).cellNeighbor(k) != background() && !cellVisited[neighI] ) {
+      if(cellData[neighI][cellCol]<0.5)
+	cellVisited[neighI]=1;
+      else {
+	cellVisited[neighI]=1;
+	colony.push_back(neighI);
+	findExpressionNeighboursRecursive(neighI,cellCol,cellVisited,colony,cellData);
+      }
+    }
+  }
+}

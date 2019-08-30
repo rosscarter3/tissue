@@ -922,6 +922,22 @@ class Tissue {
   /// @see namespace SisterVertex
   ///
   void convertToSisterVertexTissue(Tissue &T2, size_t verbose=0); 
+
+  ///
+  /// @brief Function to recursively find neighbouring cells expressing (cell variable >0.5) and
+  /// collect indices into a vector
+  ///
+  /// @details This function works recursively to collect cells expressing a specific variable (cell Variable value>0.5).
+  /// It relies on that the first cell has been identified and explore neighborhood recursively. cellI is the current cell index
+  /// , cellCol is the cell variable to check, cellVisited is a vector containing 1/0 if cells been checked or not, colony is the
+  /// vector where cell indices are stored, and cellData holds the latest values of the expression.
+  /// This function is used to collect statistics of patches of cells expressing a variable, and is used by BaseREaction.print()
+  /// using a flag 50.
+  ///
+  /// @see BaseReaction::print()
+  ///
+  void findExpressionNeighboursRecursive(size_t cellI,size_t cellCol,std::vector<size_t> &cellVisited,
+					 std::vector<size_t> &colony, DataMatrix &cellData);
 };
 
 inline std::string Tissue::id() const { return id_; }
