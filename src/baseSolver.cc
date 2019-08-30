@@ -1331,7 +1331,7 @@ void BaseSolver::print(std::ostream &os) {
   //
   // Print vertex and cell variables
   //
-  else if (printFlag_ == 3) {
+  else if (printFlag_ == 32) {
     if (tCount == 0) os << numPrint_ << "\n";
     size_t Nv = vertexData_.size();
     if (!Nv) {
