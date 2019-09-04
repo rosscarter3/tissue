@@ -1358,12 +1358,7 @@ derivs(Tissue &T,
     size_t w2 = T.cell(cellIndex).wall(1)->index();
     size_t w3 = T.cell(cellIndex).wall(2)->index();
 
-
-
-
     //std::cerr<< "cell "<< cellIndex<< " vertices  "<< v1<<" "<< v2 << " "<< v3 << " walls  "<< w1 <<" "<< w2 << " "<< w3<< std::endl;
-    
-   
 
     double youngL=1;
     double youngT=1;    
@@ -1377,7 +1372,6 @@ derivs(Tissue &T,
       youngT = 2*youngMatrix+youngFiber-youngL; 
     }
     
-   
     double lambdaL, mioL, lambdaT, mioT;
     
     if (parameter(7)==0){      
@@ -1400,8 +1394,6 @@ derivs(Tissue &T,
     // double mioL=youngL/(1+poissonL);
     // double lambdaT=youngT*poissonT/(1-poissonT*poissonT);
     // double mioT=youngT/(1+poissonT);
-     
- 
     
     double EnergyIso=0;                      
     double EnergyAniso=0;
@@ -1627,12 +1619,6 @@ derivs(Tissue &T,
       double tempAn=std::sqrt(AnisoRestLocal[0]*AnisoRestLocal[0]+AnisoRestLocal[1]*AnisoRestLocal[1]+AnisoRestLocal[2]*AnisoRestLocal[2]);
       AnisoRestLocal[0]/=tempAn;
       AnisoRestLocal[1]/=tempAn;
-      
-
-
-    
-
-
 
       double AnisoMeasure=std::sqrt(AnisoRestLocal[0]*AnisoRestLocal[0]+AnisoRestLocal[1]*AnisoRestLocal[1]);
       // std::cerr<< "cell "<< cellIndex<<" AnisoMeasure "<< AnisoMeasure<<std::endl;
@@ -1774,15 +1760,11 @@ derivs(Tissue &T,
       // deltaS[1][1]=(deltaLam/2)*(trE*directAniso[1][1]+atEa)+2*(deltaMio)* atEa * directAniso[1][1];
 
 
-
-
       // double deltaS[2][2]; // based on  ... 
       // deltaS[0][0]=2*(deltaMio1)* atEa * directAniso[0][0];
       // deltaS[1][0]=2*(deltaMio1)* atEa * directAniso[1][0];
       // deltaS[0][1]=2*(deltaMio1)* atEa * directAniso[0][1];
       // deltaS[1][1]=2*(deltaMio1)* atEa * directAniso[1][1];
-
-
         
       strainZ =1-poissonT*((2*lambdaT*trE+2*mioT*trE)+deltaS[0][0]+deltaS[1][1])/youngT;
 
@@ -1792,8 +1774,6 @@ derivs(Tissue &T,
       // ss[0][1]=            2*mioT*Egreen[0][1];
       // ss[1][0]=            2*mioT*Egreen[1][0];
       // ss[1][1]=lambdaT*trE+2*mioT*Egreen[1][1];
-
-       
 
       // double TPK[2][2];// 2nd Piola Kirchhoff stress tensor 
       // TPK[0][0]=restingArea*(DeformGrad[0][0]*ss[0][0]+DeformGrad[0][1]*ss[1][0]);
@@ -2001,8 +1981,6 @@ derivs(Tissue &T,
       cellData[cellIndex][stressTensorIndex+5]=StressTensor[1][2];
       
       
-      
-      
       // stress component along MT direction 
       temp = std::sqrt ( cellData[cellIndex][MTindex   ] * cellData[cellIndex][MTindex   ] +
 			 cellData[cellIndex][MTindex +1] * cellData[cellIndex][MTindex +1] +
@@ -2012,15 +1990,15 @@ derivs(Tissue &T,
       cellData[cellIndex][MTindex +2] /=temp;
       
       cellData[cellIndex][MTstressIndex] =
-	cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex   ] *StressTensor[0][0]  +
-	cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex +1] *StressTensor[0][1]  +
-	cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex +2] *StressTensor[0][2]  +
-	cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex   ] *StressTensor[1][0]  +
-	cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex +1] *StressTensor[1][1]  +
-	cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex +2] *StressTensor[1][2]  +
-	cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex   ] *StressTensor[2][0]  +
-	cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex +1] *StressTensor[2][1]  +
-	cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex +2] *StressTensor[2][2]       ;
+	    cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex   ] *StressTensor[0][0]  +
+	    cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex +1] *StressTensor[0][1]  +
+	    cellData[cellIndex][MTindex   ] *cellData[cellIndex][MTindex +2] *StressTensor[0][2]  +
+	    cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex   ] *StressTensor[1][0]  +
+	    cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex +1] *StressTensor[1][1]  +
+	    cellData[cellIndex][MTindex +1] *cellData[cellIndex][MTindex +2] *StressTensor[1][2]  +
+	    cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex   ] *StressTensor[2][0]  +
+	    cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex +1] *StressTensor[2][1]  +
+	    cellData[cellIndex][MTindex +2] *cellData[cellIndex][MTindex +2] *StressTensor[2][2]       ;
   
      
       // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> STRAIN and STRESS TENSORS (END) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -2096,11 +2074,12 @@ derivs(Tissue &T,
               }
           }
 
-	for (size_t ii=0; ii<3; ++ii) {
-	  for (size_t jj=0; jj<3; ++jj) {
-	    eigenVectorStrain[ii][jj] = 0.0; 
-	  }
-	}	
+      	for (size_t ii=0; ii<3; ++ii) {
+      	  for (size_t jj=0; jj<3; ++jj) {
+      	    eigenVectorStrain[ii][jj] = 0.0; 
+      	  }
+      	}
+
         for (int r=0 ; r<3 ; r++) {
           for (int s=0 ; s<3 ; s++) {
             for(int w=0 ; w<3 ; w++) {
@@ -2108,6 +2087,7 @@ derivs(Tissue &T,
             }
           }
         }
+
         pivot=std::fabs(StrainTensor[1][0]);
         I=1;
         J=0;
@@ -2116,6 +2096,7 @@ derivs(Tissue &T,
           I=2;
           J=0;
         }
+
         if (std::fabs(StrainTensor[2][1])>pivot) {
           pivot=std::fabs(StrainTensor[2][1]);
           I=2;
@@ -2159,11 +2140,7 @@ derivs(Tissue &T,
         Istrain2=Istrain3;
       }
       maximalStrainValue2=StrainTensor[Istrain2][Istrain2];
-      
-      
-      
 
-   
       //perpendicular direction to strain in cellData
       
       // normal to the cell plane in global direction is Zcurrent[], vector product gives the perpendicular strain direction
@@ -2178,8 +2155,6 @@ derivs(Tissue &T,
          PerpStrain[1]=eigenVectorStrain[1][Istrain];
          PerpStrain[2]=eigenVectorStrain[2][Istrain];
        }
-       
-  
 
        // storing a measure for strain anisotropy in cell vector
        if (std::abs(maximalStrainValue)<0.0000001) cellData[cellIndex][strainAnIndex]=0;
@@ -2236,15 +2211,9 @@ derivs(Tissue &T,
        }
 
 
-       
-
-   
-    
-       
        //---- Anisotropic Correction Force-------------------------------
        double deltaF[3][3];
-       
-        
+
          for ( int i=0 ; i<3 ; ++i )  // from stress tensor(equipartitioning energy)
           for ( int j=0 ; j<3 ; ++j )
             deltaF[i][j]=(-deltaFTPK[i][j]);
@@ -2287,8 +2256,6 @@ derivs(Tissue &T,
           +(tensileStiffness[1]*Delta[1]+angularStiffness[1]*Delta[0]+angularStiffness[2]*Delta[2])*(position[1][2]-position[2][2])
           + deltaF[2][2];  
         
-      
-        
         // adding TRBSMT forces to the total vertexDerivs
         
         vertexDerivs[v1][0]+= Force[0][0];
@@ -2302,8 +2269,6 @@ derivs(Tissue &T,
         vertexDerivs[v3][0]+= Force[2][0];
         vertexDerivs[v3][1]+= Force[2][1];
         vertexDerivs[v3][2]+= Force[2][2];
-
- 
 
         cellData[cellIndex][areaRatioIndex]  =Area/restingArea; //area ratio
         cellData[cellIndex][isoEnergyIndex]  =EnergyIso;        //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
