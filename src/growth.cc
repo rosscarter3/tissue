@@ -563,7 +563,7 @@ namespace WallGrowth {
 		  << "WallGrowthStrainTRBScenterTriangulation() "
 		  << "Uses three parameters k_growth, strain_threshold and velocity threshold "
                   << "- or four parameters with the forth one equal to one " 
-                  << "for the case of using two independent resting lengths for neigbouhrs."
+                  << "for the case of using two independent resting lengths for neighbours."
                   << "- or six parameters with the fifth one the K value for a concentration "
                   << "Hill function with n=2 and the sixth parameter v_max"
                   << std::endl;
