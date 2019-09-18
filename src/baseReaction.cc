@@ -680,6 +680,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Namespace Initiation, initiation.h
   else if (idValue=="Initiation::RandomBoolean")
     return new Initiation::RandomBoolean(paraValue, indValue);
+  else if (idValue=="Initiation::RandomBooleanBiased")
+    return new Initiation::RandomBooleanBiased(paraValue, indValue);
 
   // Namespace Hypocotyl3D, hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")
