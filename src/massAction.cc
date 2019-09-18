@@ -226,6 +226,72 @@ namespace MassAction {
   }
 
 
+  HillSimple::
+  HillSimple(std::vector<double> &paraValue, 
+	  std::vector< std::vector<size_t> > &indValue ) 
+  {  
+    //
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size() !=3 ) {
+      std::cerr << "MassAction::HillSimple() "
+                << "Uses only three parameters V_max, K_hill and n_hill \n";                                            
+      exit(0);
+    }    
+    if( indValue.size() !=2 || indValue[0].size() !=1  
+        || indValue[1].size() !=1) {
+      std::cerr << "MassAction::HillSimple() "
+                << "Two levels of variable indices should be used.\n"
+                << "One for a single reactant and one for a single product.\n";
+      exit(0);
+    }  
+
+    //
+    // Set the variable values
+    //
+    setId("MassAction::HillSimple");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    //
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp.resize( numParameter() );
+    tmp[0] = "V";
+    tmp[1] = "K";
+    tmp[2] = "n";
+    setParameterId( tmp );
+  }
+  
+  void HillSimple::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) 
+  {  
+    if( numVariableIndex(0) ) {
+      for( size_t cellIndex = 0 ; cellIndex < cellData.size() ; cellIndex++ ) {
+	double power = std::pow( cellData[cellIndex][variableIndex(1,0)], parameter(2) );
+	double rate = parameter(0)*power/(std::pow( parameter(1), parameter(2) ) + power);
+
+	rate *= cellData[cellIndex][variableIndex(0,0)];
+
+	if (rate>0.0) {
+	  cellDerivs[cellIndex][variableIndex(0,0)] -= rate; 
+	  cellDerivs[cellIndex][variableIndex(1,0)] += rate;
+	}
+      }
+    }
+    else  //No reaction defined...
+      return;
+  }
+
+
+
+
   OneToTwo::
   OneToTwo(std::vector<double> &paraValue, 
 	   std::vector< std::vector<size_t> > 
