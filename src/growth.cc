@@ -152,26 +152,26 @@ namespace WallGrowth {
       size_t v2 = T.wall(i).vertex2()->index();
       double stress=0.0;
       if (!parameter(2)) {//Stress used, read from saved data in the wall
-	for (size_t k=0; k<numVariableIndex(1); ++k)
-	  stress += wallData[i][variableIndex(1,k)];
+	      for (size_t k=0; k<numVariableIndex(1); ++k)
+	        stress += wallData[i][variableIndex(1,k)];
       }
       else { //Strain/stretch used
-	double distance=0.0;
-	for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
-	  distance += (vertexData[v1][d]-vertexData[v2][d])*
-	    (vertexData[v1][d]-vertexData[v2][d]);
-	distance = std::sqrt(distance);
-	stress = (distance-wallData[i][lengthIndex]) /
-	  wallData[i][lengthIndex];
+      	double distance=0.0;
+      	for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
+      	  distance += (vertexData[v1][d]-vertexData[v2][d])*
+      	    (vertexData[v1][d]-vertexData[v2][d]);
+      	  distance = std::sqrt(distance);
+      	  stress = (distance-wallData[i][lengthIndex]) /
+      	    wallData[i][lengthIndex];
       }
       if (parameter(1)==0.0 || stress > parameter(1)) {
-	double growthRate = parameter(0)*(stress - parameter(1));
-	if (parameter(3))
-	  growthRate *= wallData[i][lengthIndex];
-	if (numParameter()>4) {
-	  growthRate *= (1.0 - wallData[i][lengthIndex]/parameter(4));
-	}
-	wallDerivs[i][lengthIndex] += growthRate;
+      	double growthRate = parameter(0)*(stress - parameter(1));
+      	if (parameter(3))
+      	  growthRate *= wallData[i][lengthIndex];
+      	if (numParameter()>4) {
+      	  growthRate *= (1.0 - wallData[i][lengthIndex]/parameter(4));
+	      }
+	      wallDerivs[i][lengthIndex] += growthRate;
       }
     }
   }
@@ -197,26 +197,26 @@ namespace WallGrowth {
       size_t v2 = T.wall(i).vertex2()->index();
       double stress=0.0;
       if (!parameter(2)) {//Stress used, read from saved data in the wall
-  for (size_t k=0; k<numVariableIndex(1); ++k)
-    stress += wallData[i][variableIndex(1,k)];
+        for (size_t k=0; k<numVariableIndex(1); ++k)
+          stress += wallData[i][variableIndex(1,k)];
       }
       else { //Strain/stretch used
-  double distance=0.0;
-  for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
-    distance += (vertexData[v1][d]-vertexData[v2][d])*
-      (vertexData[v1][d]-vertexData[v2][d]);
-  distance = std::sqrt(distance);
-  stress = (distance-wallData[i][lengthIndex]) /
-    wallData[i][lengthIndex];
+        double distance=0.0;
+        for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
+          distance += (vertexData[v1][d]-vertexData[v2][d])*
+            (vertexData[v1][d]-vertexData[v2][d]);
+        distance = std::sqrt(distance);
+        stress = (distance-wallData[i][lengthIndex]) /
+          wallData[i][lengthIndex];
       }
       if (parameter(1)==0.0 || stress > parameter(1)) {
-  double growthRate = parameter(0)*(stress - parameter(1));
-  if (parameter(3))
-    growthRate *= wallData[i][lengthIndex];
-  if (numParameter()>4) {
-    growthRate *= (1.0 - wallData[i][lengthIndex]/parameter(4));
-  }
-  wallDerivs[i][lengthIndex] += growthRate;
+        double growthRate = parameter(0)*(stress - parameter(1));
+        if (parameter(3))
+          growthRate *= wallData[i][lengthIndex];
+        if (numParameter()>4) {
+          growthRate *= (1.0 - wallData[i][lengthIndex]/parameter(4));
+        }
+      wallDerivs[i][lengthIndex] += growthRate;
       }
     }
   }

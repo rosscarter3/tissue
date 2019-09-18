@@ -1729,7 +1729,7 @@ VertexFromDoubleWallSpring(std::vector<double> &paraValue,
     }
 
   VertexFromDoubleWallSpringMTConcentrationHill::
-    VertexFromDoubleWallSpringMTConcentrationHill(std::vector<double> &paraValue,											 std::vector< std::vector<size_t> > &indValue ) 
+    VertexFromDoubleWallSpringMTConcentrationHill(std::vector<double> &paraValue,	std::vector< std::vector<size_t> > &indValue ) 
     {  
       // Do some checks on the parameters and variable indeces
       if( paraValue.size()!=6 ) {

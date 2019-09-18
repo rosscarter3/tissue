@@ -675,15 +675,17 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if (idValue=="MassAction::OneToTwoWall")
       return new MassAction::OneToTwoWall(paraValue, indValue);
   else if (idValue=="MassAction::TwoToOneWall")
-    return new MassAction::TwoToOneWall(paraValue, indValue);
+      return new MassAction::TwoToOneWall(paraValue, indValue);
+  else if (idValue=="MassAction::HillSimple")
+      return new MassAction::HillSimple(paraValue, indValue);
 
-  // Namespace Initiation, initiation.h
+ // Namespace Initiation, initiation.h
   else if (idValue=="Initiation::RandomBoolean")
     return new Initiation::RandomBoolean(paraValue, indValue);
   else if (idValue=="Initiation::RandomBooleanBiased")
     return new Initiation::RandomBooleanBiased(paraValue, indValue);
-
-  // Namespace Hypocotyl3D, hypocotyl3D.h
+  
+  //Namespace Hypocotyl3D, hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")
     return new Hypocotyl3D::limitZdis(paraValue, indValue);
   else if (idValue == "Hypocotyl3D::StrainTRBS")
