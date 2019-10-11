@@ -880,7 +880,12 @@ void BaseReaction::print( std::ofstream &os )
 {
   std::cerr << "BaseReaction::print(ofstream) should not be used. "
 	    << "Should always be mapped onto one of the real types.\n";
-  exit(0);
+  exit(EXIT_FAILURE);
+}
+
+void BaseReaction::printVtu( std::ofstream &os )
+{
+  // Only implemented for some reactions, do nothing for others
 }
 
 void BaseReaction::printState(Tissue *T,

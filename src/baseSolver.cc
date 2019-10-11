@@ -210,7 +210,7 @@ void BaseSolver::print(std::ostream &os) {
   }
 
   //
-  // Print vertex, cell, and wall variables
+  // Print vertex, cell, and wall variables used by home made openGL visualisers
   //
   if (printFlag_ == 0) {
     if (tCount == 0) os << numPrint_ << "\n";
@@ -1697,8 +1697,7 @@ void BaseSolver::print(std::ostream &os) {
     }
   }
 
-  else if (printFlag_ ==
-           66) {  // Print in vtu format and strain data  at the end PLoS/fig2F
+  else if (printFlag_ == 66) {  // Print in vtu format and strain data  at the end PLoS/fig2F
     std::string pvdFile = "vtk/tissue.pvd";
     std::string cellFile = "vtk/VTK_cells.vtu";
     std::string wallFile = "vtk/VTK_walls.vtu";
@@ -2278,7 +2277,25 @@ void BaseSolver::print(std::ostream &os) {
   else if (printFlag_ == 107) {  // Init style
     printInit(os);
   }
+  else if (printFlag_ == 999) {  // Print plane from reaction
+        int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
 
+    std::string pvdFile = vtkOutputFolder + std::string("/tissue.pvd");
+    std::string cellFile = vtkOutputFolder + std::string("/VTK_cells.vtu");
+    std::string wallFile = vtkOutputFolder + std::string("/VTK_walls.vtu");
+    std::string reactionFile = vtkOutputFolder + std::string("/Reactions.ply");
+
+    static size_t numCellVar = T_->cell(0).numVariable();
+    setTissueVariables(numCellVar);
+    if (tCount == 0) {
+      PVD_file::writeFullPvd(pvdFile, cellFile, wallFile, numPrint_);
+      std::ofstream wallOutput;
+      wallOutput.open(reactionFile);
+      T_->reaction(9)->printVtu(wallOutput);
+      wallOutput.close();
+    }
+    PVD_file::write(*T_, cellFile, wallFile, tCount);
+  }
   else
     std::cerr << "BaseSolver::print() Wrong printFlag value\n";
   tCount++;

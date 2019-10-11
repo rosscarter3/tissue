@@ -661,6 +661,10 @@ namespace Force {
     ///
     void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 		DataMatrix &vertexData, double h);
+    ///
+    /// @brief Prints the wall plane into a vtu file
+    ///
+    void printVtu( std::ofstream &os );
   };
   
 } // end namespace Force

@@ -1079,5 +1079,26 @@ namespace Force {
       setParameter(2, parameter(2) + h * parameter(10));
     }
   }
-  
+
+  void ExternalWall::printVtu( std::ofstream &os ) {
+    std::cerr << "ExternalWall::printVtu... I'm here..." << std::endl;
+    // Print header
+    os << "ply" << std::endl << "format ascii 1.0" << std::endl
+       << "comment Tissue generated PLY File" << std::endl
+       << "obj_info vtkPolyData points and polygons: vtk4.0" << std::endl
+       << "element vertex 4" << std::endl
+       << "property float x" << std::endl
+       << "property float y" << std::endl
+       << "property float z" << std::endl
+       << "element face 1" << std::endl
+       << "property list uchar int vertex_indices" << std::endl
+       << "end_header" << std::endl;
+    // Print the 4 vertices defining the wall
+    os << parameter(0) << " " << parameter(1) << " " << parameter(2) << std::endl
+       << parameter(0)+1.0 << " " << parameter(1) << " " << parameter(2) << std::endl
+       << parameter(0) << " " << parameter(1)+1.0 << " " << parameter(2)+2.0 << std::endl
+       << parameter(0)+1.0 << " " << parameter(1)+1.0 << " " << parameter(2)+2.0 << std::endl;
+    // Print face connections
+    os << "4 0 1 3 2" << std::endl;
+  }
 } //end namespace Force
