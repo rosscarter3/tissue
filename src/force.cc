@@ -1080,7 +1080,7 @@ namespace Force {
     }
   }
 
-  void ExternalWall::printVtu( std::ofstream &os ) {
+  void ExternalWall::printPly( std::ofstream &os ) {
     std::cerr << "ExternalWall::printVtu... I'm here..." << std::endl;
     // Print header
     os << "ply" << std::endl << "format ascii 1.0" << std::endl

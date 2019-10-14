@@ -883,7 +883,7 @@ void BaseReaction::print( std::ofstream &os )
   exit(EXIT_FAILURE);
 }
 
-void BaseReaction::printVtu( std::ofstream &os )
+void BaseReaction::printPly( std::ofstream &os )
 {
   // Only implemented for some reactions, do nothing for others
 }

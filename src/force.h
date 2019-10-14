@@ -664,7 +664,7 @@ namespace Force {
     ///
     /// @brief Prints the wall plane into a vtu file
     ///
-    void printVtu( std::ofstream &os );
+    void printPly( std::ofstream &os );
   };
   
 } // end namespace Force

@@ -342,7 +342,7 @@ class BaseReaction {
   ///
   /// @details A test to write wall position information for Force::Wall
   ///
-  virtual void printVtu( std::ofstream &os );
+  virtual void printPly( std::ofstream &os );
   
   ///
   /// @brief Prints internal variables stored by a reaction
