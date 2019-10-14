@@ -2291,7 +2291,7 @@ void BaseSolver::print(std::ostream &os) {
       PVD_file::writeFullPvd(pvdFile, cellFile, wallFile, numPrint_);
       std::ofstream wallOutput;
       wallOutput.open(reactionFile);
-      T_->reaction(9)->printVtu(wallOutput);
+      T_->reaction(9)->printPly(wallOutput);
       wallOutput.close();
     }
     PVD_file::write(*T_, cellFile, wallFile, tCount);
