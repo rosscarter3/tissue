@@ -1079,9 +1079,9 @@ namespace Force {
 			   (parameter(1)-y00_)*(parameter(1)-y00_) +
 			   (parameter(2)-z00_)*(parameter(2)-z00_) );
     if (D < parameter(9)) { // only if total movement is less than D_max (p9) 
-      setParameter(0, parameter(0) + h * parameter(8));
-      setParameter(1, parameter(1) + h * parameter(9));
-      setParameter(2, parameter(2) + h * parameter(10));
+      setParameter(0, parameter(0) + h * parameter(6));
+      setParameter(1, parameter(1) + h * parameter(7));
+      setParameter(2, parameter(2) + h * parameter(8));
     }
   }
   
