@@ -994,15 +994,15 @@ namespace Force {
 	       std::vector<std::vector<size_t>> &indValue) {
     // Do some checks on the parameters and variable indeces
     //
-    if (paraValue.size() != 12) {
+    if (paraValue.size() != 11) {
       std::cerr << "Force::ExternalWall::ExternalWall() "
 		<< "Puts a wall in a given point(x,y,z) with a given normal "
 		<< "vector(nx,ny,nz)"
-		<< "with a given height beween zmin and zmax around meriestem "
 		<< "and  moves it"
-		<< "toward meristem with a given velocity vector(dx,dy,dz)"
-		<< "12 parameters used:x0, y0, z0, nx, ny, nz, zmin, zmax, dx, "
-		<< "dy, dz, Kforce"
+		<< "towards the tissue with a given velocity vector(dx,dy,dz)."
+		<< " There is a final parameter stopping the movement after it has been moved a distance D_max."
+		<< "11 parameters used: x0, y0, z0, nx, ny, nz, dx, "
+		<< "dy, dz, D_max, Kforce."
 		<< std::endl
 		<< std::endl;
       exit(EXIT_FAILURE);
@@ -1027,14 +1027,18 @@ namespace Force {
     tmp[3] = "nx";
     tmp[4] = "ny";
     tmp[5] = "nz";
-    tmp[6] = "zmin";
-    tmp[7] = "zmax";
-    tmp[8] = "dx";
-    tmp[9] = "dy";
-    tmp[10] = "dz";
-    tmp[11] = "Kforce";
+    tmp[6] = "dx";
+    tmp[7] = "dy";
+    tmp[8] = "dz";
+    tmp[9] = "D_max";
+    tmp[10] = "Kforce";
     
     setParameterId(tmp);
+
+    // Set original positions (for calculation of distance moved)
+    x00_ = parameter(0);
+    y00_ = parameter(1);
+    z00_ = parameter(2);
   }
   
   void ExternalWall::derivs(Tissue &T, DataMatrix &cellData,
@@ -1052,14 +1056,12 @@ namespace Force {
       double nx = parameter(3);
       double ny = parameter(4);
       double nz = parameter(5);
-      double Zmin = parameter(6);
-      double Zmax = parameter(7);
-      double Kforce = parameter(11);
+      double Kforce = parameter(10);
       DataMatrix position(1, vertexData[vertexIndex]);
       double d = (nx * position[0][0] + ny * position[0][1] +
 		  nz * position[0][2] - nx * X0 - ny * Y0 - nz * Z0) /
 	std::sqrt(nx * nx + ny * ny + nz * nz);
-      if (d < 0 && position[0][2] > Zmin && position[0][2] < Zmax) {
+      if (d < 0) {
 	vertexDerivs[vertexIndex][0] += Kforce * (-d) * std::sqrt(-d) * nx /
 	  std::sqrt(nx * nx + ny * ny + nz * nz);
 	vertexDerivs[vertexIndex][1] += Kforce * (-d) * std::sqrt(-d) * ny /
@@ -1073,13 +1075,16 @@ namespace Force {
   void ExternalWall::update(Tissue &T, DataMatrix &cellData,
 			    DataMatrix &wallData,
 			    DataMatrix &vertexData, double h) {
-    if (numParameter() > 5) {
+    double D =  std::sqrt( (parameter(0)-x00_)*(parameter(0)-x00_) +
+			   (parameter(1)-y00_)*(parameter(1)-y00_) +
+			   (parameter(2)-z00_)*(parameter(2)-z00_) );
+    if (D < parameter(9)) { // only if total movement is less than D_max (p9) 
       setParameter(0, parameter(0) + h * parameter(8));
       setParameter(1, parameter(1) + h * parameter(9));
       setParameter(2, parameter(2) + h * parameter(10));
     }
   }
-
+  
   void ExternalWall::printPly( std::ofstream &os ) {
     std::cerr << "ExternalWall::printVtu... I'm here..." << std::endl;
     // Print header
