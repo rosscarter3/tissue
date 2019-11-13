@@ -616,21 +616,31 @@ namespace Force {
   /// with a given velocity vector toward the meristem.
   ///
   /// @details The force is applied in the normal direction and is proportional to
-  /// (overlap)^(3/2) In a model file the reaction is defined as
+  /// (overlap)^(3/2) where the force magnitude is given by p10. (p0, p1, p2) defines the
+  /// original point on the plane, (p3, p4, p5) defines the normal of the plane, (p6, p7, p8)
+  /// defines the movement vector, and p9 defines the maximal distance of movement (measured
+  /// as the distance between current plane position point from original, which should be the
+  /// same as (sum dt)*|dX|). 
+  /// In a model file the reaction is defined as
   /// @verbatim
   /// Force::ExternalWall 12 0
-  /// X0 Y0 Z0 nx ny nz Zmin Zmax dXc dYc dZc Kforce
+  /// X0 Y0 Z0 nx ny nz dXc dYc dZc Dmax Kforce
   /// @endverbatim
   /// where n is the normal vector to the 'wall' pushing at the tissue, X0,Y0,Z0
   /// is a point on the wall and dXc,dYc,dZc are the rates for moving the wall
   /// along the different directions (the movement is generated in the update
   /// function).
   ///
-  /// @note used to be called VertexFromExternalWall
+  /// @note used to be called VertexFromExternalWall, and have a Zmin/max instead of Dmax
   /// @see Force::InfiniteWall is a simpler version with fewer parameters, but with wall along
   /// axis and static
   ///
   class ExternalWall : public BaseReaction {
+  private:
+    // variables to store original positions (for calculation of plane distance movement)
+    double x00_;
+    double y00_;
+    double z00_;
   public:
     ///
     /// @brief Main constructor
@@ -661,6 +671,10 @@ namespace Force {
     ///
     void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 		DataMatrix &vertexData, double h);
+    ///
+    /// @brief Prints the wall plane into a vtu file
+    ///
+    void printPly( std::ofstream &os );
   };
   
 } // end namespace Force

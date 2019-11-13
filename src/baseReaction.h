@@ -338,6 +338,13 @@ class BaseReaction {
   virtual void print( std::ofstream &os );
 
   ///
+  /// @brief Test reaction for printing reaction-specific information into vtu files
+  ///
+  /// @details A test to write wall position information for Force::Wall
+  ///
+  virtual void printPly( std::ofstream &os );
+  
+  ///
   /// @brief Prints internal variables stored by a reaction
   ///
   /// This allows for printing internal variable/parameter values as specified
