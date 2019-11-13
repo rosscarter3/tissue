@@ -89,6 +89,7 @@ void PVD_file::write ( Tissue const& t, const std::string vtu_filename1,
     basenames[1] = vtu_filename2;
     // Update vtu file name
     vtuNameUpdate ( count, basenames, filenames );
+
     std::ofstream co ( filenames[0].c_str() );
     VTUostream out ( co );
     out.write_cells2 ( t );
@@ -274,8 +275,8 @@ void PVD_file::vtuNameUpdate ( const int m_counter, std::vector<std::string>cons
     {
         std::ostringstream newfilename;
         std::string fname = basenames[i];
-        filestart.assign ( fname, 0, fname.find ( "." ) );
-        extension.assign ( fname, fname.find ( "." ), fname.size() );
+        filestart.assign ( fname, 0, fname.find_last_of ( "." ) );
+        extension.assign ( fname, fname.find_last_of ( "." ), fname.size() );
         newfilename << filestart << fileid.str() << extension;
         filenames[i] = newfilename.str();
         //       // Make sure file is empty
