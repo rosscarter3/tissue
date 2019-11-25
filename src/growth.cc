@@ -1479,6 +1479,16 @@ namespace WallGrowth {
     }
     
     void VectorTRBS::
+      derivs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs ) {
+    }
+
+    void VectorTRBS::
     update(Tissue &T,
 	   DataMatrix &cellData,
 	   DataMatrix &wallData,
