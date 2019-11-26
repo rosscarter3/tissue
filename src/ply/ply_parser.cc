@@ -19,7 +19,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
     {
         if ( error_callback_ )
         {
-            error_callback_ ( line_number_, "parse error" );
+            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 1" );
         }
         return false;
     }
@@ -27,7 +27,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
     {
         if ( error_callback_ )
         {
-            error_callback_ ( line_number_, "parse error" );
+            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 2" );
         }
         return false;
     }
@@ -70,7 +70,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
 		    std::cerr << "test: format_string = " << format_string << " version = " << version << std::endl;
                     //if ( error_callback_ )
 		    //{
-		    //  error_callback_ ( line_number_, "parse error1" );
+		    //  error_callback_ ( line_number_, "ply::ply_parser::parse ERROR1" );
 		    //}
                     //return false;
 		  }
@@ -91,7 +91,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 3" );
                     }
                     return false;
                 }
@@ -107,7 +107,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 4" );
                     }
                     return false;
                 }
@@ -125,14 +125,18 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 std::size_t count;
                 char space_element_name, space_name_count;
                 stringstream >> space_element_name >> std::ws >> name >> space_name_count >> std::ws >> count >> std::ws;
-                if ( !stringstream || !stringstream.eof() || !std::isspace ( space_element_name ) || !std::isspace ( space_name_count ) )
-                {
+		if ( !stringstream || !stringstream.eof() ||
+		     !std::isspace ( space_element_name ) ||
+		     !std::isspace ( space_name_count ) )
+		  {
                     if ( error_callback_ )
-                    {
-                        error_callback_ ( line_number_, "parse error" );
-                    }
+		      {
+			std::cerr << "s_e_n: " << space_element_name << " name: " << name << " s_n_c: "
+				  << space_name_count << " count: " << count << std::endl;
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 5" );
+		      }
                     return false;
-                }
+		  }
                 std::vector< C11NSPACE::shared_ptr<element> >::const_iterator iterator;
                 for ( iterator = elements.begin(); iterator != elements.end(); ++iterator )
                 {
@@ -146,7 +150,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 6" );
                     }
                     return false;
                 }
@@ -171,7 +175,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 7" );
                     }
                     return false;
                 }
@@ -185,7 +189,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 8" );
                         }
                         return false;
                     }
@@ -193,7 +197,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 9" );
                         }
                         return false;
                     }
@@ -210,7 +214,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 10" );
                         }
                         return false;
                     }
@@ -250,7 +254,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 11" );
                         }
                         return false;
                     }
@@ -266,7 +270,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 12" );
                         }
                         return false;
                     }
@@ -274,7 +278,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 13" );
                         }
                         return false;
                     }
@@ -291,7 +295,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 14" );
                         }
                         return false;
                     }
@@ -334,7 +338,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                         {
                             if ( error_callback_ )
                             {
-                                error_callback_ ( line_number_, "parse error" );
+                                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 15" );
                             }
                             return false;
                         }
@@ -378,7 +382,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                         {
                             if ( error_callback_ )
                             {
-                                error_callback_ ( line_number_, "parse error" );
+                                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 16" );
                             }
                             return false;
                         }
@@ -422,7 +426,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                         {
                             if ( error_callback_ )
                             {
-                                error_callback_ ( line_number_, "parse error" );
+                                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 17" );
                             }
                             return false;
                         }
@@ -467,7 +471,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                         {
                             if ( error_callback_ )
                             {
-                                error_callback_ ( line_number_, "parse error" );
+                                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 18" );
                             }
                             return false;
                         }
@@ -476,7 +480,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                     {
                         if ( error_callback_ )
                         {
-                            error_callback_ ( line_number_, "parse error" );
+                            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 19" );
                         }
                         return false;
                     }
@@ -533,7 +537,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
     {
         if ( error_callback_ )
         {
-            error_callback_ ( line_number_, "parse error" );
+            error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 20" );
         }
         return false;
     }
@@ -554,7 +558,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 21" );
                     }
                     return false;
                 }
@@ -574,7 +578,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
                 {
                     if ( error_callback_ )
                     {
-                        error_callback_ ( line_number_, "parse error" );
+                        error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 22" );
                     }
                     return false;
                 }
@@ -589,7 +593,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
         {
             if ( error_callback_ )
             {
-                error_callback_ ( line_number_, "parse error" );
+                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 23" );
             }
             return false;
         }
@@ -626,7 +630,7 @@ bool ply::ply_parser::parse ( std::istream& istream )
         {
             if ( error_callback_ )
             {
-                error_callback_ ( line_number_, "parse error" );
+                error_callback_ ( line_number_, "ply::ply_parser::parse ERROR 24" );
             }
             return false;
         }
