@@ -731,11 +731,23 @@ namespace WallGrowth {
       VectorTRBS(std::vector<double> &paraValue, 
 	     std::vector< std::vector<size_t> > 
 	     &indValue );
-      
+      ///
+      /// @brief Derivative function for this reaction class
+      ///
+      /// @see BaseReaction::derivs(Tissue &T,...)
+      ///
+      void derivs(Tissue &T,
+                  DataMatrix &cellData,
+                  DataMatrix &wallData,
+                  DataMatrix &vertexData,
+                  DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs,
+                  DataMatrix &vertexDerivs);
+
       void update(Tissue &T,
-		  DataMatrix &cellData,
-		  DataMatrix &wallData,
-		  DataMatrix &vertexData,
+		              DataMatrix &cellData,
+		              DataMatrix &wallData,
+		              DataMatrix &vertexData,
                   double h );
     };
   } // namespace CenterTriangulation
