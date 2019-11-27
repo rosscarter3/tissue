@@ -25,6 +25,7 @@
 #include "mechanicalSpring.h"
 #include "mechanicalTRBS.h"
 #include "network.h"
+#include "pressure2D.h"
 #include "transport.h"
 #include "sisterVertex.h"
 #include "membraneCycling.h"
@@ -126,9 +127,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if(idValue=="vertexFromSubstrate")
    return new vertexFromSubstrate(paraValue,indValue);
 
-  //Mechanical interactions between vertices
-  //mechanical.h,mechanical.cc
   // Namespace Pressure2D for forces generated perpendicular to edges (along faces)
+  // pressure2D.h, pressure2D.cc
  else if(idValue=="Pressure2D::AreaPotential")
    return new Pressure2D::AreaPotential(paraValue,indValue);
  else if(idValue=="Pressure2D::AreaPotentialTri")
@@ -138,6 +138,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
  else if (idValue == "Pressure2D::AreaPotentialTargetArea")
    return new Pressure2D::AreaPotentialTargetArea(paraValue, indValue);
 
+  //Mechanical interactions between vertices
+  //mechanical.h,mechanical.cc
   // Pressure forces (from 2D cells) implemented assuming a CenterTriangulation
  else if(idValue=="CenterTriangulation::VertexFromCellPressure" ||
          idValue=="VertexFromCellPressurecenterTriangulation")
