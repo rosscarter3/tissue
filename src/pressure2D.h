@@ -15,7 +15,7 @@
 
 ///
 /// @brief Namespace for reactions updating vertices based on 2D cell pressure
-/// forces, i.e. perpendicular to edges.
+/// forces, i.e. perpendicular to edges, always updating in 2D.
 ///
 /// These functions are for generating forces from internal cell pressures, and
 /// includes reactions describing perpendicular to edge forces and
@@ -23,10 +23,13 @@
 ///
 /// @note Might be interesting for some of the old AreaPotential versions to use the
 /// more straightforward area calculation now implemented.
+/// @note These reactions assumes a 2D tissue, sometimes allow 3D tissue but do the
+/// update in two dimensions.
 ///
 namespace Pressure2D {
 ///
-/// @brief Updates vertices from a cell pressure potential implemented as an area-based potential
+/// @brief Updates vertices from a cell pressure potential implemented as an
+/// area-based potential in 2D
 ///
 /// @details This reaction is a 2D version of a pressure force calculated from a
 /// potential given as an area expansion
@@ -86,7 +89,7 @@ class AreaPotential : public BaseReaction {
 
 ///
 /// @brief Updates vertices from a cell pressure potential described as an area
-/// expansion
+/// expansion in 2D
 ///
 /// @details This reaction is a 2D version of a pressure force calculated from a
 /// potential given as an area expansion
@@ -106,7 +109,6 @@ class AreaPotential : public BaseReaction {
 /// then project this down onto the edge vector @f$n@f$ followd by extracting
 /// the height vector @f$h@f$ perpendicular to the edge for the area calculation
 /// @f[ h = dx + dx \frac{n}{|n|} @f]
-///
 /// In a model file, the reaction is given by:
 /// @verbatim
 /// Pressure2D::AreaPotentialTri 2[/3] 0
@@ -121,6 +123,7 @@ class AreaPotential : public BaseReaction {
 /// @note The secondary effect to the area of the movement of the center of mass
 /// when a vertex is moved is not taken into account.
 /// @note Maybe convert to the area description used in Pressure2D::AreaPotential?
+/// @note Requires two dimensions.
 ///
 class AreaPotentialTri : public BaseReaction {
   public:
@@ -160,7 +163,6 @@ class AreaPotentialTri : public BaseReaction {
 /// direction given as (only) variable index. The idea is for example to define
 /// a growth zone close to the apex of a tissue that follows the tip as the
 /// tissue is growing.
-///
 /// In a model file, the reaction is given by:
 /// @verbatim
 /// Pressure2D::AreaPotentialTriSpatialThreshold 2 1 1
@@ -176,6 +178,7 @@ class AreaPotentialTri : public BaseReaction {
 /// @note Currently, this reaction has not implemented a flag for area
 /// normalized forces.
 /// @note Maybe convert to the area description used in Pressure2D::AreaPotential?
+/// @note Requires two dimensions.
 ///
 class AreaPotentialTriSpatialThreshold : public BaseReaction {
   public:
@@ -206,7 +209,7 @@ class AreaPotentialTriSpatialThreshold : public BaseReaction {
 
 ///
 /// @brief Updates vertices with forces from a cell pressure potential described
-/// by an area expansion and with an additional aim of a target area
+/// by an area expansion and with an additional aim of a target area in 2D
 ///
 /// @details This reaction is a 2D version of a pressure force calculated from a
 /// potential given as an area expansion
@@ -238,6 +241,7 @@ class AreaPotentialTriSpatialThreshold : public BaseReaction {
 ///
 /// @see Pressure2D::AreaPotential
 /// @see TargetAreaFromPressure
+/// @note Requires two dimensions. 
 ///
 class AreaPotentialTargetArea : public BaseReaction {
   public:

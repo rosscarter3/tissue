@@ -14,7 +14,7 @@
 
 namespace CenterTriangulation {
 ///
-/// @brief Updates vertices from a cell pressure potential
+/// @brief Updates vertices from a 2D cell pressure potential, i.e. perpendicular to edges
 ///
 /// @details This function determines the direction of the pressure force term
 /// from the position of the central mesh cell vertex to the center of the wall.
