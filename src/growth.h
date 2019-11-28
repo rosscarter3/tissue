@@ -319,26 +319,33 @@ namespace WallGrowth {
   /// @brief Constant stress/strain-driven wall growth dependent on a
   /// concentration level in the cell
   ///
-  /// Constant growth driven by a streched wall. The wall lengths, L, are
+  /// @details Constant growth driven by a streched wall. The wall lengths, L, are
   /// updated only if the length is shorter than the distance between the
   ///  vertices of the wall and then according to
-  ///
-  ///  dL/dt = (p_0+p_1*f(c,p_2,p_3)) * (d_v-L) if (d_v-L) > p_4
-  ///
-  /// p_0 is the constant growth rate.
-  /// p_1 is the maximal added growth rate (V_max in the Hill function)
-  /// p_2 is the K_Hill
-  /// p_3 is the n_Hill
-  /// p_4 is a threshold
-  /// p_5 is a flag for using stretch/strain instead of stress
-  /// p_6 is a flag for using growth proportional to wall length (not constant)
-  /// f is the hill function (increasing)
-  /// c is the concentration
-  /// d_v is the distance between the two wall vertices.
-  ///
-  ///
-  ///  In addition, the column index for the wall length and the cell
-  ///  concentration should be given.
+  /// @f[\frac{dL}{dt} = (p_{0} + p_{1} f(c,p_2,p_3)) (d_{v}-L)@f]
+  /// iff @f$(d_{v}-L) > p_{4}@f$
+  /// @f$p_{0}@f$ is the constant growth rate,
+  /// @f$p_{1}@f$ is the maximal added growth rate (V_max in the Hill function),
+  /// @f$p_{2}@f$ is the K_Hill,
+  /// @f$p_{3}@f$ is the n_Hill
+  /// @f$p_{4}@f$ is a threshold
+  /// @f$p_{5}@f$ is a flag for using stretch/strain instead of stress
+  /// @f$p_{6}@f$ is a flag for using growth proportional to wall length (not constant)
+  /// @f$ f = \frac{c^{n}}{c^{n}+K^{n}}@f$ is an increasing hill function
+  /// @f$c@f$ is the concentration
+  /// @f$d_{v}@f$ is the distance between the two wall vertices.
+  /// In addition, the column index for the wall length and the cell
+  /// concentration should be given and wall stress measures if used.
+  /// In a model fle the reaction should be defined as
+  /// @verbatim
+  /// WallGrowth::StressConcentrationHill 7 2 2 n
+  /// k_growth k_Growth_hill K_hill n_hill threshold strain_flag lin_flag
+  /// L(0) c
+  /// [S1 ...]
+  /// @endverbatim
+  /// where L is the wall index for length (should usually be 0), c is the cell
+  /// variable index for the concentration, and S are the wall stresses calculated
+  /// elsewhere (only required if stress is used as growth signal (p_5=0).
   ///
   class StressConcentrationHill : public BaseReaction {
     

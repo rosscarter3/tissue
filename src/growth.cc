@@ -2026,21 +2026,21 @@ namespace WallGrowth {
 		<< "StressConcentrationHill() "
 		<< "Uses seven parameters k_growthConst, k_growthHill, K_Hill, n_Hill,"
 		<< " stretch_threshold stretch_flag and linear_flag" << std::endl;
-      exit(0);
+      exit(EXIT_FAILURE);
     }
     if( paraValue[5] != 0.0 && paraValue[5] != 1.0 ) {
       std::cerr << "WallGrowth::StressConcentrationHill::"
 		<< "StressConcentrationHill() "
 		<< "stretch_flag parameter must be 0 (stress used) or " 
-		<< "1 (stretch used)." << std::endl;
-      exit(0);
+		<< "1 (stretch/strain used)." << std::endl;
+      exit(EXIT_FAILURE);
     }
     if( paraValue[6] != 0.0 && paraValue[6] != 1.0 ) {
       std::cerr << "WallGrowth::StressConcentrationHill::"
 		<< "StressConcentrationHill() "
 		<< "linear_flag parameter must be 0 (constant growth) or " 
-		<< "1 (length dependent growth)." << std::endl;
-      exit(0);
+		<< "1 (length dependent growth (exponential))." << std::endl;
+      exit(EXIT_FAILURE);
     }
     
     if( indValue.size() != 2 || indValue[0].size() != 2 ) {
