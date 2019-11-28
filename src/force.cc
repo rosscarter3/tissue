@@ -814,8 +814,7 @@ namespace Force {
 	if( numParameter()>d )
 	  vertexDerivs[i][d] += timeFactor_*parameter(d);
       
-      // ad-hoc for energy landscape
-      //HJ I commented this out for the moment!
+      // HJ/BB: ad-hoc for energy landscape
       //vertexDerivs[i][0] += timeFactor_ * parameter(0) / (2 - parameter(2));
       //vertexDerivs[i][1] +=
       //timeFactor_ * parameter(1) * (1 - parameter(2)) / (2 - parameter(2));

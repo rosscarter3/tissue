@@ -401,18 +401,17 @@ namespace Force {
   ///
   /// @brief Updates list of vertices with a given force in direction provided by vector
   ///
-  /// @details A force is given as parameters (1 parameter for x, 2 for x,y and 3 for x,y,z).
+  /// @details A force is given as parameters (p[0] for Fx, [optional p[1/2] for Fy/Fx].
   /// The update is given by (for dimensions i as specified by the parameters)
   /// @f[ \frac{dx_i}{dt} = p_i @f]
   /// In a model file the reaction is defined as
   /// @verbatim
-  /// VertexFromForce 1[/2/3] 1 (num vertices)
+  /// VertexFromForce 1[/2/3] 1 num_vertices
   /// F_x [F_y F_z]
   /// vertex_index_0
   /// [vertex index_1]
   /// [...]
   /// @endverbatim
-  ///
   /// @note Used to be called VertexFromForce
   /// @see Force::VectorLinear Same as this reaction, but uses a 'ramping up' of the forces (linearly) over dT.
   ///
@@ -453,7 +452,7 @@ namespace Force {
   /// linear increasing between time (t) equals zero and t equals T.
   /// In a model file the reaction is defined as
   /// @verbatim
-  /// Force::VectorLinear 2[/3/4] 1 (num vertices)
+  /// Force::VectorLinear 2[3/4] 1 num_vertices
   /// F_x [F_y F_z] T
   /// vertex_index_0
   /// [vertex index_1]
