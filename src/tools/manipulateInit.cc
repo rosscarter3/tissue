@@ -5,6 +5,8 @@
 // Created      : June 2008
 // Revision     : $Id:$
 //
+// To compile (assuming tissue been compiled with make in tissue/src/ :
+// 
 #include <fstream>
 
 //#include "baseSolver.h"
@@ -155,7 +157,7 @@ int main(int argc,char *argv[]) {
     T.readInit(initFile.c_str(),verboseFlag);
   else {
     std::cerr << "Using merryproj init file format" << std::endl;
-    T.readMerryInit(initFile.c_str(),verboseFlag);
+    T.readInitMerryProj(initFile.c_str(),verboseFlag);
   }
   
   //
@@ -174,8 +176,17 @@ int main(int argc,char *argv[]) {
   // 	p.resize(0);
   // 	removeTwoVertices(T,p);
   //////////////////////////////////////////////////
+
+  // Add cell variables ////////////////////////////
+  size_t numToAdd=38;
+  p.resize(1);
+  p[0]=1.0;
+  for (size_t i=0; i<numToAdd; ++i)
+    addCellVariable(T,p,type);
+  //////////////////////////////////////////////////
+
+
   
-  //  p.resize(1);
   // 	// Wall variables 0 0
   // 	p[0]=0.0;
   // 	addWallVariable(T,p,type);
@@ -205,18 +216,18 @@ int main(int argc,char *argv[]) {
   //  	addCellVariable(T,p,type);
   //  	addCellVariable(T,p,type);
 
-  // replace two and add three wall vars
-  p.resize(2);
-  p[0]=0.1;
-  p[1]=0;
-  setWallVariable(T,p,type);
-  p[1]=1;
-  setWallVariable(T,p,type);
-  p.resize(1);
-  p[0] = 0.1;
-  addWallVariable(T,p,type);
-  addWallVariable(T,p,type);
-  addWallVariable(T,p,type);
+  // replace two and add three wall vars ///
+  //p.resize(2);
+  //p[0]=0.1;
+  //p[1]=0;
+  //setWallVariable(T,p,type);
+  //p[1]=1;
+  //setWallVariable(T,p,type);
+  //p.resize(1);
+  //p[0] = 0.1;
+  //addWallVariable(T,p,type);
+  //addWallVariable(T,p,type);
+  //addWallVariable(T,p,type);
   
   // Add four cell vars
   //p[0] = 1.0;
@@ -231,12 +242,12 @@ int main(int argc,char *argv[]) {
   //p[1] = 2;// z
   //p[2] = 0.0;// flip around 0
   //flipVariable(T,p);
-  p.resize(4);
-  p[0] = 2;// vertex
-  p[1] = 2;// z
-  p[2] = 0.0;// move to 0
-  p[3] = 1;// move min
-  translateVariableToBorder(T,p);
+  //p.resize(4);
+  //p[0] = 2;// vertex
+  //p[1] = 2;// z
+  //p[2] = 0.0;// move to 0
+  //p[3] = 1;// move min
+  //translateVariableToBorder(T,p);
   //////////////////////////////////////////////////
   
   // For experimental and synthetic templates /////

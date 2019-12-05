@@ -46,6 +46,8 @@ SIM_SRC = simulator/simulator.cc
 SIM_OBJ = $(SIM_SRC:.cc=.o)
 CONV_SRC = tools/converter.cc
 CONV_OBJ = $(CONV_SRC:.cc=.o)
+INITMANIP_SRC = tools/manipulateInit.cc
+INITMANIP_OBJ = $(INITMANIP_SRC:.cc=.o)
 SRC_DIR = ./ ./ply/
 SRCS := $(wildcard $(SRC_DIR:/=/*.cc))
 OBJS = $(SRCS:.cc=.o)
@@ -54,8 +56,9 @@ DEP = makedep.rule
 #Binaries
 SIMULATOR = ../bin/simulator
 CONVERTER = ../bin/converter
+INITMANIP = ../bin/manipulateInit
 
-all: $(SIMULATOR) $(CONVERTER)
+all: $(SIMULATOR) $(CONVERTER) $(INITMANIP)
 
 $(SIMULATOR): $(OBJS) $(SIM_OBJ)
 	$(CXX) $(SIM_OBJ) $(OBJS) $(LDFLAGS) -o $(SIMULATOR) 
@@ -63,9 +66,14 @@ $(SIMULATOR): $(OBJS) $(SIM_OBJ)
 $(CONVERTER): $(OBJS) $(CONV_OBJ)
 	$(CXX) $(CONV_OBJ) $(OBJS) $(LDFLAGS) -o $(CONVERTER) 
 
+$(INITMANIP): $(OBJS) $(INITMANIP_OBJ)
+	$(CXX) $(INITMANIP_OBJ) $(OBJS) $(LDFLAGS) -o $(INITMANIP) 
+
 $(SIM_OBJ) : $(SIM_SRC)
 
 $(CONV_OBJ) : $(CONV_SRC)
+
+$(INITMANIP_OBJ) : $(INITMANIP_SRC)
 
 # pull in dependency info for *existing* .o files
 -include $(OBJS:.o=.d)
@@ -95,7 +103,9 @@ clean:
 	rm -f $(OBJS)
 	rm -f $(SIM_OBJ)
 	rm -f $(CONV_OBJ)
+	rm -f $(INITMANIP_OBJ)
 	rm -f $(SIMULATOR)
 	rm -f $(CONVERTER)
+	rm -f $(INITMANIP)
 	rm -f *.d
 	rm -f */*.d
