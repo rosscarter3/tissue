@@ -567,7 +567,7 @@ namespace WallGrowth {
                   << "- or six parameters with the fifth one the K value for a concentration "
                   << "Hill function with n=2 and the sixth parameter v_max"
                   << std::endl;
-	exit(0);
+	exit(EXIT_FAILURE);
       }
         
       if( indValue.size() !=3 || 
@@ -582,7 +582,7 @@ namespace WallGrowth {
 		  << "and velocity_value_strore_index and potentially concentration "
                   << "index for domain dependent growth threshold in third level."
 		  << std::endl;
-	exit(0);
+	exit(EXIT_FAILURE);
       }
       //Set the variable values
       //
