@@ -178,7 +178,7 @@ int main(int argc,char *argv[]) {
   //////////////////////////////////////////////////
 
   // Add cell variables ////////////////////////////
-  size_t numToAdd=38;
+  size_t numToAdd=39;
   p.resize(1);
   p[0]=1.0;
   for (size_t i=0; i<numToAdd; ++i)
