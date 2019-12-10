@@ -9574,17 +9574,24 @@ initiate(Tissue &T,
 FiberModel::FiberModel(std::vector<double> &paraValue,
 				     std::vector< std::vector<size_t> > &indValue)
 {
-  if (paraValue.size() != 8 && paraValue.size() != 9) {
-    std::cerr << "FiberModel::FiberModel() " 
-	      << "Uses eight or nine parameters: k_rate, equilibrium threshold , linear-hill flag, K_hill, n_hill, young_matrix, young_fiber, initialization flag and Poisson ratio. " << std::endl;
+  if (paraValue.size() != 8 ) {
+    std::cerr << "FiberModel::FiberModel() Uses eight parameters:" << std::endl
+	      << "k_rate, equilibrium_threshold (only update if vertex moving slower), " << std::endl
+	      << "linear-hill flag (0=linear,1=Hill,2=Hill_direct)," << std::endl
+	      << "K_hill, n_hill (only used if Hill versions selected)," << std::endl
+	      << "young_matrix, young_fiber, (material limits, should be same as for the mechanical (TRBS) model used)"
+	      << std::endl << "initialization flag (0=no initiation/1=isotropic/2=anisotropic" << std::endl;
     exit(EXIT_FAILURE);
   }
   
-  if (indValue.size() != 3 || indValue[0].size() != 1 ||  (indValue[1].size() != 1 && indValue[1].size() != 2) || indValue[2].size() != 1) {
+  if (indValue.size() != 3 || indValue[0].size() != 1 ||
+      (indValue[1].size() != 1 && indValue[1].size() != 2) ||
+      indValue[2].size() != 1) {
     std::cerr << "FiberModel::FiberModel() " << std::endl
-	      << "First level gives stress/strain anisotropy index." << std::endl
-              << "Second level gives Young_Longitudinal index(or fiberL and totalfiber)." << std::endl
-	      << "Third level gives store index for velocity." << std::endl;
+	      << "First level gives stress/strain anisotropy index to read." << std::endl
+              << "Second level gives Young_Longitudinal index to update (p_2=1,2) or Y_L and F_L (p_2=2) "
+	      << "where the first one is read and the second updated." << std::endl
+	      << "Third level gives index for velocity to be compared with p_1." << std::endl;
     exit(EXIT_FAILURE);
   }
   
@@ -9635,29 +9642,13 @@ void FiberModel::initiate(Tissue &T,
       if ( parameter(2)==0 ) // linear
 	cellData[cellIndex][YoungLIndex]=youngMatrix+0.5*(1+anisotropy)* youngFiber;
       
-      if ( parameter(2)==1 ) // Hill
+      if ( parameter(2)==1 || parameter(2)==2 ) // Hill
 	cellData[cellIndex][YoungLIndex] =  youngMatrix+ 
 	  0.5*(1+(std::pow(anisotropy,Nh) /(std::pow((1-anisotropy),Nh)*std::pow(Kh,Nh)
 					    +std::pow(anisotropy,Nh))))* youngFiber;
-
-      if ( parameter(2)==2 )  // minimum energy
-	cellData[cellIndex][YoungLIndex] =  youngMatrix+ 
-	  0.5*(1+(std::pow(anisotropy,Nh) /(std::pow((1-anisotropy),Nh)*std::pow(Kh,Nh)
-					    +std::pow(anisotropy,Nh))))* youngFiber; 
       //std::cerr<< cellData[cellIndex][variableIndex(1,0)] << std::endl;
     }
   }
-  if (parameter(7)==3){ // adhoc
-    for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) {
-      double anisotropy=cellData[cellIndex][AnisoIndex];
-      cellData[cellIndex][YoungLIndex] = youngMatrix+
-        0.5*(1+(std::pow(anisotropy,Nh)
-                /(std::pow((1-anisotropy),Nh)*std::pow(Kh,Nh)+std::pow(anisotropy,Nh))))* youngFiber;
-      
-    }
-  }
-
-  
 }
 
 void FiberModel::derivs(Tissue &T,
@@ -9688,14 +9679,10 @@ void FiberModel::update(Tissue &T,
   if (parameter(0)==0.0)
     return;
 
-
-
   for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) {
     double anisotropy=cellData[cellIndex][AnisoIndex];
 
-
-
-
+    // --- Linear feedback rule --- 
     if ( parameter(2)==0 // linear
 	 && cellData[cellIndex][velocityIndex] < parameter(1) 
 	 //&& cellData[cellIndex][YoungLIndex] < youngMatrix+0.5*(1+anisotropy)* youngFiber
@@ -9706,9 +9693,6 @@ void FiberModel::update(Tissue &T,
        cellData[cellIndex][YoungLIndex] += parameter(0)*h*deltaYoungL;
       //cellData[cellIndex][YoungLIndex] = youngMatrix+0.5*(1+anisotropy)* youngFiber;
     }
-
-
-
 
     if ( parameter(2)==1 // Hill
 	 && cellData[cellIndex][velocityIndex] < parameter(1) 
