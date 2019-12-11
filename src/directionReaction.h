@@ -170,7 +170,8 @@ class UpdateMTDirection : public BaseReaction
 ///
 /// @note This function applies the update within the update function (i.e. between derivative steps).
 /// @see Calculate::VertexVelocity calculates average vertex velocities for cells and stores them.
-/// @see VertexFromTRBScenterTriangulationMT and similar for calculating and storing different stresses
+/// @see VertexFromTRBScenterTriangulationMT and similar for calculating and storing different stresses.
+///
 class UpdateMTDirectionEquilibrium : public BaseReaction
 {
  public:
