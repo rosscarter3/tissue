@@ -21,24 +21,32 @@ namespace CenterTriangulation
 {
 
   ///
-  /// @brief Initiates a center triangulation, either from cells in tissue or from scratch
+  /// @brief Initiates a center triangulation, either from information in the tissue or from scratch
   ///
   /// @details This reaction does not update the tissue. It only initiates a central triangulation of cells
   /// and add variables to cellData at initiation. This is mainly used for triangular biquadratic
-  /// spring models. One parameter (flag) can be provided and is set to one if the central point and
-  /// internal edges should be initiated from scratch even if they have been provided to the tissue
-  /// when reading the init. One variable index is provided for compability with an old version, and
+  /// spring models. If no parameters are provided, the initiation will use information form the tissue
+  /// if available (need to specify flag -centerTri_init at runtime to read CT information), or create
+  /// from scratch if the tissue does not have the information. If one parameter (p0=overrideFlag) is
+  /// provided, and its value is set to 1, the CT will be created from scratch (even if the tissue has one)
+  /// A second parameter (p1=doubleEdgeFlag) can be provided, and if set to one a double edge CT will be
+  /// created from information in the tissue if available (and p0=0) or from scratch. The double edge
+  /// CT is used e.g. for growth rules connected to TRBS.
+  /// One variable index is provided for compability with an old version (and useful to make sure all
+  /// reactions using CT have the smae value for this variable), and
   /// should represents the end of the cellData vector (cell(i).numVariable()). 
   ///
   /// In a model file the reaction is given by
   /// @verbatim
-  /// CeterTriangulation::Initiate 0/1 1 1
-  /// [overrideFlag]
+  /// CeterTriangulation::Initiate 0/1/2 1 1
+  /// [override_flag] #=0 follow init tissue if CT available, =1 always create from scratch
+  /// [doubleEdge_flag] #=0 single edge,=1 double edge
+  ///
   /// InternalVarStartIndex
   /// @endverbatim
   ///
   /// @note The order of reactions may be of importance when using this reaction, 
-  /// e.g. if vertex are added on the walls.
+  /// e.g. if new vertices are added on the walls (then this should be done afterwards).
   /// @see Tissue::readInitCenterTri()
   /// @see Cell::centerPosition()
   ///
