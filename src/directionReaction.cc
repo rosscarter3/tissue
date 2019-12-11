@@ -412,6 +412,7 @@ void UpdateMTDirectionEquilibrium::update(Tissue &T,
       double norm=0.0;
       for (size_t d=0; d<dimension; ++d)
 	norm += cellData[cellIndex][outIndex+d]*cellData[cellIndex][outIndex+d];
+      assert(norm>=0.0);
       norm = 1.0/std::sqrt(norm);
       for (size_t d=0; d<dimension; ++d)
 	cellData[cellIndex][outIndex+d] *= norm;
