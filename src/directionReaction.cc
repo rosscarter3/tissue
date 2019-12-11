@@ -288,19 +288,24 @@ void UpdateMTDirection::update(Tissue &T,
 UpdateMTDirectionEquilibrium::UpdateMTDirectionEquilibrium(std::vector<double> &paraValue,
 				     std::vector< std::vector<size_t> > &indValue)
 {
-  if (paraValue.size() != 3) {
+  if (paraValue.size() != 1 && paraValue.size() != 2 && paraValue.size() != 3) {
     std::cerr << "UpdateMTDirectionEquilibrium::UpdateMTDirectionEquilibrium() " 
-	      << "Uses three parameters: k_rate and mechanical equilibrium threshould and stress difference threshold " << std::endl;
+	      << "Uses up to three parameters: k_rate has to be given."
+	      << "Mechanical equilibrium threshold (VertexVelocity) "
+	      << " and stress difference (Principal vs vonMises) threshold are optional." << std::endl;
     exit(EXIT_FAILURE);
   }
   
-  if (indValue.size() != 4 || indValue[0].size() != 1 ||  indValue[1].size() != 1 || indValue[2].size() != 1|| indValue[3].size() != 2) {
+  if (indValue.size() < 2 || indValue.size() > 4 || indValue[0].size() != 1 ||  indValue[1].size() != 1
+      || (indValue.size()>2 && indValue[2].size() != 1)
+      || (indValue.size()==4 && indValue[3].size() != 2) ) {
     std::cerr << "UpdateMTDirectionEquilibrium::UpdateMTDirectionEquilibrium() " << std::endl
 	      << "First level gives target direction index (input)." << std::endl
-              << "Second level gives real direction index." << std::endl
-	      << "Third level gives store index for velocity." << std::endl
-	      << "Fourth level gives  indices for max-stress and MT-stress values." << std::endl;
-
+              << "Second level gives index for direction to be updated." << std::endl
+	      << "Optional third level gives index for stored velocity "
+	      << "(needs second parameter for threshold)." << std::endl
+	      << "Optional fourth level gives indices for principal-stress and vonMises-stress values"
+	      << " (needs third parameter for threshold)." << std::endl;
     exit(EXIT_FAILURE);
   }
   
@@ -310,8 +315,10 @@ UpdateMTDirectionEquilibrium::UpdateMTDirectionEquilibrium(std::vector<double> &
   
   std::vector<std::string> tmp(numParameter());
   tmp[0] = "k_rate";
-  tmp[1] = "velocitythreshold";
-  tmp[2] = "stressdifthreshold";	      
+  if (numParameter()>1)
+    tmp[1] = "velocitythreshold";
+  if (numParameter()>2)
+    tmp[2] = "stressdiffthreshold";	      
   setParameterId(tmp);
 }
 
@@ -326,8 +333,8 @@ void UpdateMTDirectionEquilibrium::initiate(Tissue &T,
   size_t numCell=cellData.size();
   size_t dimension=vertexData[0].size();
   size_t inIndex=variableIndex(0,0);   // target
-  size_t outIndex=variableIndex(1,0);  // MT
- 
+  size_t outIndex=variableIndex(1,0);  // MT (to be updated)
+  
   for (size_t i=0; i<numCell; ++i)
     for (size_t d=0; d<dimension; ++d)
       cellData[i][outIndex+d] = cellData[i][inIndex+d];
@@ -339,8 +346,10 @@ void UpdateMTDirectionEquilibrium::derivs(Tissue &T,
 			       DataMatrix &vertexData,
 			       DataMatrix &cellDerivs,
 			       DataMatrix &wallDerivs,
-			       DataMatrix &vertexDerivs ) {
-
+			       DataMatrix &vertexDerivs )
+{
+  // --- Vertex velocities are now calculated in Calculate::VertexVelocity ---
+  //
   // size_t numCell=cellData.size();
   // size_t velocityIndex=variableIndex(2,0);
 
@@ -355,9 +364,7 @@ void UpdateMTDirectionEquilibrium::derivs(Tissue &T,
   //                                                     vertexDerivs[vtx][2]*vertexDerivs[vtx][2] );  
   //   }
   //   //std::cerr<< cellData[cellIndex][velocityIndex] << std::endl;
-   
   // }
- 
 }
 
 void UpdateMTDirectionEquilibrium::update(Tissue &T,
@@ -366,62 +373,57 @@ void UpdateMTDirectionEquilibrium::update(Tissue &T,
                                           DataMatrix &vertexData, 
                                           double h) 
 {
+  // No update if no rate
+  if (parameter(0)==0.0)
+    return;
+  
   size_t numCell=cellData.size();
   size_t dimension=vertexData[0].size();
   size_t inIndex=variableIndex(0,0);
   size_t outIndex=variableIndex(1,0);
-  size_t velocityIndex=variableIndex(2,0);
-  //size_t stressIndex=variableIndex(3,0);
-  //size_t MTstressIndex=variableIndex(3,1);
-
-  if (parameter(0)==0.0)
-    return;
+  
   for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) {
-    size_t v0=T.cell(cellIndex).vertex(0)->index();
-    double zCell;
-    zCell= vertexData[v0][2];
-    double stressDif=1;//(cellData[cellIndex][stressIndex]-cellData[cellIndex][MTstressIndex]) /cellData[cellIndex][stressIndex];
-
-    //if( zCell < 3500 && zCell > -3500 ){
-  if(parameter(2)>=0 || cellData[cellIndex][37]>-45) // ad hoc
+    // --- ad hoc limits of updates in z-direction
+    //size_t v0=T.cell(cellIndex).vertex(0)->index();
+    // double zCell = vertexData[v0][2];
+    // if( zCell < 3500 && zCell > -3500 ){
+    //if(parameter(2)>=0 || cellData[cellIndex][37]>-45) // ad hoc
     
-    if (std::abs(stressDif) > parameter(2)) { 
-      // std::cerr<<"target" <<" "<<cellData[cellIndex][inIndex] 
-      // 	     <<" "<<cellData[cellIndex][inIndex+1] 
-      // 	     <<" "<<cellData[cellIndex][inIndex+2]<<std::endl;
-      // std::cerr<<"MT    " <<" "<<cellData[cellIndex][outIndex] 
-      // 	     <<" "<<cellData[cellIndex][outIndex+1] 
-      // 	     <<" "<<cellData[cellIndex][outIndex+2]<<std::endl;
-      // std::cerr<<"h:" <<" "<<h<<std::endl;    
+    // Check if direction in cell should be updated
+    if ( numParameter()==1 //default
+	 || (numParameter()==2 && cellData[cellIndex][variableIndex(2,0)] < parameter(1)) // velocity check
+	 || (numParameter()==3 && cellData[cellIndex][variableIndex(2,0)] < parameter(1)
+	     && std::abs((cellData[cellIndex][variableIndex(3,0)]-cellData[cellIndex][variableIndex(3,1)])
+			 /cellData[cellIndex][variableIndex(3,0)]) > parameter(2)) ) { // velocity and stress check
       
-      double temp=(cellData[cellIndex][outIndex  ]*cellData[cellIndex][inIndex  ]+
-		   cellData[cellIndex][outIndex+1]*cellData[cellIndex][inIndex+1]+
-		   cellData[cellIndex][outIndex+2]*cellData[cellIndex][inIndex+2] );
+      // Since axes and not vectors, make sure they two directions given in 'same direction' before update
+      double temp=0.;
+      for (size_t d=0; d<dimension; ++d)
+	temp += cellData[cellIndex][outIndex+d]*cellData[cellIndex][inIndex+d];
       if ( temp<0 ){
-	cellData[cellIndex][outIndex  ] *=-1;  
-	cellData[cellIndex][outIndex+1] *=-1;  
-	cellData[cellIndex][outIndex+2] *=-1;  
+	for (size_t d=0; d<dimension; ++d)
+	  cellData[cellIndex][outIndex+d] *=-1;  
       }
-      
-      if ( cellData[cellIndex][velocityIndex] < parameter(1) ){
-	
-	for (size_t d=0; d<dimension; ++d)
-	  cellData[cellIndex][outIndex+d] += parameter(0)*h*(cellData[cellIndex][inIndex+d]-cellData[cellIndex][outIndex+d]);
-	//cellData[cellIndex][outIndex+d] += cellData[cellIndex][inIndex+d];
-	// Normalize
-	double norm=0.0;
-	for (size_t d=0; d<dimension; ++d)
-	  norm += cellData[cellIndex][outIndex+d]*cellData[cellIndex][outIndex+d];
-	norm = 1.0/std::sqrt(norm);
-	for (size_t d=0; d<dimension; ++d)
-	  cellData[cellIndex][outIndex+d] *= norm;
-      }
+      // Update MT vector
+      for (size_t d=0; d<dimension; ++d)
+	cellData[cellIndex][outIndex+d] += parameter(0)*h*(cellData[cellIndex][inIndex+d] -
+							   cellData[cellIndex][outIndex+d]);
+      // Normalize MT vector
+      double norm=0.0;
+      for (size_t d=0; d<dimension; ++d)
+	norm += cellData[cellIndex][outIndex+d]*cellData[cellIndex][outIndex+d];
+      norm = 1.0/std::sqrt(norm);
+      for (size_t d=0; d<dimension; ++d)
+	cellData[cellIndex][outIndex+d] *= norm;
     }
-
-    //}// z threshold for applyng the update locally
-
-
-
+    // std::cerr<<"target" <<" "<<cellData[cellIndex][inIndex] 
+    // 	     <<" "<<cellData[cellIndex][inIndex+1] 
+    // 	     <<" "<<cellData[cellIndex][inIndex+2]<<std::endl;
+    // std::cerr<<"MT    " <<" "<<cellData[cellIndex][outIndex] 
+    // 	     <<" "<<cellData[cellIndex][outIndex+1] 
+    // 	     <<" "<<cellData[cellIndex][outIndex+2]<<std::endl;
+    // std::cerr<<"h:" <<" "<<h<<std::endl;    
+    //} // end for loop ad hoc z threshold for applyng the update locally
   }
 }
 
