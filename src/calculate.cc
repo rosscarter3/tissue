@@ -246,31 +246,31 @@ namespace Calculate {
     }
   }
   
-  MaxVelocity::
-  MaxVelocity(
-	      std::vector<double> &paraValue,
-	      std::vector<std::vector<size_t>>
-	      &indValue) {
+  VertexVelocity::
+  VertexVelocity(
+		 std::vector<double> &paraValue,
+		 std::vector<std::vector<size_t>>
+		 &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
-      std::cerr << "Calculate::MaxVelocity:: "
-		<< "MaxVelocity() "
-		<< "Calculates  maximum velocity of vertices in tissue "
-		<< "for checking closeness to mechanical equilibrum."
+      std::cerr << "Calculate::VertexVelocity:: "
+		<< "VertexVelocity() "
+		<< "Calculates  average velocity of vertices per face/cell in tissue "
+		<< "for e.g. checking closeness to mechanical equilibrum."
 		<< "Uses no parameter. " << std::endl;
       exit(EXIT_FAILURE);
     }
     if (indValue.size() != 1 || indValue[0].size() != 1) {
-      std::cerr << "Calculate::MaxVelocity:: "
-		<< "MaxVelocity() "
-		<< "1st level with 1 variable index used: "
-		<< "store index for max velocity. " << std::endl;
+      std::cerr << "Calculate::VertexVelocity:: "
+		<< "VertexVelocity() "
+		<< "1 level with 1 variable index used: "
+		<< "store index for vertex velocity. " << std::endl;
       exit(EXIT_FAILURE);
     }
     // Set the variable values
     //
-    setId("Calculate::MaxVelocity");
+    setId("Calculate::VertexVelocity");
     setParameter(paraValue);
     setVariableIndex(indValue);
     
@@ -279,29 +279,26 @@ namespace Calculate {
     setParameterId(tmp);
   }
 
-  void MaxVelocity::
+  void VertexVelocity::
   derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 	 DataMatrix &vertexData, DataMatrix &cellDerivs,
 	 DataMatrix &wallDerivs, DataMatrix &vertexDerivs) {
     size_t numCells = T.numCell();
     size_t velocityIndex = variableIndex(0, 0);
-    if (vertexData[0].size() != 3) {
-      std::cerr << "Calculate::MaxVelocity:: "
-		<< "MaxVelocity() "
-		<< "only for 3 dimensions! " << std::endl;
-      exit(EXIT_FAILURE);
-    }
+    size_t dimension = vertexData[0].size();
 
     for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex) {
-      size_t numCellVertices = T.cell(cellIndex).numVertex();
-      double cellVelocity = 0;
-      for (size_t VIndex = 0; VIndex < numCellVertices; ++VIndex)
-	cellVelocity +=
-          std::sqrt(vertexDerivs[VIndex][0] * vertexDerivs[VIndex][0] +
-                    vertexDerivs[VIndex][1] * vertexDerivs[VIndex][1] +
-                    vertexDerivs[VIndex][2] * vertexDerivs[VIndex][2]);
-      
-      cellData[cellIndex][velocityIndex] = cellVelocity / numCellVertices;
+      size_t numCellVertex = T.cell(cellIndex).numVertex();
+      double cellVelocity = 0.;
+      for (size_t k=0; k<numCellVertex; ++k) {
+	size_t VIndex = T.cell(cellIndex).vertex(k)->index();
+	double vertexVelocity = 0.;
+	for (size_t d=0; d<dimension; ++d) {
+	  vertexVelocity += vertexDerivs[VIndex][d]*vertexDerivs[VIndex][d];
+	}
+	cellVelocity += std::sqrt(vertexVelocity);
+      }
+      cellData[cellIndex][velocityIndex] = cellVelocity / numCellVertex;
     }
   }
 

@@ -512,9 +512,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue=="Calculate::AngleVector" ||
 	  idValue=="AngleVector")
     return new Calculate::AngleVector(paraValue,indValue);
-  else if(idValue=="Calculate::MaxVelocity" ||
-	  idValue=="maxVelocity")
-    return new Calculate::MaxVelocity(paraValue,indValue);
+  else if(idValue=="Calculate::VertexVelocity")
+    return new Calculate::VertexVelocity(paraValue,indValue);
   else if(idValue=="Calculate::TissueVolumeChange" ||
 	  idValue=="TemplateVolumeChange")
     return new Calculate::TissueVolumeChange(paraValue,indValue);
@@ -696,6 +695,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
   
   // Obselete reactions
+  if(idValue=="Calculate::MaxVelocity" ||
+     idValue=="maxVelocity") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction Calculate::MaxVelocity (maxVelocity) has been replaced by Calculate::VertexVelocity."
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
   if(idValue == "WallGrowthExponentialTruncated" ) {
     std::cerr << "BaseReaction::createReaction() EXITING: "
 	      << "Reaction WallGrowthExponentialTruncated has been replaced by WallGrowth::Constant."

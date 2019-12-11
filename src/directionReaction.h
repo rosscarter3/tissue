@@ -131,18 +131,18 @@ class UpdateMTDirection : public BaseReaction
 /// is considered as a state in which the addition of absolute values of velocity vectors of 
 /// vertices of a cell is less than a user defined threshold. 
 /// It normalizes the vector after the update.
-///
 /// In a model file the reaction is defined as
 /// @verbatim
 /// UpdateMTDirectionEquilibrium 3 4 1 1 1 2 
 /// k_rate
-/// equilibrium velocity threshold
-/// stress difference threshold
-/// target index
-/// MT index
-/// max-stress index
-/// MT-stress index
-/// velocity store index
+/// equilibrium_velocity_threshold
+/// stress_difference_threshold
+///
+/// target_index
+/// MT_index
+/// max-stress_index
+/// MT-stress_index
+/// velocity-store_index
 /// @endverbatim
 ///
 class UpdateMTDirectionEquilibrium : public BaseReaction

@@ -19,7 +19,7 @@
 /// @details Collection of reaction that are not updating derivatives but rather
 /// do some calculations and store them in the cellData matrix. Examples are angles
 /// between vectors (e.g. stress and strain), or between a vector and an axis, and
-/// calculation of total change of volume for the tissue.
+/// calculation of average vertex velocities or total change of volume for the tissue.
 ///
 namespace Calculate {
   ///
@@ -153,21 +153,26 @@ namespace Calculate {
   };
 
   ///
-  /// @brief Extracts the maximum velocity of vertices (from vertexDerivs)
+  /// @brief Extracts the average velocity of vertices (from vertexDerivs)
   /// and stores it in a given index in cellData vector
-  /// to check the closeness to mechanical equilibrium
+  /// to e.g. check the closeness to mechanical equilibrium
   ///
-  /// @details Uses no parameter
-  /// The first index specifies the index for storage
+  /// @details This function calculates the average vertex velocity (from the derivs stored in vertexDerivs)
+  /// per cell/face and stores the result in a cellData variable specified.
+  /// It uses no parameters and the only index specifies the cellData index for storage.
   /// In a model file the reaction is defined as:
   /// @verbatim
-  /// Calculate::MaxVelocity 0 1 1
-  /// velocity-store-index(angle-deg)
+  /// Calculate::VertexVelocity 0 1 1
+  /// velocity-store-index
   /// @endverbatim
   ///
-  class MaxVelocity : public BaseReaction {
-  private:
-  DataMatrix vertexDataRest;
+  /// @note Since derivative values are used directly for the calculation, this reaction has to be specified
+  /// after the reactions adding to the vertex movements to calculate coorect velocity.
+  /// @see FiberModel that can specify velocity threshold for no update.
+  /// @see UpdateMTDirectionEquilibrium that can specify velocity threshold for no update
+  /// @note Used to be (wrongly) called Calculate::MaxVelocity (maxVelocity)
+  ///
+  class VertexVelocity : public BaseReaction {
   public:
   ///
   /// @brief Main constructor
@@ -181,7 +186,7 @@ namespace Calculate {
   ///
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   ///
-  MaxVelocity(std::vector<double> &paraValue,
+  VertexVelocity(std::vector<double> &paraValue,
               std::vector<std::vector<size_t>> &indValue);
   
   ///

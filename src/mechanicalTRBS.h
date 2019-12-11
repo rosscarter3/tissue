@@ -711,19 +711,19 @@ class VertexFromTRBScenterTriangulationConcentrationHillMT : public BaseReaction
 /// @f[ Y_L^{new} = Y_L + k_{rate} (Y_L^{target}-Y_L)\Delta t@f]
 /// where @f$k_{rate}=p_0@f$ is the update rate, and @f$Y_L@f$ is read and stored in a given cell index.
 /// When @f$p_2=2@f$, the update is direct and @f$Y_L@f$ is read and the updated value is stored at another
-/// cell index (FiberLindex). In addition, the update will not happen if a cell variable (velocity_index,
-/// e.g. a velocity calculated and stored by the UpdateMTdirectionEquilibrium function) is larger than a
-/// threshold given as @f$p_1@f$ (in the case of @f$p_2=0,1@f$), or if @f$p_0=0.0@f$. Before the
+/// cell index (FiberLindex). In addition, the update will not happen if a cell variable (velocity_index)
+/// is larger than a threshold given as @f$p_1@f$ (in the case of @f$p_2=0,1@f$), or if @f$p_0=0.0@f$.
+/// This can e.g. be used to only update close to mechanical equilibrium by having a threshold on a vertex
+/// velocity calculated and stored by the Calculate::VertexVelocity function. Before the
 /// simulation starts, the anisotropy and @f$Y_L@f$ can be initiated: if @f$p_7=0@f$ no initiation; =1
 /// anisotropy is set to zero in all cells and @f$Y_L=Y_M+0.5Y_F@f$; =2 @f$Y_L@f$ is set to its target value
 /// given the anisotropy in the cell.
 /// In a model file the reaction is defined as
 /// @verbatim
 /// FiberModel 8 3 1 1[2] 1
-/// 
 ///  k_rate
 ///  velocity_threshold
-///  linear-hill_flag [0=linear/1=Hill/2=Hill_direct]
+///  linear-hill_flag (0=linear/1=Hill/2=Hill_direct)
 ///  k_hill
 ///  n_hill
 ///  Y_matrix
@@ -731,13 +731,14 @@ class VertexFromTRBScenterTriangulationConcentrationHillMT : public BaseReaction
 ///  initiate_flag (0=no initiation/1=initiate with isotropic/2=initiate with anisotropy from aniso_index)
 ///
 ///  anisotropy_index
-///  Young_Longitudinal_index [FiberL_index (only if linear-hill_flag=2)]
-///  velocity_index (e.g. from "UpdateMTdirectionEquilibrium" only if linear-hill_flag=0/1)
+///  Young_Longitudinal_index [FiberL_index (only given/needed if linear-hill_flag=2)]
+///  velocity_index (e.g. from "Calculate::VertexVelocity"; only used if linear-hill_flag=0/1)
 /// @endverbatim
 ///
 /// @see Equations 8 and 9 and Fig. 6 in Bozorg et al (2014) PLoS Comp Biol for Hill version.
 /// @see VertexFromTRBScenterTriangulationMT and similar functions for calculating strain/stress anisotropy.
-/// @see UpdateMTdirectionEquilibrium (for example) to provide velocity values that can block update.
+/// @see Calculate::VertexVelocity (for example) to provide vertex velocity values that can block update.
+///
 class FiberModel : public BaseReaction {
   
 public:
