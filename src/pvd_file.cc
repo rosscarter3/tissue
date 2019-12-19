@@ -190,8 +190,8 @@ void PVD_file::writeFullPvd ( const std::string filename, const std::string vtu_
     {
         std::string fname;
         fname.assign ( basenames[i], basenames[i].find_last_of ( "/" ) + 1, basenames[i].size() );
-        filestart[i].assign ( fname, 0, fname.find ( "." ) );
-        extension[i].assign ( fname, fname.find ( "." ), fname.size() );
+        filestart[i].assign ( fname, 0, fname.find_last_of ( "." ) );
+        extension[i].assign ( fname, fname.find_last_of ( "." ), fname.size() );
     }
     // Open pvd file
     //    pvdFile.open(filename.c_str(), std::ios::out | std::ios::trunc);
@@ -297,8 +297,8 @@ void PVD_file::writeFullPvd ( const std::string filename, std::vector<std::strin
     {
         std::string fname;
         fname.assign ( basenames[i], basenames[i].find_last_of ( "/" ) + 1, basenames[i].size() );
-        filestart[i].assign ( fname, 0, fname.find ( "." ) );
-        extension[i].assign ( fname, fname.find ( "." ), fname.size() );
+        filestart[i].assign ( fname, 0, fname.find_last_of ( "." ) );
+        extension[i].assign ( fname, fname.find_last_of ( "." ), fname.size() );
     }
     // Open pvd file
     pvdFile.open ( filename.c_str(), std::ios::out );
