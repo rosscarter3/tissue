@@ -643,13 +643,9 @@ namespace WallGrowth {
         if(cellData[cellIndex][velocityStoreIndex]>velocityThreshold)
           equil=false;
       }
-      //std::cerr << "Deltat: " << deltat << std::endl;
-      // WHY THIS!?
-      // My parameters wehre always causing equil = false
-      //if(equil && deltat<200) {// if limited growth time
-      std::cerr << equil << std::endl;
-      if(equil && deltat>0.0) {// if close to mechanical equilibrum        
-      //if(true) {  
+      //std::cerr << equil << std::endl; //to check if it is ever updating
+      if(equil && deltat>0.0) {// If close to mechanical equilibrum        
+      //if(true) {  // If no check to be done
         growthtime+=h;  
         //std::cerr<<scaletmp<<std::endl;
         std::vector<std::vector<double> > mainWalls(numWalls);
