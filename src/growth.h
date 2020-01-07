@@ -475,6 +475,9 @@ namespace WallGrowth {
 		DataMatrix &vertexDerivs);
   };
   
+  /// 
+  /// @brief Reactions describing wall growth that use center triangulation
+  ///
   namespace CenterTriangulation {
     ///
     /// @brief Constant internal edge growth which can be truncated at threshold length
