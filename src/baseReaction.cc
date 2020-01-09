@@ -10,6 +10,7 @@
 #include "baseReaction.h"
 #include "adhocReaction.h"
 #include "bending.h"
+#include "boolean.h"
 #include "calculate.h"
 #include "cellTime.h"
 #include "centerTriangulation.h"
@@ -587,28 +588,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromRotationalForceLinear(paraValue, indValue);
   else if (idValue == "ThresholdSwitch")
     return new ThresholdSwitch(paraValue, indValue);
-  else if (idValue == "AndGate")
-    return new AndGate(paraValue, indValue);
-  else if (idValue == "AndNotGate")
-    return new AndNotGate(paraValue, indValue);
-  else if (idValue == "AndSpecialGate")
-    return new AndSpecialGate(paraValue, indValue);
-  else if (idValue == "AndSpecialGate2")
-    return new AndSpecialGate2(paraValue, indValue);
-  else if (idValue == "AndSpecialGate3")
-    return new AndSpecialGate3(paraValue, indValue);
-  else if (idValue == "AndGateCount")
-    return new AndGateCount(paraValue, indValue);
-  else if (idValue == "OrGateCount")
-    return new OrGateCount(paraValue, indValue);
-  else if (idValue == "OrSpecialGateCount")
-    return new OrSpecialGateCount(paraValue, indValue);
-  else if (idValue == "AndThresholdsGate")
-    return new AndThresholdsGate(paraValue, indValue);
-  else if (idValue == "Count")
-    return new Count(paraValue, indValue);
-  else if (idValue == "FlagCount")
-    return new FlagCount(paraValue, indValue);
   else if (idValue == "ThresholdReset")
     return new ThresholdReset(paraValue, indValue);
   else if (idValue == "ThresholdNoisyReset")
@@ -625,6 +604,41 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new CopyVariable(paraValue, indValue);
   else if (idValue == "DebugReaction")
     return new DebugReaction(paraValue, indValue);
+
+  // Boolean namespace (boolean.h)
+  else if (idValue == "Boolean::AndGate" ||
+	   idValue == "AndGate")
+    return new Boolean::AndGate(paraValue, indValue);
+  else if (idValue == "Boolean::AndNotGate" ||
+	   idValue == "AndNotGate")
+    return new Boolean::AndNotGate(paraValue, indValue);
+  else if (idValue == "Boolean::AndSpecialGate" ||
+	   idValue == "AndSpecialGate")
+    return new Boolean::AndSpecialGate(paraValue, indValue);
+  else if (idValue == "Boolean::AndSpecialGate2" ||
+	   idValue == "AndSpecialGate2")
+    return new Boolean::AndSpecialGate2(paraValue, indValue);
+  else if (idValue == "Boolean::AndSpecialGate3" ||
+	   idValue == "AndSpecialGate3")
+    return new Boolean::AndSpecialGate3(paraValue, indValue);
+  else if (idValue == "Boolean::AndThresholdGate" ||
+	   idValue == "AndThresholdsGate")
+    return new Boolean::AndThresholdsGate(paraValue, indValue);
+  else if (idValue == "Boolean::Count" ||
+	   idValue == "Count")
+    return new Boolean::Count(paraValue, indValue);
+  else if (idValue == "Boolean::FlagCount" ||
+	   idValue == "FlagCount")
+    return new Boolean::FlagCount(paraValue, indValue);
+  else if (idValue == "Boolean::AndGateCount" ||
+	   idValue == "AndGateCount")
+    return new Boolean::AndGateCount(paraValue, indValue);
+  else if (idValue == "Boolean::OrGateCount" ||
+	   idValue == "OrGateCount")
+    return new Boolean::OrGateCount(paraValue, indValue);
+  else if (idValue == "Boolean::OrSpecialGateCount" ||
+	   idValue == "OrSpecialGateCount")
+    return new Boolean::OrSpecialGateCount(paraValue, indValue);
   
   // cellTime.h
   else if (idValue=="CellTimeDerivative")
