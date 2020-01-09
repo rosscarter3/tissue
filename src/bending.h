@@ -17,12 +17,13 @@
 namespace Bending {
   
   /// 
-  /// @brief Creates a bending resistance by a force towards the line connecting the neighboring vertices 
+  /// @brief Creates a bending resistance by a force towards the line connecting the neighboring 
+  /// vertices 
   ///
-  /// @details This reaction applies a force acting on a vertex towards the weighted (by edge length) middle
-  /// of the line connecting the left and right vertex neighbors within the cell. The force is a spring force
-  /// acting as soon as the vertex is outside the line (i.e. the edges connected to the vertex have an angle
-  /// in between). The update is given by
+  /// @details This reaction applies a force acting on a vertex towards the weighted (by edge 
+  /// length) middle of the line connecting the left and right vertex neighbors within the cell. 
+  /// The force is a spring force acting as soon as the vertex is outside the line (i.e. the 
+  /// edges connected to the vertex have an angle in between). The update is given by
   ///
   /// @f[ \frac{dx_i}{dt} = - k_{spring} (x_{i}-\frac{1}{L_{-}+L_{+}}( L_{-}x_{+} + L_{+}x_{-})) @f]
   ///
@@ -30,18 +31,17 @@ namespace Bending {
   ///
   /// @f[ \frac{1}{L_{-}+L_{+}}( L_{-}x_{+} + L_{+}x_{-}) @f]
   ///
-  /// is the weighted middle on the line between left(-) and right(+) vertex neighbors, @$L_{-},L_{+}@$ 
-  /// are the edge lengths towards the left and right vertex neighbors and @$x_{-},x_{+}@$ ar the positions.
-  /// The update is done in all dimensions.
+  /// is the weighted middle on the line between left(-) and right(+) vertex neighbors, 
+  /// @f$L_{-},L_{+}@f$ are the edge lengths towards the left and right vertex neighbors and 
+  /// @f$x_{-},x_{+}@f$ are the positions. The update is done in all dimensions.
   ///
-  /// The reaction expects a strength of the spring force, and the edge variable index for the length (=0). 
-  /// In a model file it is defined as:
+  /// The reaction expects a strength of the spring force, and the edge variable index for the 
+  /// length (=0). In a model file it is defined as:
   /// @verbatim
   /// Bending::NeighborCenter 1 1 1
   /// k_spring
   /// L_index
   /// @endverbatim
-  ///
   /// @note It might be good to add a maximal angle to allow for a bent structure.
   ///
   class NeighborCenter : public BaseReaction {
@@ -115,9 +115,7 @@ namespace Bending {
   /// @verbatim
   /// Bending::Angle 1 1 1
   /// k_theta
-  /// Theta^t_index
-  /// @endverbatim
-  ///
+  /// Theta^t_index @endverbatim
   /// @see Bending::AngleRelax for how to update the prefered angle towards the current.
   /// @see Bending::AngleInitiate will initiate the stored angle to the current measured angle.
   ///
@@ -173,8 +171,7 @@ namespace Bending {
   /// In a model file the reaction is defined by:
   /// @verbatim
   /// Bending::AngleInitiate 0 1 1
-  /// Theta^t_index
-  /// @endverbatim
+  /// Theta^t_index @endverbatim
   /// where the index is where the angle is stored (as wall variable).
   ///
   /// @see Bending::Angle for how to update the vertices towards this angle 

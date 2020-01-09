@@ -1008,9 +1008,7 @@ class VertexFromRotationalForceLinear : public BaseReaction {
 /// index_var   	      # index of the index variable upstream the switch.
 /// index_var_out  	      # list of updated indices - for the moment it can
 ///                           # be just one index - where the output of
-///                           # the switch is written.
-/// @endverbatim
-///
+///                           # the switch is written. @endverbatim
 /// @note This function makes a downstream species reversibly or irreversibly
 /// switch from 0 to 1, upon being above a certain threshold of an upstream
 /// variable.
@@ -1060,16 +1058,12 @@ class ThresholdSwitch : public BaseReaction {
 /// 
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
-/// AndGate 1 2 2 1   	 	 # number of parameters is set to one
-/// (gate_type)
-/// gate_type		 		  # the gate_type parameter takes the values 0 and 1 for
-/// defining the reversible and irreversible gate, respectively. index_var1
-/// # index of the fist variable upstream the gate.
-/// index_var2   	 		  # index of the second variable upstream the
-/// gate.
-/// index_var_out  			  # updated index where the output of the gate is
-/// written.
-/// @endverbatim
+/// AndGate 1 2 2 1  # number of parameters is one
+/// gate_type	     # the gate_type parameter takes the values 0 and 1 for
+///                  # defining the reversible and irreversible gate, respectively. 
+/// index_var1       # index of the fist variable upstream the gate.
+/// index_var2       # index of the second variable upstream the gate.
+/// index_var_out    # updated index where the output of the gate is written. @endverbatim
 ///
 class AndGate : public BaseReaction {
   public:
@@ -1108,6 +1102,19 @@ class AndGate : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species reversibly or
+/// irreversibly switch from 0 to 1 if a first input variable is 1 and a
+/// second input variable is 0.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndNotGate 1 2 2 1 # number of parameters is set to one
+/// gate_type          # the gate_type parameter takes the values 0 and 1 for
+///                    # defining the reversible and irreversible gate, respectively. 
+/// index_var1         # index of the fist variable upstream the gate.
+/// index_var2         # index of the second variable upstream the gate.
+/// index_var_out      # updated index where the output of the gate is written. @endverbatim
+///
 class AndNotGate : public BaseReaction {
   public:
   ///
@@ -1120,28 +1127,11 @@ class AndNotGate : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndNotGate 1 2 2 1   	  # number of parameters is set to one
-  /// (gate_type)
-  /// gate_type		 		  # the gate_type parameter takes the values 0 and 1 for
-  /// defining the reversible and irreversible gate, respectively. index_var1
-  /// # index of the fist variable upstream the gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species reversibly or
-  /// irreversibly switch from 0 to 1 if a first input variable is 1 and a
-  /// second input variable is 0.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   AndNotGate(std::vector<double> &paraValue,
              std::vector<std::vector<size_t>> &indValue);
-
+  
   ///
   /// @brief This class does not use derivatives for updates.
   ///
@@ -1165,6 +1155,18 @@ class AndNotGate : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species switch from 0 to 1 if the 
+/// following conditions are met: the first input variable is 1 the second input variable is 0
+/// the third input variable is 0.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndSpecialGate 0 2 3 1 # number of parameters is set to zero
+/// index_var1   	   # index of the fist variable upstream the gate.
+/// index_var2   	   # index of the second variable upstream the gate.
+/// index_var3   	   # index of the third variable upstream the gate.
+/// index_var_out  	   # updated index where the output of the gate is written. @endverbatim
+///
 class AndSpecialGate : public BaseReaction {
   public:
   ///
@@ -1177,27 +1179,8 @@ class AndSpecialGate : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndSpecialGate 0 2 3 1    # number of parameters is set to zero
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var3   	 		  # index of the third variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species
-  /// switch from 0 to 1 if the folowing conditions are met:
-  // the first input variable is 1
-  // the second input variable is 0
-  // the third input variable is 0.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   AndSpecialGate(std::vector<double> &paraValue,
                  std::vector<std::vector<size_t>> &indValue);
 
@@ -1224,6 +1207,18 @@ class AndSpecialGate : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species switch from 0 to 1 if the 
+/// following conditions are met: the first input variable is 1, the second input variable is 1,
+/// the third input variable is 0.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndSpecialGate2 0 2 3 1 # number of parameters is set to zero
+/// index_var1              # index of the fist variable upstream the gate.
+/// index_var2   	    # index of the second variable upstream the gate.
+/// index_var3   	    # index of the third variable upstream the gate.
+/// index_var_out  	    # updated index where the output of the gate is written. @endverbatim
+///
 class AndSpecialGate2 : public BaseReaction {
   public:
   ///
@@ -1236,28 +1231,8 @@ class AndSpecialGate2 : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndSpecialGate2 0 2 3 1    # number of parameters is set to zero
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var3   	 		  # index of the third variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species
-  /// switch from 0 to 1 if the folowing conditions are met:
-  // the first input variable is 1
-  // the second input variable is 1
-  // the third input variable is 0.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-
+  ///
   AndSpecialGate2(std::vector<double> &paraValue,
                   std::vector<std::vector<size_t>> &indValue);
 
@@ -1286,6 +1261,21 @@ class AndSpecialGate2 : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @note This logical gate function makes a downstream species
+/// switch from 0 to 1 if the folowing conditions are met:
+/// the first input variable is higher than a threshold
+/// the second input variable is 1
+/// the third input variable is 0.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndSpecialGate3 1 2 3 1 # number of parameters is set to zero
+/// thresh      	    # threshold variable
+/// index_var1   	    # index of the fist variable upstream the gate.
+/// index_var2   	    # index of the second variable upstream the gate.
+/// index_var3   	    # index of the third variable upstream the gate.
+/// index_var_out  	    # updated index where the output of the gate is written. @endverbatim
+///
 class AndSpecialGate3 : public BaseReaction {
   public:
   ///
@@ -1298,29 +1288,8 @@ class AndSpecialGate3 : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndSpecialGate3 1 2 3 1    # number of parameters is set to zero
-  /// thresh      	 		  # threshold variable
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var3   	 		  # index of the third variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species
-  /// switch from 0 to 1 if the folowing conditions are met:
-  // the first input variable is higher than a threshold
-  // the second input variable is 1
-  // the third input variable is 0.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-
+  ///
   AndSpecialGate3(std::vector<double> &paraValue,
                   std::vector<std::vector<size_t>> &indValue);
 
@@ -1349,6 +1318,16 @@ class AndSpecialGate3 : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species add +1
+/// if the two input variables are 1.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndGateCount 0 2 2 1 # number of parameters is set to zero
+/// index_var1   	 # index of the first variable upstream the gate.
+/// index_var2   	 # index of the second variable upstream the gate.
+/// index_var_out  	 # updated index where the output of the gate is written. @endverbatim
+///
 class AndGateCount : public BaseReaction {
   public:
   ///
@@ -1361,22 +1340,8 @@ class AndGateCount : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndGateCount 0 2 2 1   	  # number of parameters is set to zero
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species add +1
-  /// if the two input variables are 1.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   AndGateCount(std::vector<double> &paraValue,
                std::vector<std::vector<size_t>> &indValue);
 
@@ -1403,6 +1368,16 @@ class AndGateCount : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species add +1
+/// if one of the two input variables is 1.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// OrGateCount 0 2 2 1 # number of parameters is set to zero
+/// index_var1   	 # index of the fist variable upstream the gate.
+/// index_var2   	 # index of the second variable upstream the gate.
+/// index_var_out  	 # updated index where the output of the gate is written. @endverbatim
+///
 class OrGateCount : public BaseReaction {
   public:
   ///
@@ -1415,22 +1390,6 @@ class OrGateCount : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndGateCount 0 2 2 1   	  # number of parameters is set to one
-  /// (switch_type)
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species add +1
-  /// if one of the two input variables is 1.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
   OrGateCount(std::vector<double> &paraValue,
               std::vector<std::vector<size_t>> &indValue);
@@ -1458,6 +1417,17 @@ class OrGateCount : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species add +1
+/// if the first input variables is 1 or if the second input variable is
+/// larger than 0.
+///
+/// @brief In the model file, the reaction is specified as:
+/// @verbatim
+/// OrSpecialGateCount 0 2 2 1 # number of parameters is set to zero
+/// index_var1   	       # index of the fist variable upstream the gate.
+/// index_var2   	       # index of the second variable upstream the gate.
+/// index_var_out  	       # index where the output of the gate is written. @endverbatim
+///
 class OrSpecialGateCount : public BaseReaction {
   public:
   ///
@@ -1470,24 +1440,8 @@ class OrSpecialGateCount : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndGateCount 0 2 2 1   	  # number of parameters is set to one
-  /// (switch_type)
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species add +1
-  /// if the first input variables is 1 or if the second input variable is
-  /// larger than 0.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   OrSpecialGateCount(std::vector<double> &paraValue,
                      std::vector<std::vector<size_t>> &indValue);
 
@@ -1514,6 +1468,18 @@ class OrSpecialGateCount : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species irreversibly
+/// switch from 0 to 1 if the two input variables are larger than their respective thresholds.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// AndThresholdsGate 2 2 2 1 # 2 parameters, 2 index types, 2 inputs 1 output
+/// thresh_var1   	      # threshold of the fist variable upstream the gate.
+/// thresh_var2   	      # threshold of the second variable upstream the gate.
+/// index_var1   	      # index of the first variable upstream the gate.
+/// index_var2   	      # index of the second variable upstream the gate.
+/// index_var_out  	      # index where the output of the gate is written. @endverbatim
+///
 class AndThresholdsGate : public BaseReaction {
   public:
   ///
@@ -1526,28 +1492,8 @@ class AndThresholdsGate : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// AndThresholdsGate 2 2 2 1  # number of parameters, types of indexs, and
-  /// number of the different types of indexs.
-  /// thresh_var1   	 		  # threshold of the fist variable upstream the
-  /// gate.
-  /// thresh_var2   	 		  # threshold of the second variable upstream the
-  /// gate.
-  /// index_var1   	 		  # index of the fist variable upstream the
-  /// gate.
-  /// index_var2   	 		  # index of the second variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species  irreversibly
-  /// switch from 0 to 1 if the two input variables are larger than their
-  /// respective thresholds.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   AndThresholdsGate(std::vector<double> &paraValue,
                     std::vector<std::vector<size_t>> &indValue);
 
@@ -1574,6 +1520,13 @@ class AndThresholdsGate : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species add +1.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// Count 0 1 1   # number of parameters is set to zero
+/// index_var_out # index where the output of the gate is written. @endverbatim
+///
 class Count : public BaseReaction {
   public:
   ///
@@ -1586,18 +1539,8 @@ class Count : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// Count 0 1 1 	  	      # number of parameters is set to zero
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species add +1.
-  ///
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   Count(std::vector<double> &paraValue,
         std::vector<std::vector<size_t>> &indValue);
 
@@ -1624,6 +1567,15 @@ class Count : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This logical gate function makes a downstream species add +1
+/// if the input variable is 1.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// FlagCount 0 2 1 1 # number of parameters is set to zero
+/// index_var         # index of the variable upstream the gate.
+/// index_var_out     # index where the output of the gate is written. @endverbatim
+///
 class FlagCount : public BaseReaction {
   public:
   ///
@@ -1636,20 +1588,8 @@ class FlagCount : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// FlagCount 0 2 1 1	  	  # number of parameters is set to zero
-  /// index_var   	 		  # index of the variable upstream the
-  /// gate.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This logical gate function makes a downstream species add +1
-  /// if the input variable is 1.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   FlagCount(std::vector<double> &paraValue,
             std::vector<std::vector<size_t>> &indValue);
 
@@ -1676,6 +1616,18 @@ class FlagCount : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species reversibly or irreversibly
+/// switch from 1 to 0, upon being above a certain threshold of an upstream variable.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// ThresholdReset 2 2 1 1 # number of parameters is set to two
+/// threshold		   # threshold above which a variable is reset to zero.
+/// switch_type		   # the switchtype parameter takes the values 0 and 1
+///                        # for defining the reversible and irreversible switch, respectively.
+/// index_var   	   # index of the index variable upstream the switch.
+/// index_var_out  	   # index of updated variable @endverbatim
+///
 class ThresholdReset : public BaseReaction {
   public:
   ///
@@ -1688,26 +1640,8 @@ class ThresholdReset : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// ThresholdReset 2 2 1 1   # number of parameters is set to two (threshold
-  /// and switch_type)
-  /// threshold		 		  # threshold above which a variable is reset to
-  /// zero.
-  /// switch_type		 		  # the switchtype parameter takes the values 0 and 1
-  /// for defining the reversible and irreversible switch, respectively.
-  /// index_var   	 		  # index of the index variable upstream the
-  /// switch.
-  /// index_var_out  			  # list of updated indices - for the moment it can
-  /// be just one index - where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species reversibly or irreversibly
-  /// switch from 1 to 0, upon being above a certain threshold of an upstream
-  /// variable.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   ThresholdReset(std::vector<double> &paraValue,
                  std::vector<std::vector<size_t>> &indValue);
 
@@ -1734,6 +1668,17 @@ class ThresholdReset : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species irreversibly switch from 1 to 0 (reset) 
+/// with a bit of noise, upon being above a certain threshold of an upstream variable.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// ThresholdNoisyReset 2 2 1 1 # number of parameters is set to two
+/// threshold		 	# threshold above which a variable is reset to zero. 
+/// noise_amplitude             # noise amplitude for the resetting 
+/// index_var   	 	# index of the index variable upstream the switch.
+/// index_var_out  	        # index of updated variable @endverbatim
+///
 class ThresholdNoisyReset : public BaseReaction {
   public:
   ///
@@ -1746,23 +1691,8 @@ class ThresholdNoisyReset : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// ThresholdNoisyReset 2 2 1 1   # number of parameters is set to two
-  /// (threshold and switch_type) threshold		 		  #
-  /// threshold above which a variable is reset to zero. noise_amplitude
-  /// # noise amplitude for the resetting index_var   	 		  #
-  /// index of the index variable upstream the switch.
-  /// index_var_out  			  # list of updated indices - for the moment it can
-  /// be just one index - where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species irreversibly
-  /// switch from 1 to 0 (reset) with a bit of noise, upon being above a certain
-  /// threshold of an upstream variable.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   ThresholdNoisyReset(std::vector<double> &paraValue,
                       std::vector<std::vector<size_t>> &indValue);
 
@@ -1789,6 +1719,18 @@ class ThresholdNoisyReset : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species reversibly or irreversibly switch from 1 
+/// to 0, upon being above a certain threshold of an upstream variable.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// ThresholdResetAndCount 2 2 1 1 # number of parameters is set to two
+/// threshold		           # threshold above which a variable is reset to zero. 
+/// switch_type                    # the switchtype parameter takes the values 0 and 1 for 
+///                                # defining the reversible and irreversible switch, respectively.
+/// index_var                      # index of the index variable upstream the switch. 
+/// index_var_out                  # index of updated variable @endverbatim
+///
 class ThresholdResetAndCount : public BaseReaction {
   public:
   ///
@@ -1801,24 +1743,8 @@ class ThresholdResetAndCount : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// ThresholdResetAndCount 2 2 1 1   # number of parameters is set to two
-  /// (threshold and switch_type) threshold		 		  #
-  /// threshold above which a variable is reset to zero. switch_type
-  /// # the switchtype parameter takes the values 0 and 1 for defining the
-  /// reversible and irreversible switch, respectively. index_var
-  /// # index of the index variable upstream the switch. index_var_out
-  /// # list of updated indices - for the moment it can be just one index -
-  /// where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species reversibly or irreversibly
-  /// switch from 1 to 0, upon being above a certain threshold of an upstream
-  /// variable.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   ThresholdResetAndCount(std::vector<double> &paraValue,
                          std::vector<std::vector<size_t>> &indValue);
 
@@ -1845,6 +1771,19 @@ class ThresholdResetAndCount : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species reversibly or irreversibly
+/// switch from 1 to 0, upon being above a certain threshold of an upstream variable.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// FlagNoisyReset 2 2 1 1 # number of parameters is set to two
+/// flag_value		   # value of the flag that will make the output variable resetting 
+///                        # to zero with noise. 
+/// switch_type            # the switchtype parameter takes the values 0 and 1 for defining the
+///                        # reversible and irreversible switch, respectively. 
+/// index_var              # index of the index variable upstream the switch. 
+/// index_var_out          # index of updated variable @endverbatim
+///
 class FlagNoisyReset : public BaseReaction {
   public:
   ///
@@ -1857,25 +1796,8 @@ class FlagNoisyReset : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// FlagNoisyReset 2 2 1 1   # number of parameters is set to two (threshold
-  /// and switch_type)
-  /// flag_value		 		  # value of the flag that will make the output
-  /// variable is resetting to zero with noise. switch_type
-  /// # the switchtype parameter takes the values 0 and 1 for defining the
-  /// reversible and irreversible switch, respectively. index_var
-  /// # index of the index variable upstream the switch. index_var_out
-  /// # list of updated indices - for the moment it can be just one index -
-  /// where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species reversibly or irreversibly
-  /// switch from 1 to 0, upon being above a certain threshold of an upstream
-  /// variable.
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   FlagNoisyReset(std::vector<double> &paraValue,
                  std::vector<std::vector<size_t>> &indValue);
 
@@ -1902,6 +1824,20 @@ class FlagNoisyReset : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species be reset to 0 with noise, when being above 
+/// a certain threshold of an upstream variable and another flag variable has a certain flag_value
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// ThresholdAndFlagNoisyReset 3 2 1 1 # number of parameters is set to three
+/// threshold		 	       # threshold above which a variable is reset to zero. 
+/// flag_value                         # value of the flag that will make the output variable 
+///                                    # is resetting to zero with noise. 
+/// noise_amplitude		       # noise amplitude for the resetting
+/// index_var_in1   	 	       # index threshold variable upstream the switch.
+/// index_var_in2   	 	       # index flag variable upstream the switch.
+/// index_var_out  		       # index of updated variable @endverbatim
+///
 class ThresholdAndFlagNoisyReset : public BaseReaction {
   public:
   ///
@@ -1914,27 +1850,8 @@ class ThresholdAndFlagNoisyReset : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// ThresholdAndFlagNoisyReset 3 2 1 1   # number of parameters is set to two
-  /// (flag_value and threshold) threshold		 		  #
-  /// threshold above which a variable is reset to zero. flag_value
-  /// # value of the flag that will make the output variable is resetting to
-  /// zero with noise. noise_amplitude		      # noise amplitude for the
-  /// resetting index_var_in1   	 		  # index threshold
-  /// variable upstream the switch.
-  /// index_var_in2   	 		  # index flag variable upstream the
-  /// switch.
-  /// index_var_out  			  # list of updated indices - for the moment it can
-  /// be just one index - where the output of the switch is written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species be reset to 0 with noise,
-  /// when being above a certain threshold of an upstream variable and
-  /// another flag variable has a certain flag_value
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   ThresholdAndFlagNoisyReset(std::vector<double> &paraValue,
                              std::vector<std::vector<size_t>> &indValue);
 
@@ -1961,6 +1878,16 @@ class ThresholdAndFlagNoisyReset : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function makes a downstream species add an add_value in a
+/// certain flag variable is 1.
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// FlagAddValue 1 2 1 1 # number of parameters is set to one
+/// add_value  		 # number that will be added
+/// index_var_in  	 # index of the flag variable.
+/// index_var_out  	 # index where the output of the gate is written. @endverbatim
+///
 class FlagAddValue : public BaseReaction {
   public:
   ///
@@ -1973,21 +1900,8 @@ class FlagAddValue : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// FlagAddValue 1 2 1 1 	  	      # number of parameters is set to
-  /// zero add_value  			      # number that will be added
-  /// index_var_in  			  # index of the flag variable.
-  /// index_var_out  			  # updated index where the output of the gate is
-  /// written.
-  /// @endverbatim
-
-  /// @note This function makes a downstream species add an add_value in a
-  /// certain flag variable is 1.
-  ///
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   FlagAddValue(std::vector<double> &paraValue,
                std::vector<std::vector<size_t>> &indValue);
 
@@ -2014,6 +1928,15 @@ class FlagAddValue : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+/// @brief This function  copies one input variable into the output variable
+///
+/// @details In the model file, the reaction is specified as:
+/// @verbatim
+/// CopyVariable 0 2 1 1 # number of parameters is set to 0
+/// index_var   	 # input index variable
+/// index_var_out  	 # output index variable
+/// @endverbatim
+///
 class CopyVariable : public BaseReaction {
   public:
   ///
@@ -2026,17 +1949,8 @@ class CopyVariable : public BaseReaction {
   ///
   /// @param indValue vector of vectors with variable indices
   ///
-
-  /// In the model file, the reaction is specified as:
-  /// @verbatim
-  /// CopyVariable 0 2 1 1   # number of parameters is set to 0
-  /// index_var   	 		  # input index variable
-  /// index_var_out  			  # output index variable
-  /// @endverbatim
-
-  /// @note This function  copies one input variable into the output variable
-
   /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+  ///
   CopyVariable(std::vector<double> &paraValue,
                std::vector<std::vector<size_t>> &indValue);
 
@@ -2063,7 +1977,9 @@ class CopyVariable : public BaseReaction {
               DataMatrix &vertexData, double h);
 };
 
+//
 // Typically, this reaction should not be used (restricted use) unless you are a developer.
+//
 class DebugReaction : public BaseReaction {
   public:
   DebugReaction(std::vector<double> &paraValue,
