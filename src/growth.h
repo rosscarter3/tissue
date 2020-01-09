@@ -45,8 +45,7 @@ namespace WallGrowth {
   /// @verbatim
   /// WallGrowth::Constant 2/3 1 1
   /// k_growth linear_flag [L_trunc]
-  /// L
-  /// @endverbatim
+  /// L @endverbatim
   ///
   class Constant : public BaseReaction {
   
@@ -93,7 +92,7 @@ namespace WallGrowth {
   /// @f$ p_1 @f$ is a threshold (@f$ s_{threshold} @f$) in stress or strain depending 
   /// on @f$ p_2 @f$. If set to zero, shinkage is allowed. 
   /// @f$ p_2 @f$ is a flag (@f$ strain_{flag} @f$) for using stretch/strain (@f$p_2=1 @f$) 
-  /// or stress (@f$p_2=0 @f$). Strain is calculated by @f$ S=(d-L)/L @f$, where d is the distance
+  /// or stress (@f$p_2=0 @f$). Strain is calculated by @f$ S=(d-L) / L @f$, where d is the distance
   /// between the vertices. Stress is read from the second layer of variable indices.  
   /// @f$ p_3 @f$ is a flag (@f$ linear_{flag} @f$) for using growth proportional to 
   /// wall length (@f$ p_3=1 @f$, as in equation above. If @f$ p_3=0 @f$ the above equation
@@ -107,8 +106,8 @@ namespace WallGrowth {
   /// WallGrowthStress 4/5 1/2 1 [N]
   /// k_growth s_threshold stretch_flag linear_flag [L_trunc]  
   /// L
-  /// [stress1 ... stressN]
-  /// @endverbatim
+  /// [stress1 ... stressN] @endverbatim
+  ///
   /// If stress is used (stretch_flag=0) a second level of wall stresses has to be read
   /// (calculated and updated from other (mechanical) reactions).
   ///
@@ -163,8 +162,8 @@ namespace WallGrowth {
   /// @verbatim
   /// WallGrowthStrain 4 1 1 
   /// k_growth s_threshold strain_flag linear_flag   
-  /// L0-index
-  /// @endverbatim
+  /// L0-index @endverbatim
+  ///
   /// If Almansi strain is used (strain_flag=0) .
   ///
   /// @note If s_threshold is set to zero, also shrinkage is allowed. To avoid shrinkage set small value.
@@ -268,16 +267,16 @@ namespace WallGrowth {
   /// @details Constant growth driven by a streched wall. The wall lengths, L, are
   /// updated only if the length is shorter than the distance between the
   ///  vertices of the wall and then according to
-  ///  @f[\frac{dL}{dt} = p_{0} (d_{v}-L-p_{1}) \frac{p_{2}^{p_3}}{(p_{2}^{p_{3}}+d^{p_{3}})}@f]
+  ///  @f[ \frac{dL}{dt} = p_{0} (d_{v}-L-p_{1}) \frac{p_{2}^{p_3}}{(p_{2}^{p_{3}}+d^{p_{3}})} @f]
   /// iff @f$(d_{v}-L) > p_{1}@f$.
-  /// p_0 is the growth rate.
-  /// p_1 is a stress/strain threshold
-  /// p_2 is the K_Hill of the spatial factor
-  /// p_3 is the n_Hill of the spatial factor
-  /// p_4 is a flag for using stretch/strain instead of stress
-  /// p_5 is a flag for using growth proportional to wall length (not constant)
-  /// d_v is the distance between the two wall vertices.
-  /// d is the distance between the max value and wall.
+  /// @f$p_0@f$ is the growth rate.
+  /// @f$p_1@f$ is a stress/strain threshold
+  /// @f$p_2@f$ is the K_Hill of the spatial factor
+  /// @f$p_3@f$ is the n_Hill of the spatial factor
+  /// @f$p_4@f$ is a flag for using stretch/strain instead of stress
+  /// @f$p_5@f$ is a flag for using growth proportional to wall length (not constant)
+  /// @f$d_v@f$ is the distance between the two wall vertices.
+  /// @f$d@f$ is the distance between the max value and wall.
   ///  In addition, the column index for the wall length, the distance
   ///  coordinate should be given at first level and stress index in second.
   ///
@@ -341,8 +340,8 @@ namespace WallGrowth {
   /// WallGrowth::StressConcentrationHill 7 2 2 n
   /// k_growth k_Growth_hill K_hill n_hill threshold strain_flag lin_flag
   /// L(0) c
-  /// [S1 ...]
-  /// @endverbatim
+  /// [S1 ...] @endverbatim
+  ///
   /// where L is the wall index for length (should usually be 0), c is the cell
   /// variable index for the concentration, and S are the wall stresses calculated
   /// elsewhere (only required if stress is used as growth signal (p_5=0).
@@ -382,17 +381,17 @@ namespace WallGrowth {
   ///
   /// @brief Constant strech-driven wall growth with epidermal walls treated specially
   ///
-  ///Constant growth driven by a streched wall. The wall lengths, L, are
-  ///updated only if the length is shorter than the distance between the
-  ///vertices of the wall and then according to
+  /// @details Constant growth driven by a streched wall. The wall lengths, L, are
+  /// updated only if the length is shorter than the distance between the
+  /// vertices of the wall and then according to
   ///
-  ///dL/dt = p_0*(d_v-L)*f_e
+  /// @f[ \frac{dL}{dt} = p_0 (d_v-L) f_e @f]
   ///
-  ///p_0 is the growth rate.
-  ///f_e fraction for epidermal walls
-  ///d_v is the distance between the two wall vertices.
+  /// @f$p_0@f$ is the growth rate.
+  /// @f$f_e@f$ fraction for epidermal walls
+  /// @f$d_v@f$ is the distance between the two wall vertices.
   ///
-  ///In addition, the column index for the wall length should be given.
+  /// In addition, the column index for the wall length should be given.
   ///
   class ConstantStressEpidermalAsymmetric : public BaseReaction {
     
@@ -439,8 +438,8 @@ namespace WallGrowth {
   /// WallGrowth::Force 2 2 1 N
   /// k_growth F_threshold
   /// L
-  /// F_1 ... F_N
-  /// @endverbatim
+  /// F_1 ... F_N @endverbatim
+  ///
   /// This is an old reaction that is replaced by the more general WallGrowth::Stress(), but
   /// hangs around since it was used in publications.
   ///
@@ -475,14 +474,12 @@ namespace WallGrowth {
 		DataMatrix &vertexDerivs);
   };
   
-  /// 
-  /// @brief Reactions describing wall growth that use center triangulation
-  ///
   namespace CenterTriangulation {
+    
     ///
     /// @brief Constant internal edge growth which can be truncated at threshold length
     ///
-    /// Constant (constant mode) or exponential (proportional to length, linear mode) 
+    /// @details Constant (constant mode) or exponential (proportional to length, linear mode) 
     /// growth of the internal edges 
     /// in a central cell vertex meshed description. The internal edges 
     /// lengths are updated only if the length plus a threshold value is shorter 
@@ -509,9 +506,7 @@ namespace WallGrowth {
     /// @verbatim
     /// CenterTriangulation::WallGrowth::Constant 2/3 1 1
     /// k_growth linear_flag [L_trunc]
-    /// index
-    /// @endverbatim
-    ///
+    /// index @endverbatim
     /// @see WallGrowth::Constant (for same update of edges/2D walls)
     ///
     class Constant : public BaseReaction {
@@ -548,7 +543,7 @@ namespace WallGrowth {
     ///
     /// @brief Constant stress/strain-driven internal edge growth dependent on a threshold
     ///
-    /// Constant (constant mode) or exponential (linear mode) growth of the internal edges 
+    /// @details Constant (constant mode) or exponential (linear mode) growth of the internal edges 
     /// in a central cell vertex meshed description and driven by a 
     /// streched/stressed wall. The internal edges 
     /// lengths are updated only if the length plus a threshold value is shorter 
@@ -556,7 +551,8 @@ namespace WallGrowth {
     /// (in strain mode), and if 
     /// the total stress is above the threshold (in stress mode). Hence the update follows:
     ///
-    ///  @f[ \frac{dL}{dt} = p_0 L (S-p_1) @f] if @f$ S > p_1 @f$ and 0 otherwise.
+    /// @f[ \frac{dL}{dt} = p_0 L (S-p_1) @f]
+    /// if @f$ S > p_1 @f$ and 0 otherwise.
     ///
     /// where S is the stress/strain and L is the wall length.
     /// @f$ p_0 @f$ is the growth rate (@f$ k_{growth} @f$). 
@@ -581,8 +577,7 @@ namespace WallGrowth {
     /// CenterTriangulation::WallGrowth::Stress 4/5 1/2 1 [N]
     /// k_growth s_threshold stretch_flag linear_flag [L_trunc] 
     /// L
-    /// [stress1 ... stressN]
-    /// @endverbatim
+    /// [stress1 ... stressN] @endverbatim
     ///
     /// If stress is used (stretch_flag=0) a second level of wall stresses has to be read
     /// (calculated and updated from other (mechanical) reactions).
@@ -625,7 +620,7 @@ namespace WallGrowth {
     /// @brief This reaction is currently using ad hoc additions/changes within the code and should
     /// only be used by an expert, i.e. Behruz?
     ///
-    /// In a model file the reaction is defined as
+    /// @details In a model file the reaction is defined as
     ///
     /// @verbatim
     /// CenterTriangulation::WallGrowth::StrainTRBS 2 3 1 1 3
@@ -636,8 +631,7 @@ namespace WallGrowth {
     ///
     /// strain1_index
     /// strain2_index
-    /// strain_vector_index
-    /// @endverbatim
+    /// strain_vector_index @endverbatim
     ///
     /// (strain value and direction calculated and updated from other (mechanical) reactions).
     ///
@@ -683,7 +677,7 @@ namespace WallGrowth {
     /// @brief This reaction reads a vector representing e.g. strain or stress calculated elsewhere
     /// as input for growth 
     /// 
-    /// A vector t for example can be strain or stress rections and magnitudes are given as input to
+    /// @details A vector t for example can be strain or stress rections and magnitudes are given as input to
     /// this reaction, where the information is read from cell variables hence assuming that another
     /// reaction is updating the values unless they are supposed to be constant.
     ///
@@ -691,13 +685,11 @@ namespace WallGrowth {
     /// resting lengths accordingly. The reactions use the global input and for each triangle in the
     /// cell 'project' the main directions down to the edge directions of the triangles to calculate
     /// the contribution per edge. It follows the description in
-    /// @verbatim
-    /// Bozorg, Krupinski and Jonsson (2016) A continuous growth model for plant tissue.
-    /// Phys Biol 13:065002
-    /// @endverbatim
+    /// @verbatim Bozorg, Krupinski and Jonsson (2016) A continuous growth model for plant tissue.
+    /// Phys Biol 13:065002 @endverbatim
     /// and is an implementation of the update in Eq. 32:
-    /// @f[\frac{dL_i}{dt} = k_g R(g_i-g_t) L_i @f]
-    /// where @f$L_i2f$ is the resting length of edge i, @f$k_g@f$ throw rate, @f$R@f$ is the ramp
+    /// @f[ \frac{dL_i}{dt} = k_g R(g_i-g_t) L_i @f]
+    /// where @f$ L_i f$ is the resting length of edge i, @f$k_g@f$ growth rate, @f$R@f$ is the ramp
     /// function (linearly increasing if the argument is above zero (zero otherwise). @f$g_t@f$ is the
     /// given threshold value and @f$g_i@f$ is the (e.g. strain) value in the direction of the edge.
     /// The update is done in the update function (not derivs), such that it can be controlled
@@ -717,8 +709,7 @@ namespace WallGrowth {
     /// VelocityStoreIndex    # cell index for velocity data (to check for equilibrium)
     /// strain1_index         # 'signal' magnitue in first principal direction (index in cellData)
     /// strain2_index         # 'signal' magnitue in second principal direction
-    /// strain_vector_index   # start index where principal direction stored (in cellData)  
-    /// @endverbatim
+    /// strain_vector_index   # start index where principal direction stored (in cellData) @endverbatim
     /// @note Strain value and direction calculated and updated from other (mechanical) reactions.
     /// @see namespace (to come) TRBS, triangular spring plate elements
     /// @see VertexFromTRBScenterTriangulation
@@ -764,16 +755,26 @@ namespace WallGrowth {
 } // namespace WallGrowth
 
 ///
-/// @brief Updates the water volume variable given osmotic and turgor
-/// potentials
+/// @brief Updates the water volume variable given osmotic and turgor potentials
 ///
 /// @details This function uses a constant osmotic potential and calculates the turgor
 /// potential to calculate water intake into the cell according to
-/// @f[ \frac{V_w}{dt} = p_0 A (p_1-p_2T) @f]
-/// where V_w is the water volume, T is the turgor,p_0 is the rate, p_1 is the
-/// osmotic potential and p_2 is an scaling factor. Also p_3=denyShrink_flag
-/// and p_4=allowNegTurgor_flag can be set to restrict the behavior.
-/// The turgor, T, is calculated as @f$T=V_w-V@f$.
+/// @f[ \frac{V_w}{dt} = p_0 A (p_1-p_2 T) @f]
+/// where @f$V_w@f$ is the water volume, T is the turgor, @f$p_0@f$ is the update rate, @f$p_1@f$ is the
+/// osmotic potential and @f$p_2@f$ is an scaling factor. Also @f$p_3@f$ = denyShrinkFlag
+/// and @f$p_4@f$ = allowNegTurgorFlag can be set to restrict the behavior.
+/// The turgor, T, is calculated as @f$T=V_w-V@f$, the difference between the current water volume
+/// and cell (face) volume. In a model file the reaction is defined as
+/// @verbatim
+/// WaterVolumeFromTurgor 5 1/2 1 [1]
+/// k_p
+/// P_max
+/// k_pp
+/// denyShrink_flag
+/// allowNegativeTurgor_flag
+///
+/// WaterVolume
+/// [Turgor_save] @endverbatim
 ///
 class WaterVolumeFromTurgor : public BaseReaction
 {
@@ -785,9 +786,7 @@ public:
     /// indices that defines the reaction.
     ///
     /// @param paraValue vector with parameters
-    ///
     /// @param indValue vector of vectors with variable indices
-    ///
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     WaterVolumeFromTurgor(std::vector<double> &paraValue,
@@ -810,13 +809,15 @@ public:
 /// @brief Updates 'concentration' variables according to volume changes from
 /// derivatives of the vertex positions.
 ///
-/// The dilution of 'concentration' variables, C_i are calculated according to
+/// @details The dilution of 'concentration' variables, C_i are calculated according to
 ///
-/// @f$ \frac{C_i}{dt} = - \frac{C_i}{V}\frac{dV}{dt} @f$
+/// @f[ \frac{C_i}{dt} = - \frac{C_i}{V} \frac{dV}{dt} @f]
 ///
 /// where V is the volume, and dV/dt is calculated from vertex position
-/// derivatives.
-///
+/// derivatives. In a model file the reaction is defined as
+/// @verbatim
+/// DilutionFromVertexDerivs 0 1 k
+/// c1_index [c2_index...ck_index] @endverbatim
 /// @note Since this function uses the derivatives of the vertex positions it
 /// needs to be applied after all other derivatives applied to the vertices.
 ///
@@ -862,4 +863,4 @@ public:
          DataMatrix &sdydtVertex );
 };
 
-#endif
+#endif // WALLGROWTH_H
