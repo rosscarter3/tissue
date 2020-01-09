@@ -17,12 +17,10 @@
 
 
 ///
-/// @brief Membrane Cycling describes reactions that give the cycling of a protein to and from the membrane/Wall.
+/// @brief Membrane Cycling describes reactions that give the cycling of a protein to and 
+/// from the membrane/Wall.
 ///
 namespace MembraneCyclingAll {
-
-
-
 
 ///
 /// @brief A function describing the constant exocytosis and endocytosis of PIN (or another protein) from the cytosol to the cell membrane at a constant rate. 
@@ -60,14 +58,16 @@ class Constant : public BaseReaction {
 };
 
 ///
-/// @brief A function describing the exocytosis and endocytosis of PIN (or another protein) from the cell membrane to the cytosol at a  rate
-/// dependent on the amount of auxin (or another molecule) in the wall compartment, being the effect of auxin a promoter of the trafficking. 
+/// @brief A function describing the exocytosis and endocytosis of PIN (or another protein) 
+/// from the cell membrane to the cytosol at a rate dependent on the amount of auxin (or 
+/// another molecule) in the wall compartment, being the effect of auxin a promoter of the 
+/// trafficking. 
 ///
-/// It uses two compartments for each wall and a single for the cells. p0 gives exocytosis rate, p1 endocytosis rate.
-/// PIN  molecules are updated according to:
-/// @f[ \frac{dP_i}{dt} = \sum_{j}- p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}+ p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f] 
+/// @details It uses two compartments for each wall and a single for the cells. p0 gives 
+/// exocytosis rate, p1 endocytosis rate. PIN  molecules are updated according to:
+/// @f[ \frac{dP_i}{dt} = \sum_{j}- p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} + p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f] 
 ///  
-/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}- p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f]  @f]
+/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}}- p_1 P_{ij} \frac{X_{ij}^{p_3}}{X_{ij}^{p_3}+{p_2}^{p_3}} @f]
 ///
 /// In the model file the reaction is given by:
 /// @verbatim
@@ -96,24 +96,25 @@ class LocalWallFeedbackNonLinear : public BaseReaction {
 
 
 ///
-/// @brief A function describing the exocytosis and endocytosis of PIN (or another protein) from the cell membrane to the cytosol at a  rate
-/// dependent on the amount of auxin (or another molecule) in the wall compartment, which here has an inhibitory effect. 
+/// @brief A function describing the exocytosis and endocytosis of PIN (or another protein) 
+/// from the cell membrane to the cytosol at a  rate dependent on the amount of auxin (or 
+/// another molecule) in the wall compartment, which here has an inhibitory effect. 
 ///
-/// It uses two compartments for each wall and a single for the cells. p0 gives exocytosis rate, p1 endocytosis rate.
-/// PIN  molecules are updated according to:
-/// @f[ \frac{dP_i}{dt} = \sum_{j}- p_0 P_i \frac{1}{1+X_{ij}^{p_3}/{p_2}^{p_3}}+ p_1 P_{ij} \frac{1}{1+X_{ij}^{p_3}/{p_2}^{p_3}} @f] 
+/// @details It uses two compartments for each wall and a single for the cells. p0 gives 
+/// exocytosis rate, p1 endocytosis rate. PIN  molecules are updated according to:
+/// @f[ \frac{dP_i}{dt} = \sum_{j} - p_0 P_i \frac{1}{1+\frac{X_{ij}^{p_3}}{{p_2}^{p_3}}}+ p_1 P_{ij} \frac{1}{1+\frac{X_{ij}^{p_3}}{{p_2}^{p_3}}} @f] 
 ///  
-/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{1}{1+X_{ij}^{p_3}/{p_2}^{p_3}}- p_1 P_{ij} \frac{1}{1+X_{ij}^{p_3}/{p_2}^{p_3}} @f]  @f]
+/// @f[ \frac{dP_{ij}}{dt} =  p_0 P_i \frac{1}{1+\frac{X_{ij}^{p_3}}{{p_2}^{p_3}}}- p_1 P_{ij} \frac{1}{1+\frac{X_{ij}^{p_3}}{{p_2}^{p_3}}} @f]
 ///
 /// In the model file the reaction is given by:
 /// @verbatim
 /// MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition 4 2 1 2
-/// p_0 ..p_2 p3
+/// p0 p1 p2 p3
 /// ci_PIN 
 /// wi_X  Wi_PIN 
 /// @endverbatim
+/// where X is the regultory molecule (auxin) and PIN is the molecule that cycles.
 ///
-
 class LocalWallFeedbackNonLinearInhibition : public BaseReaction {
   
  public:

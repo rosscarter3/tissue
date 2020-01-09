@@ -32,13 +32,13 @@ namespace Initiation {
   /// @f[ y_{ij} = 1 if R<p_0 y_{ij} = 0 if R>p_0 @f]
   ///
   /// where p_0 is the probability for each cell i to get value 1 for molecule j.
-  /// seed is an integer to seed the random number. A @$\Delta T@$ parameter can be given
+  /// seed is an integer to seed the random number. A @f$\Delta T@f$ parameter can be given
   /// and then the random initiation is redone with a period (but where only ones can be given to
-  /// off cells). If set to 0, it will not repeat.
+  /// cells currently off/zero). If set to 0, the rule will not repeat.
   /// In the model file the reaction is defined by
   /// @verbatim
   /// Initiation::RandomBoolean 2[3] 1 1
-  /// p seed [\DeltaT]
+  /// p seed [Delta_T]
   /// cell_var_index
   /// @endverbatim
   ///
@@ -109,7 +109,7 @@ namespace Initiation {
   ///
   /// where p_0 is the probability for each cell i to get value 1 for molecule j.
   /// probability will be 0 if the number of neighbours that are 'on' ar more than @$N_{t}@$ or more.
-  /// seed is an integer to seed the random number. A @$\Delta T@$ parameter can be given
+  /// seed is an integer to seed the random number. A @f$\Delta T@f$ parameter can be given
   /// and then the random initiation is redone with a period (but where only ones can be given to
   /// off cells). If set to 0, it will not repeat.
   /// In the model file the reaction is defined by

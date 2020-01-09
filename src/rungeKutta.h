@@ -140,7 +140,7 @@ class RK4 : public BaseSolver {
   /// T_start T_end 
   /// printFlag printNum 
   /// h 
-  /// @verbatim
+  /// @endverbatim
   /// where RK4 is the identity string used by BaseSolver::getSolver to
   /// identify that the RK4 algorithm should be used. T_start (T_end) is the
   /// start (end) time for the simulation, printFlag is an integer which sets
