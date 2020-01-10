@@ -18,6 +18,7 @@
 #include "degradation.h"
 #include "dilution.h"
 #include "directionReaction.h"
+#include "fiberModel.h"
 #include "force.h"
 #include "grn.h"
 #include "growth.h"
@@ -285,12 +286,20 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new VertexFromTRLScenterTriangulationMT(paraValue, indValue);
   else if (idValue == "VertexFromTRBScenterTriangulationConcentrationHillMT")
    return new VertexFromTRBScenterTriangulationConcentrationHillMT(paraValue, indValue);
-  else if (idValue == "FiberModel")
-    return new FiberModel(paraValue, indValue);
   else if (idValue == "VertexFromTRBScenterTriangulationMTOpt")
     return new VertexFromTRBScenterTriangulationMTOpt(paraValue, indValue);
-  else if (idValue == "FiberDeposition")
-    return new FiberDeposition(paraValue, indValue);
+
+  // FiberModel namespace (fiberModel.h(.cc))
+  else if (idValue == "FiberModel::General" ||
+	   idValue == "FiberModel")
+    return new FiberModel::General(paraValue, indValue);
+  else if (idValue == "FiberModel::Deposition" ||
+	   idValue == "FiberDeposition")
+    return new FiberModel::Deposition(paraValue, indValue);
+  //else if (idValue == "FiberModel::Linear")
+  //return new FiberModel::Linear(paraValue, indValue);
+  //else if (idValue == "FiberModel::Hill")
+  //return new FiberModel::Hill(paraValue, indValue);
 
   // bending.h (.cc)
   else if (idValue == "Bending::NeighborCenter")
