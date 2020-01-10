@@ -16,6 +16,7 @@
 #include "centerTriangulation.h"
 #include "creation.h"
 #include "degradation.h"
+#include "dilution.h"
 #include "directionReaction.h"
 #include "force.h"
 #include "grn.h"
@@ -28,6 +29,7 @@
 #include "network.h"
 #include "pressure2D.h"
 #include "transport.h"
+#include "turgorGrowth.h"
 #include "sisterVertex.h"
 #include "membraneCycling.h"
 #include "membraneCyclingAll.h"
@@ -41,8 +43,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 			       std::vector< std::vector<size_t> > &indValue,
 			       std::string idValue ) {
 
-  //Growth related updates
-  //growth.h,growth.cc
+  // Growth related updates
+  // namespace WallGrowth (growth.h,growth.cc) 
   if(idValue == "WallGrowth::Constant")
     return new WallGrowth::Constant(paraValue, indValue);
   else if(idValue == "WallGrowth::Stress" || idValue == "WallGrowthStress")
@@ -74,10 +76,16 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new WallGrowth::ConstantStressEpidermalAsymmetric(paraValue, indValue);
   else if (idValue == "WallGrowth::Force")
     return new WallGrowth::Force(paraValue, indValue);
-  else if (idValue == "WaterVolumeFromTurgor")
-    return new WaterVolumeFromTurgor(paraValue, indValue);
-  else if (idValue == "DilutionFromVertexDerivs")
-    return new DilutionFromVertexDerivs(paraValue, indValue);
+
+  // namespace TurgorGrowth (turgorGrowth.h(.cc))
+  else if (idValue == "TurgorGrowth::WaterVolume" ||
+	   idValue == "WaterVolumeFromTurgor")
+    return new TurgorGrowth::WaterVolume(paraValue, indValue);
+
+  // namespace Dilution (dilution.h(.cc))
+  else if (idValue == "Dilution::FromVertexDerivs" ||
+	   idValue == "DilutionFromVertexDerivs")
+    return new Dilution::FromVertexDerivs(paraValue, indValue);
 
   //Mechanical interactions between vertices
   //mechanicalSpring.h,mechanicalSpring.cc
