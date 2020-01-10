@@ -38,23 +38,22 @@
 /// hill 3 3 1 1 0
 /// V K n
 /// produced_index
-/// activator_index
-/// @endverbatim
+/// activator_index @endverbatim
+///
 /// One repressor:
 /// @verbatim
 /// hill 3 3 1 0 1
 /// V K n
 /// produced_index
-/// repressor_index
-/// @endverbatim
+/// repressor_index @endverbatim
+///
 /// Two activators and one repressor:
 /// @verbatim
 /// hill 5 3 1 2 1
 /// V K_A1 n_A1 K_A2 n_A2 K_R n_R
 /// produced_index
 /// A1_index A2_index 
-/// R_index
-/// @endverbatim
+/// R_index @endverbatim
 ///
 class Hill : public BaseReaction {
   
@@ -107,7 +106,7 @@ class Hill : public BaseReaction {
 /// @details This reaction uses a single input and describes a Hill production (activation or repression) by
 ///
 /// @f[ \frac{dy_{ij}}{dt} =
-/// \frac{p_0 p_2^{p_3} + p_1 y_{ik}^{p_3}}{p_2^{p_3}+y_{ik}^{p_3}}@f]
+/// \frac{p_0 p_2^{p_3} + p_1 y_{ik}^{p_3}}{p_2^{p_3}+y_{ik}^{p_3}} @f]
 ///
 /// where @f$ p_0 @f$ is the maximal unbound rate @f$ p_1 @f$ is the maximal bound rate
 /// (@f$V_{max}@f$ if the other V is set to zero), and @f$ p_2 @f$ is the Hill
@@ -116,11 +115,10 @@ class Hill : public BaseReaction {
 ///
 /// In a model file the reaction looks like
 /// @verbatim
-/// hillGeneralOne 4 2 1 1
+/// HillGeneralOne 4 2 1 1
 /// Vunbound Vbound K_H n_H
 /// j (produced_index)
-/// k (activator/repressor_index)
-/// @endverbatim
+/// k (activator/repressor_index) @endverbatim
 ///
 class HillGeneralOne : public BaseReaction {
   
@@ -186,8 +184,7 @@ class HillGeneralOne : public BaseReaction {
 /// Vunbound Vbound K_H n_H
 /// j (produced_index)
 /// k (activator/repressor_index)
-/// k' (activator/repressor_index)
-/// @endverbatim
+/// k' (activator/repressor_index) @endverbatim
 ///
 class HillGeneralOne_TwoInputs : public BaseReaction {
   
@@ -255,8 +252,7 @@ class HillGeneralOne_TwoInputs : public BaseReaction {
 /// hillGeneralTwo 8 2 1 2
 /// V_unbound V_firstbound V_secondbound V_bothbound K_H1 n_H1 K_H2 n_H2 
 /// j
-/// k l
-/// @endverbatim
+/// k l @endverbatim
 ///
 class HillGeneralTwo : public BaseReaction {
   
@@ -318,8 +314,7 @@ class HillGeneralTwo : public BaseReaction {
 /// hillGeneralThree 14 2 1 3
 /// V_000 V_100 V_010 V_001 V_110 V_101 V_011 V_111 K_H1 n_H1 K_H2 n_H2 K_H3 n_H3 
 /// j
-/// k l m
-/// @endverbatim
+/// k l m @endverbatim
 ///
 class HillGeneralThree : public BaseReaction {
   
@@ -358,7 +353,7 @@ class HillGeneralThree : public BaseReaction {
 /// @brief The class Grn use a neural network inspired mathematics for gene
 /// regulation
 ///
-/// This class uses a neural network inspired update with a sigmoidal function
+/// @details This class uses a neural network inspired update with a sigmoidal function
 /// for gene regulation as defined in Mjolsness et al (1991). The update is
 /// done according to:
 ///
@@ -414,11 +409,11 @@ class Grn : public BaseReaction {
   inline double sigmoid( double value );  
 };
 
-
-
 ///
-/// @brief The class Grn use a neural network inspired mathematics for gene
+/// @brief The class Gsrn2 use a neural network inspired mathematics for gene
 /// regulation where neighbor input is accounted for.
+///
+/// @see Grn.
 ///
 class Gsrn2 : public BaseReaction {
   
@@ -471,7 +466,5 @@ inline double Gsrn2::sigmoid(double x)
 { 
   return 0.5*(1 + x/sqrt(1+x*x) );
 }
-
-
 
 #endif
