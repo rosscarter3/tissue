@@ -13,6 +13,18 @@
 
 namespace FiberModel {
 
+  double isotropicFunction(double youngMatrix, double youngFiber) {
+    return youngMatrix+0.5*youngFiber; // youngL = youngT = youngMatrix + 0.5*youngFiber
+  }
+  double linearFunction(double input, double youngMatrix, double youngFiber) {
+    return youngMatrix+0.5*(1.0+input) * youngFiber;
+  }
+  double hillFunction(double input, double youngMatrix, double youngFiber, double Kh, double Nh) {
+    return youngMatrix+ 
+      0.5*(1+(std::pow(input,Nh) / (std::pow((1.-input),Nh)*std::pow(Kh,Nh)
+					 +std::pow(input,Nh))))* youngFiber;
+  }
+
   General::General(std::vector<double> &paraValue,
 			 std::vector< std::vector<size_t> > &indValue)
   {
@@ -75,7 +87,6 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { // initiating with 0 anisotropy and isotropic material
 	cellData[cellIndex][AnisoIndex] = 0;
 	cellData[cellIndex][YoungLIndex] = youngMatrix+0.5*youngFiber; // youngL = youngMatrix + 0.5*youngFiber;
-	//std::cerr<< cellData[cellIndex][variableIndex(1,0)] << std::endl;
       }
     }
     if (parameter(7)==2){
