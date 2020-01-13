@@ -33,21 +33,27 @@ namespace FiberModel {
 
   ///
   /// @brief Calculation of isotropic Young Modulii used for initiation of material to isotropic.
-  /// @f[ Y_L = Y_T = Y_M + 0.5 Y_F @f]
+  /// @f$ Y_L = Y_T = Y_M + 0.5 Y_F @f$
   ///
   double isotropicFunction(double YoungMatrix, double YoungFiber);
 
   ///
   /// @brief Calculation of max Young's modulus used by FiberModel::Linear* reactions. 
-  /// @f[ Y_L = Y_M + 0.5 (1.0+a) Y_F @f]
+  /// @f$ Y_L = Y_M + 0.5 (1.0+a) Y_F @f$
   ///
   double linearFunction(double input, double YoungMatrix, double YoungFiber);
 
   ///
   /// @brief Calculation of max Young's modulus used by FiberModel::Hill* reactions.
-  /// @f[ Y_L = Y_M + 0.5(1.0 + \frac{a^n}{(1-a)^{n}K^{n} + a^{n}})Y_F}@f]
+  /// @f$ Y_L = Y_M + 0.5(1.0 + \frac{a^n}{(1-a)^{n}K^{n} + a^{n}})Y_F}@f$
   ///  
   double hillFunction(double input, double YoungMatrix, double YoungFiber);
+
+  ///
+  /// @brief Calculation of Transverse (min) Young's modulus given Longitudinal, Matrix and Fiber values
+  /// @f$ Y_T = 2 Y_M + Y_F - Y_L @f$
+  ///
+  double transverseFromLongitudinal(double youngL, double youngMatrix, double youngFiber);
 
   ///
   /// @brief Updates Young modulus of cells given an anisotropy measure. Update is within update function

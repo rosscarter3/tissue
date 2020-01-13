@@ -24,6 +24,9 @@ namespace FiberModel {
       0.5*(1+(std::pow(input,Nh) / (std::pow((1.-input),Nh)*std::pow(Kh,Nh)
 					 +std::pow(input,Nh))))* youngFiber;
   }
+  double transverseFromLongitudinal(double youngL, double youngMatrix, double youngFiber) {
+    return 2*youngMatrix+youngFiber-youngL;
+  }
 
   General::General(std::vector<double> &paraValue,
 		   std::vector< std::vector<size_t> > &indValue)
@@ -242,12 +245,19 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	cellData[cellIndex][AnisoIndex] = 0.0;
 	cellData[cellIndex][YoungLIndex] = youngIso;
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = youngIso;
+	}
       }
     }
     else if (parameter(2)==2) { // initiating with current anisotropy 
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	double anisotropy = cellData[cellIndex][AnisoIndex];
 	cellData[cellIndex][YoungLIndex] = FiberModel::linearFunction(anisotropy,youngMatrix,youngFiber); 
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber);
+	}
       }
     }
   }
@@ -285,8 +295,9 @@ namespace FiberModel {
 	  youngL = youngMatrix + youngFiber;
 	
 	cellData[cellIndex][YoungLIndex] = youngL;
-	if (numVariableIndex(1) >1 ) { // Also save Y_T
-	  cellData[cellIndex][variableIndex(1,1)] = 2*youngMatrix+youngFiber-youngL; 
+	if (numVariableIndex(1)>1) { // Also save Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(youngL,youngMatrix,youngFiber);
 	}
       }
     }
@@ -363,6 +374,9 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	cellData[cellIndex][AnisoIndex] = 0.0;
 	cellData[cellIndex][YoungLIndex] = youngIso;
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = youngIso;
+	}
       }
     }
     else if (parameter(3)==2) { // initiating with current anisotropy 
@@ -370,6 +384,10 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	double anisotropy = cellData[cellIndex][AnisoIndex];
 	cellData[cellIndex][YoungLIndex] = FiberModel::linearFunction(anisotropy,youngMatrix,youngFiber); 
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber);
+	}
       }
     }
   }
@@ -417,8 +435,9 @@ namespace FiberModel {
 		    << cellIndex << "(" << cellData[cellIndex][YoungLIndex] << " > " << youngMatrix
 		    << " + " << youngFiber << "." << std::endl;
 	}
-	if (numVariableIndex(1) >1 ) { // Also save Y_T
-	  cellData[cellIndex][variableIndex(1,1)] = 2*youngMatrix+youngFiber-cellData[cellIndex][YoungLIndex]; 
+	if (numVariableIndex(1)>1) { // Also save Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber); 
 	}
       }
     }
@@ -498,6 +517,9 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	cellData[cellIndex][AnisoIndex] = 0.0;
 	cellData[cellIndex][YoungLIndex] = youngIso;
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = youngIso;
+	}
       }
     }
     else if (parameter(4)==2) { // initiating with current anisotropy 
@@ -505,6 +527,10 @@ namespace FiberModel {
 	double anisotropy = cellData[cellIndex][AnisoIndex];
 	cellData[cellIndex][YoungLIndex] = FiberModel::hillFunction(anisotropy,youngMatrix,youngFiber,
 								    KHill,nHill); 
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber);
+	}
       }
     }
   }
@@ -544,8 +570,9 @@ namespace FiberModel {
 	  youngL = youngMatrix + youngFiber;
 	
 	cellData[cellIndex][YoungLIndex] = youngL;
-	if (numVariableIndex(1) >1 ) { // Also save Y_T
-	  cellData[cellIndex][variableIndex(1,1)] = 2*youngMatrix+youngFiber-youngL; 
+	if (numVariableIndex(1)>1) { // Also save Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(youngL,youngMatrix,youngFiber); 
 	}
       }
     }
@@ -628,6 +655,9 @@ namespace FiberModel {
       for (size_t cellIndex=0; cellIndex<numCell; ++cellIndex) { 
 	cellData[cellIndex][AnisoIndex] = 0.0;
 	cellData[cellIndex][YoungLIndex] = youngIso;
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = youngIso;
+	}
       }
     }
     else if (parameter(5)==2) { // initiating with current anisotropy 
@@ -635,6 +665,10 @@ namespace FiberModel {
 	double anisotropy = cellData[cellIndex][AnisoIndex];
 	cellData[cellIndex][YoungLIndex] = FiberModel::hillFunction(anisotropy,youngMatrix,youngFiber,
 								    KHill,nHill); 
+	if (numVariableIndex(1)>1) { // Also initiate Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber);
+	}
       }
     }
   }
@@ -684,8 +718,9 @@ namespace FiberModel {
 		    << cellIndex << "(" << cellData[cellIndex][YoungLIndex] << " > " << youngMatrix
 		    << " + " << youngFiber << "." << std::endl;
 	}
-	if (numVariableIndex(1) >1 ) { // Also save Y_T
-	  cellData[cellIndex][variableIndex(1,1)] = 2*youngMatrix+youngFiber-cellData[cellIndex][YoungLIndex]; 
+	if (numVariableIndex(1)>1) { // Also save Y_T
+	  cellData[cellIndex][variableIndex(1,1)] = FiberModel::
+	    transverseFromLongitudinal(cellData[cellIndex][YoungLIndex],youngMatrix,youngFiber);
 	}
       }
     }
