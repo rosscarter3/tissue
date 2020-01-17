@@ -122,6 +122,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue=="WallMechanics::SpringEpidermalCell" ||
 	  idValue=="VertexFromEpidermalCellWallSpring")
     return new WallMechanics::SpringEpidermalCell(paraValue,indValue);
+  else if(idValue=="WallMechanics::ViscoElastic")
+    return new WallMechanics::ViscoElastic(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTConcentrationHill")
     return new VertexFromWallSpringMTConcentrationHill(paraValue,indValue);
   else if(idValue=="VertexFromDoubleWallSpringMTConcentrationHill")

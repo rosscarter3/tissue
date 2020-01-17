@@ -554,6 +554,139 @@ namespace WallMechanics {
         }
       }
     }
+
+    ViscoElastic::
+    ViscoElastic(std::vector<double> &paraValue, 
+        std::vector< std::vector<size_t> > 
+        &indValue ) 
+    {  
+      // Do some checks on the parameters and variable indeces
+      if( paraValue.size()!=2 ) {
+        std::cerr << "WallMechanics::ViscoElastic::"
+		  << "ViscoElastic() "
+		  << "Uses two parameters viscosity and k_spring." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if( (indValue.size() < 1 ||
+	   indValue.size() >2  || 
+	   indValue[0].size() != 1 ||
+	   (indValue.size() == 2  &&  indValue[1].size() != 1 )) ) { 
+        std::cerr << "WallMechanics::ViscoElastic::"
+		  << "ViscoElastic() "
+		  << "Wall length index given in first level. "
+		  << "If two levels are given, wall index for saving strain is in second level. " << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
+      // Set the variable values
+      setId("WallMechanics::ViscoElastic");
+      setParameter(paraValue);  
+      setVariableIndex(indValue);
+
+      // Set the parameter identities
+      std::vector<std::string> tmp( numParameter() );
+      tmp[0] = "eta";
+      tmp[1] = "k_spring";
+
+      setParameterId( tmp );
+    }
+
+  void ViscoElastic::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+
+    // Set parameters
+    double h = 0.1; // ad hoc value (works with constant step size for solver set to this value?)
+    double eta = parameter(0);
+    double k_spring = parameter(1);
+    // Do the update for each wall
+    size_t numWalls = T.numWall();
+    size_t wallLengthIndex = variableIndex(0,0);
+
+    // relaxation time
+    double B = -k_spring/eta;
+    
+    for( size_t i=0 ; i<numWalls ; ++i ) {
+      
+      size_t v1 = T.wall(i).vertex1()->index();
+      size_t v2 = T.wall(i).vertex2()->index();
+      size_t dimension = vertexData[v1].size();
+      assert( vertexData[v2].size()==dimension );
+      
+      // Calculate shared factors
+      double distance=0.0;
+      for( size_t d=0 ; d<dimension ; d++ )
+	distance += (vertexData[v1][d]-vertexData[v2][d])*
+	  (vertexData[v1][d]-vertexData[v2][d]);
+      distance = std::sqrt(distance);
+      double wallLength=wallData[i][wallLengthIndex];
+      
+      // Calculate integral over old times 
+      double integral = 0.0;
+      size_t numStep = historyTime_.size();
+      size_t finalStep = numStep-1;
+      size_t t = historyTime_[finalStep];
+      for (size_t step=0; step<numStep; ++step) {
+	integral += k_spring*historyData_[i][step]*std::exp(B*(t-historyTime_[step])); //should have dt
+      }
+      // Add to the integral (assuming du/dt constant)
+      integral += k_spring*(std::exp(B*(h)) + 1.0)*historyData_[i][finalStep] ; //should have dt
+      
+      
+      // Elastic + Viscous contributions
+      double coeff = parameter(1)*((1.0/wallLength)-(1.0/distance))
+	+ integral;
+
+      
+      //Save force in wall variable if appropriate
+      if( (numVariableIndexLevel()==2 && numVariableIndex(1)>0) ) {
+	wallData[i][variableIndex(1,0)] = coeff;
+      }
+      
+        //Update both vertices for each dimension
+        for(size_t d=0 ; d<dimension ; d++ ) {
+          double div = (vertexData[v1][d]-vertexData[v2][d])*coeff;
+          vertexDerivs[v1][d] -= div;
+          vertexDerivs[v2][d] += div;
+        }
+    }
+  }
+
+  void ViscoElastic::update(Tissue &T,
+			    DataMatrix &cellData,
+			    DataMatrix &wallData,
+			    DataMatrix &vertexData, 
+			    double h) { 
+    
+    size_t lengthIndex = variableIndex(0,0);
+    historyTime_.push_back(h);
+    size_t numWall = T.numWall();
+    for (size_t wallIndex=0; wallIndex<numWall; ++wallIndex) {
+      historyData_[wallIndex].push_back(wallData[lengthIndex][wallIndex]);
+      // To Do! Should be...
+      //historyData_[wallIndex].push_back(wallDerivs[lengthIndex][wallIndex]);
+    }
+  }
+  
+  void ViscoElastic::initiate(Tissue &T,
+			      DataMatrix &cellData,
+			      DataMatrix &walldata,
+			      DataMatrix &vertexData,
+			      DataMatrix &cellderivs,
+			      DataMatrix &wallderivs,
+			      DataMatrix &vertexDerivs )
+  {
+    historyData_.reserve(10000);
+    historyTime_.reserve(10000);
+  }
+
+  
 } // end namespace WallMechanics
 
 VertexFromWallSpringMTnew::
