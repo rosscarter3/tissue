@@ -374,7 +374,38 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
-  /// @brief Divides a cell when volume above a threshold
+  /// @brief Divides a cell when volume above a threshold where the threshold
+  /// is determined as an increasing Hill function of a concentration inside the
+  /// cell.
+  /// Divides a cell when volume above a concentration-determined threshold.
+  /// New wall is created
+  /// in a random direction through center of mass.
+  
+  class VolumeRandomDirectionConcentration : public BaseCompartmentChange {
+    
+  public:
+    
+    VolumeRandomDirectionConcentration(std::vector<double> &paraValue, 
+				       std::vector< std::vector<size_t> > 
+				       &indValue );
+    
+    int flag(Tissue *T,size_t i,
+	     DataMatrix &cellData,
+	     DataMatrix &wallData,
+	     DataMatrix &vertexData,
+	     DataMatrix &cellDerivs,
+	     DataMatrix &wallDerivs,
+	     DataMatrix &vertexDerivs );
+    void update(Tissue* T,size_t i,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );  
+  };
+
+    /// @brief Divides a cell when volume above a threshold
   /// Divides a cell when volume above a threshold. New wall is created
   ///  in a random direction through center of mass.
   

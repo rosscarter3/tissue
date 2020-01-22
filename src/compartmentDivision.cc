@@ -1916,6 +1916,179 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
     // Check that the division did not mess up the data structure
     // T->checkConnectivity(1);
   }
+
+  VolumeRandomDirectionConcentration::
+  VolumeRandomDirectionConcentration(
+			std::vector<double> &paraValue,
+			std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 7) {
+      std::cerr << "Division::VolumeRandomDirectionConcentration::"
+		<< "VolumeRandomDirectionConcentration() "
+		<< "Seven parameters used V_threshold_min, V_threshold_max, "
+		<< "K_hill, n_hill, LWall_frac, "
+		<< "Lwall_threshold, and COM (1 = COM, 0 = Random)." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    if (indValue.size() != 2 && indValue[0].size() != 1) {
+      std::cerr << "Division::VolumeRandomDirection::"
+		<< "VolumeRandomDirection() "
+	        << "Index of concentration is at the first level."
+		<< "Indices for volume dependent cell "
+		<< "variables are at the second level." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Division::VolumeRandomDirectionConcentration");
+    setNumChange(1);
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp.resize(numParameter());
+    tmp[0] = "V_threshold_min";
+    tmp[1] = "V_threshold_max";
+    tmp[2] = "K_hill";
+    tmp[3] = "n_hill";
+    tmp[4] = "LWall_frac";
+    tmp[5] = "LWall_threshold";
+    tmp[6] = "COM";
+    setParameterId(tmp);
+  }
+  
+  int VolumeRandomDirectionConcentration::
+  flag(Tissue *T, size_t i, DataMatrix &cellData,
+       DataMatrix &wallData, DataMatrix &vertexData,
+       DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs) {
+    double conc = cellData[i][variableIndex(0, 0)];
+    size_t n = parameter(4);
+    double K = parameter(2);
+    double volThreshold = 0.0;
+    volThreshold = parameter(0) + parameter(1) * (std::pow(conc, n) / (std::pow(K, n) + std::pow(conc, n)));
+    if (T->cell(i).calculateVolume(vertexData) > volThreshold) {
+      std::cerr << "Cell " << i << " marked for division with volume "
+		<< T->cell(i).volume() << std::endl;
+      return 1;
+    }
+    return 0;
+  }
+
+  void VolumeRandomDirectionConcentration::
+  update(Tissue *T, size_t cellI,
+	 DataMatrix &cellData, DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDeriv, DataMatrix &wallDeriv,
+	 DataMatrix &vertexDeriv) {
+    Cell *divCell = &(T->cell(cellI));
+    size_t dimension = vertexData[0].size();
+    // size_t numV = divCell->numVertex();
+    assert(divCell->numWall() > 2);
+    assert(dimension == 2);
+    
+    std::vector<double> com;
+    
+    if (parameter(6) == 1) {
+      com = divCell->positionFromVertex(vertexData);
+    } else {
+      try {
+	com = divCell->randomPositionInCell(vertexData);
+      } catch (Cell::FailedToFindRandomPositionInCellException) {
+	return;
+      }
+    }
+    
+    std::vector<double> n(dimension);
+    double phi = 2 * 3.14 * myRandom::Rnd();
+    n[0] = std::sin(phi);
+    n[1] = std::cos(phi);
+    
+    // Find two (and two only) intersecting walls
+    //
+    std::vector<size_t> wI(2);
+    std::vector<double> s(2);
+    wI[0] = 0;
+    wI[1] = divCell->numWall();
+    s[0] = s[1] = -1.0;
+    // double minDist,w3s;
+    std::vector<size_t> w3Tmp;
+    std::vector<double> w3tTmp;
+    int flag = 0;
+    for (size_t k = 0; k < divCell->numWall(); ++k) {
+      size_t v1Tmp = divCell->wall(k)->vertex1()->index();
+      size_t v2Tmp = divCell->wall(k)->vertex2()->index();
+      std::vector<double> w3(dimension), w0(dimension);
+      for (size_t d = 0; d < dimension; ++d) {
+	w3[d] = vertexData[v2Tmp][d] - vertexData[v1Tmp][d];
+	w0[d] = com[d] - vertexData[v1Tmp][d];
+      }
+      double a = 0.0, b = 0.0, c = 0.0, d = 0.0, e = 0.0;  // a=1.0
+      for (size_t dim = 0; dim < dimension; ++dim) {
+	a += n[dim] * n[dim];
+	b += n[dim] * w3[dim];
+	c += w3[dim] * w3[dim];
+	d += n[dim] * w0[dim];
+	e += w3[dim] * w0[dim];
+      }
+      double fac = a * c - b * b;  // a*c-b*b
+      if (fac > 0.0) {             // else parallell and not applicable
+	fac = 1.0 / fac;
+	// double s = fac*(b*e-c*d);
+	double t = fac * (a * e - b * d);  // fac*(a*e-b*d)
+	if (t >= 0.0 && t < 1.0) {         // within wall
+	  // double dx0 = w0[0] +fac*((b*e-c*d)*nW2[0]+()*w3[0]);
+	  w3Tmp.push_back(k);
+	  w3tTmp.push_back(t);
+	  std::cerr << "Dividing cell " << divCell->index() << " via wall " << k
+		    << " at t=" << t << std::endl;
+	  if (flag < 2) {
+	    s[flag] = t;
+	    wI[flag] = k;
+	  }
+	  flag++;
+	}
+      }
+    }
+    assert(wI[1] != divCell->numWall() && wI[0] != wI[1]);
+    if (flag != 2) {
+      return;
+    }
+    // Addition of new vertices at walls at position 's'
+    std::vector<double> v1Pos(dimension), v2Pos(dimension);
+    size_t v1I = divCell->wall(wI[0])->vertex1()->index();
+    size_t v2I = divCell->wall(wI[0])->vertex2()->index();
+    for (size_t d = 0; d < dimension; ++d)
+      v1Pos[d] =
+        vertexData[v1I][d] + s[0] * (vertexData[v2I][d] - vertexData[v1I][d]);
+    v1I = divCell->wall(wI[1])->vertex1()->index();
+    v2I = divCell->wall(wI[1])->vertex2()->index();
+    for (size_t d = 0; d < dimension; ++d)
+      v2Pos[d] =
+        vertexData[v1I][d] + s[1] * (vertexData[v2I][d] - vertexData[v1I][d]);
+    
+    // Add one cell, three walls, and two vertices
+    //
+    // Save number of walls
+    size_t numWallTmp = wallData.size();
+    assert(numWallTmp == T->numWall());
+    // Divide
+    T->divideCell(divCell, wI[0], wI[1], v1Pos, v2Pos, cellData, wallData,
+		  vertexData, cellDeriv, wallDeriv, vertexDeriv, variableIndex(1),
+		  parameter(5));
+    assert(numWallTmp + 3 == T->numWall());
+    
+    // Change length of new wall between the divided daugther cells
+    wallData[numWallTmp][0] *= parameter(4);
+    
+    // Check that the division did not mess up the data structure
+    // T->checkConnectivity(1);
+  }
+  
+
   
   VolumeRandomDirection::
   VolumeRandomDirection(
