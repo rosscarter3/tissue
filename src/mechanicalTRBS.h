@@ -75,6 +75,30 @@ namespace TRBS {
   ///
   void Rotate(std::vector<double> &inVector, std::vector< std::vector<double> > &rotation,
 	      std::vector<double> &outVector);
+
+  ///
+  /// @brief Rotates a tensor and saves the output in the input matrix
+  ///
+  void RotTensorRot(std::vector< std::vector<double> > &rotation,std::vector< std::vector<double> > &Tensor);
+
+  ///
+  /// @brief Normalise a vector to length 1.0
+  ///
+  void Normalise(std::vector<double> &inVector);
+
+  ///
+  /// @brief Extract eigenvectors from a matrix using Jacobi method
+  ///
+  /// @details Eigenvectors for the matrix are extracted using a Jacobi method. The eigenvectors are
+  /// normalised and stored in columns in the eigenVectors output
+  ///
+  void GetEigenVectors(std::vector< std::vector<double> > &eigenVectors,
+		       std::vector< std::vector<double> > &inMatrix, double epsilon=1.0e-06);
+
+  ///
+  /// @brief Sets the values of a matrix to the Identity matrix
+  ///
+  void SetIdentity(std::vector< std::vector<double> > &matrix);
   
   namespace CenterTriangulation {
   } // end namespace CenterTriangulation

@@ -163,7 +163,139 @@ namespace TRBS {
       }
     }
   }
-   
+  void RotTensorRot(std::vector< std::vector<double> > &rotation,std::vector< std::vector<double> > &Tensor) {
+    size_t dimension=rotation.size();
+    std::vector<double> tmpVector3(dimension);
+    std::vector< std::vector<double> > tempR(dimension,tmpVector3);
+    for (size_t r=0; r<dimension; r++) 
+      for (size_t s=0; s<dimension; s++) 
+	for(size_t w=0; w<dimension; w++) 
+	  tempR[r][s] += rotation[r][w]*Tensor[w][s];
+    
+    for (size_t r=0; r<dimension; r++) 
+      for (size_t s=0; s<dimension; s++) {
+	Tensor[r][s]=0;
+	for(size_t w=0; w<dimension; w++) 
+	  Tensor[r][s] += tempR[r][w]*rotation[s][w]; 
+      }
+  }
+  void Normalise(std::vector<double> &inVector) {
+    double lengthFac = 0.0;
+    for (size_t i=0; i<inVector.size(); ++i)
+      lengthFac += inVector[i]*inVector[i];
+    assert(lengthFac>0.0);
+    lengthFac = 1.0 / std::sqrt(lengthFac);
+    for (size_t i=0; i<inVector.size(); ++i)
+      inVector[i] *= lengthFac;
+  }
+
+  void GetEigenVectors(std::vector< std::vector<double> > &eigenVectors,
+		       std::vector< std::vector<double> > &inMatrix, double epsilon) {
+    int I,J;    
+    double pivot=1;
+    double tanRotAngle, Si, Co;
+    TRBS::SetIdentity(eigenVectors);
+    size_t dimension = eigenVectors.size();
+    pivot=1;      
+    while (pivot>epsilon) {
+      pivot=std::fabs(inMatrix[1][0]);
+      I=1;
+      J=0;
+      if (std::fabs(inMatrix[2][0])>pivot) {
+	pivot=std::fabs(inMatrix[2][0]);
+	I=2;
+	J=0;
+      }
+      if (std::fabs(inMatrix[2][1])>pivot) {
+	pivot=std::fabs(inMatrix[2][1]);
+	I=2;
+	J=1;
+      }
+      if (std::fabs(inMatrix[I][I]-inMatrix[J][J])<epsilon) {
+	//RotAngle=pi/4;
+	Si=0.70710678118;
+	Co=0.70710678118;
+      }
+      else {
+	tanRotAngle=(2*inMatrix[I][J])/(inMatrix[J][J]-inMatrix[I][I]);
+	tanRotAngle=1/std::sqrt(1+tanRotAngle*tanRotAngle);
+	if(tanRotAngle<1)
+	  Si=0.70710678118*std::sqrt(1-tanRotAngle);
+	else
+	  Si=0.70710678118*std::sqrt(tanRotAngle-1);
+	Co=0.70710678118*std::sqrt(1+tanRotAngle);
+      }
+      std::vector<double> tmpVector(dimension);
+      std::vector< std::vector<double> > tempRot(dimension,tmpVector);
+      SetIdentity(tempRot);
+      tempRot[I][I]=Co;
+      tempRot[J][J]=Co;
+      tempRot[I][J]=Si;
+      tempRot[J][I]=-Si;
+      
+      std::vector< std::vector<double> > tempStress(dimension,tmpVector);
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w) 
+	    tempStress[r][s]=tempStress[r][s]+inMatrix[r][w]*tempRot[w][s];
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  inMatrix[r][s]=0.0;
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w) 
+	    inMatrix[r][s]=inMatrix[r][s]+tempRot[w][r]*tempStress[w][s];
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  tempStress[r][s]=eigenVectors[r][s];
+      
+      for (size_t ii=0; ii<3; ++ii) {
+	for (size_t jj=0; jj<3; ++jj) {
+	  eigenVectors[ii][jj] = 0.0;
+	}
+      }
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w)       
+	    eigenVectors[r][s]=eigenVectors[r][s]+tempStress[r][w]*tempRot[w][s];
+    } // end while
+    
+    // normalizing eigenvectors (remove if not necessary)  
+    double temp=std::sqrt(eigenVectors[0][0]*eigenVectors[0][0] +
+			  eigenVectors[1][0]*eigenVectors[1][0] +
+			  eigenVectors[2][0]*eigenVectors[2][0] );
+    if(temp>0){
+      eigenVectors[0][0]/=temp;
+      eigenVectors[1][0]/=temp;
+      eigenVectors[2][0]/=temp;
+    }
+    temp=std::sqrt(eigenVectors[0][1]*eigenVectors[0][1] +
+		   eigenVectors[1][1]*eigenVectors[1][1] +
+		   eigenVectors[2][1]*eigenVectors[2][1] );
+    if(temp>0){
+      eigenVectors[0][1]/=temp;
+      eigenVectors[1][1]/=temp;
+      eigenVectors[2][1]/=temp;
+    }
+    temp=std::sqrt(eigenVectors[0][2]*eigenVectors[0][2] +
+		   eigenVectors[1][2]*eigenVectors[1][2] +
+		   eigenVectors[2][2]*eigenVectors[2][2] );
+    if(temp>0){
+      eigenVectors[0][2]/=temp;
+      eigenVectors[1][2]/=temp;
+      eigenVectors[2][2]/=temp;
+    } 
+  }
+
+  void SetIdentity(std::vector< std::vector<double> > &matrix) {
+    for (size_t i=0; i<matrix.size(); ++i)
+      for (size_t j=0; j<matrix[i].size(); ++j)
+	(i==j) ? matrix[i][j]=1.0 : matrix[i][j]=0.0;
+  }
+  
 } // end namespace TRBS
 
 VertexFromTRBS::  
