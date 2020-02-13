@@ -59,6 +59,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	   idValue == "CenterTriangulation::WallGrowth::Stress" ||
 	   idValue == "WallGrowthStresscenterTriangulation")
     return new WallGrowth::CenterTriangulation::Stress(paraValue, indValue);
+  else if (idValue == "WallGrowth::CenterTriangulation::StressConcentrationHill" ||
+	   idValue == "CenterTriangulation::WallGrowth::StressConcentrationHill" )
+    return new WallGrowth::CenterTriangulation::StressConcentrationHill(paraValue, indValue);
   else if (idValue == "WallGrowth::CenterTriangulation::StrainTRBS" ||
 	   idValue == "CenterTriangulation::WallGrowth::StrainTRBS")
     return new WallGrowth::CenterTriangulation::StrainTRBS(paraValue, indValue);
