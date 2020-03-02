@@ -560,31 +560,31 @@ namespace WallGrowth {
       //Do some checks on the parameters and variable indeces
       //
       if( paraValue.size()!=7 ) {
-	std::cerr << "WallGrowth::CnterTriangulation::StressConcentrationHill"
-		  << "WallGrowthStresscenterTriangulation() "
+	std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill"
+		  << "StressConcentrationHill() "
 		  << "Uses seven parameters k_growthConst, k_growthHill, K_Hill, n_Hill and "
 		  << "stress_threshold, stretch_flag (1 for now), linear_flag (0 const, 1 prop to wall length)" 
 		  << std::endl;
 	exit(EXIT_FAILURE);
       }
       if( paraValue[5] != 0.0 && paraValue[5] != 1.0 ) {
-	std::cerr << "WallGrowthStresscenterTriangulation::"
-		  << "WallGrowthStresscenterTriangulation() "
+	std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill"
+      << "StressConcentrationHill() "
 		  << "stretch_flag parameter must be 0 (stress used) or " 
 		  << "1 (stretch used)." << std::endl;
 	exit(EXIT_FAILURE);
       }
       if( paraValue[5] == 0.0 ) {
-	std::cerr << "WallGrowthStresscenterTriangulation::"
-		  << "WallGrowthStresscenterTriangulation() "
+	std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill"
+      << "StressConcentrationHill() "
 		  << "stretch_flag parameter must be 1 (stretch used) (not implemented for" 
 		  << " stress yet..." 
 		  << std::endl;
 	exit(EXIT_FAILURE);
       }
       if( paraValue[6] != 0.0 && paraValue[6] != 1.0 ) {
-	std::cerr << "WallGrowthStresscenterTriangulation::"
-		  << "WallGrowthStresscenterTriangulation() "
+	std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill"
+      << "StressConcentrationHill() "
 		  << "linear_flag parameter must be 0 (constant growth) or " 
 		  << "1 (length dependent growth)." << std::endl;
 	exit(EXIT_FAILURE);
@@ -592,8 +592,8 @@ namespace WallGrowth {
       
       if( (indValue.size()!=1 && indValue.size()!=2) || indValue[0].size() != 2 
 	  || (paraValue[2]==0 && (indValue.size()!=2 || !indValue[1].size())) ) {
-	std::cerr << "WallGrowthStresscenterTriangulation::"
-		  << "WallGrowthStresscenterTriangulation() "
+	std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill"
+      << "StressConcentrationHill() "
 		  << "Start of additional Cell variable indices (center(x,y,z) "
 		  << "L_1,...,L_n, n=num vertex) and cellIndex for concentration are given in first level, " 
 		  << "and stress variable indices at second (if strain_flag not set)."
@@ -638,36 +638,36 @@ namespace WallGrowth {
 
       
       for (size_t i=0; i<numCells; ++i) {
-	// Get Hill factor for concentration
-	double concpow = std::pow(cellData[i][concIndex],parameter(3));
-	double hillFactor = concpow/(Kpow+concpow); 
+      	// Get Hill factor for concentration
+	      double concpow = std::pow(cellData[i][concIndex],parameter(3));
+	      double hillFactor = concpow/(Kpow+concpow); 
 
-	for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
-	  size_t v = T.cell(i).vertex(k)->index();
-	  double stress=0.0;
-	  if (!parameter(5)) {//Stress used, read from saved data in the wall
-	    std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill::derivs() " << std::endl
-		      << "Strain (and not stress) is the only implemented version sofar."
-		      << std::endl;
-	    //for (size_t k=0; k<numVariableIndex(1); ++k)
-	    //stress += wallData[i][variableIndex(1,k)];
-	  }
-	  else { //Strain/stretch used
-	    double distance=0.0;
-	    for( size_t d=0 ; d<vertexData[v].size() ; d++ )
-	      distance += (vertexData[v][d]-cellData[i][d+posStartIndex])*
-		(vertexData[v][d]-cellData[i][d+posStartIndex]);
-	    distance = std::sqrt(distance);
-	    stress = (distance-cellData[i][k+lengthStartIndex]) /
-	      cellData[i][k+lengthStartIndex];
-	  }
-	  if (stress > parameter(4)) {
-	    double growthRate = (parameter(0)+parameter(1)*hillFactor)*(stress - parameter(4));
-	    if (parameter(6))
-	      growthRate *= cellData[i][k+lengthStartIndex];
-	    cellDerivs[i][k+lengthStartIndex] += growthRate;
-	  }
-	}
+      	for (size_t k=0; k<T.cell(i).numVertex(); ++k) {
+      	  size_t v = T.cell(i).vertex(k)->index();
+      	  double stress=0.0;
+      	  if (!parameter(5)) {//Stress used, read from saved data in the wall
+      	    std::cerr << "WallGrowth::CenterTriangulation::StressConcentrationHill::derivs() " << std::endl
+      		      << "Strain (and not stress) is the only implemented version sofar."
+      		      << std::endl;
+      	    //for (size_t k=0; k<numVariableIndex(1); ++k)
+      	    //stress += wallData[i][variableIndex(1,k)];
+      	  }
+      	  else { //Strain/stretch used
+      	    double distance=0.0;
+      	    for( size_t d=0 ; d<vertexData[v].size() ; d++ )
+      	      distance += (vertexData[v][d]-cellData[i][d+posStartIndex])*
+      		      (vertexData[v][d]-cellData[i][d+posStartIndex]);
+      	      distance = std::sqrt(distance);
+      	      stress = (distance-cellData[i][k+lengthStartIndex]) /
+      	        cellData[i][k+lengthStartIndex];
+      	  }
+      	  if (stress > parameter(4)) {
+      	    double growthRate = (parameter(0)+parameter(1)*hillFactor)*(stress - parameter(4));
+      	    if (parameter(6))
+      	      growthRate *= cellData[i][k+lengthStartIndex];
+      	    cellDerivs[i][k+lengthStartIndex] += growthRate;
+      	  }
+      	}
       }
     }
 
@@ -2202,33 +2202,33 @@ namespace WallGrowth {
       size_t v2 = T.wall(i).vertex2()->index();
       double stress=0.0;
       if (!parameter(5)) {
-	for (size_t k=0; k<numVariableIndex(1); ++k)
-	  stress += wallData[i][variableIndex(1,k)];
+	     for (size_t k=0; k<numVariableIndex(1); ++k)
+	       stress += wallData[i][variableIndex(1,k)];
       }
       else {
-	double distance=0.0;
-	for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
-	  distance += (vertexData[v1][d]-vertexData[v2][d])*
-	    (vertexData[v1][d]-vertexData[v2][d]);
-	distance = std::sqrt(distance);
-	stress = (distance-wallData[i][lengthIndex]) /
-	  wallData[i][lengthIndex];
+      	double distance=0.0;
+      	for( size_t d=0 ; d<vertexData[v1].size() ; d++ )
+      	  distance += (vertexData[v1][d]-vertexData[v2][d])*
+      	    (vertexData[v1][d]-vertexData[v2][d]);
+      	  distance = std::sqrt(distance);
+      	  stress = (distance-wallData[i][lengthIndex]) /
+      	  wallData[i][lengthIndex];
       }
       if (stress > parameter(4)) {
-	// Get the Hill factor from the two cells
-	double hillFactor=0.0;
-	if (T.wall(i).cell1() != T.background()) {
-	  double concpow = std::pow(cellData[T.wall(i).cell1()->index()][concIndex],parameter(3));
-	  hillFactor += concpow/(Kpow+concpow); 
-	}
-	if (T.wall(i).cell2() != T.background()) {
-	  double concpow = std::pow(cellData[T.wall(i).cell2()->index()][concIndex],parameter(3));
-	  hillFactor += concpow/(Kpow+concpow); 
-	}
-	double growthRate = (parameter(0)+hillFactor*parameter(1))*(stress - parameter(4));
-	if (parameter(6))
-	  growthRate *= wallData[i][lengthIndex];
-	wallDerivs[i][lengthIndex] += growthRate;
+      	// Get the Hill factor from the two cells
+      	double hillFactor=0.0;
+      	if (T.wall(i).cell1() != T.background()) {
+      	  double concpow = std::pow(cellData[T.wall(i).cell1()->index()][concIndex],parameter(3));
+      	  hillFactor += concpow/(Kpow+concpow); 
+      	}
+      	if (T.wall(i).cell2() != T.background()) {
+      	  double concpow = std::pow(cellData[T.wall(i).cell2()->index()][concIndex],parameter(3));
+      	  hillFactor += concpow/(Kpow+concpow); 
+      	}
+      	double growthRate = (parameter(0)+hillFactor*parameter(1))*(stress - parameter(4));
+      	if (parameter(6))
+      	  growthRate *= wallData[i][lengthIndex];
+      	wallDerivs[i][lengthIndex] += growthRate;
       }
     }
   }
