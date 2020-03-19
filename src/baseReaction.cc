@@ -256,6 +256,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	  idValue=="CenterTriangulation::GrowthForce::Radial" ||
 	  idValue == "MoveVertexRadiallycenterTriangulation")
     return new GrowthForce::CenterTriangulation::Radial(paraValue, indValue);
+  else if (idValue=="GrowthForce::centerTriangulation::ForceToCell" ||
+    idValue=="centerTriangulation::GrowthForce::ForceToCell")
+    return new GrowthForce::CenterTriangulation::ForceToCell(paraValue, indValue);
   else if(idValue=="GrowthForce::EpidermalRadial" ||
 	  idValue == "MoveEpidermalVertexRadially")
     return new GrowthForce::EpidermalRadial(paraValue, indValue);
