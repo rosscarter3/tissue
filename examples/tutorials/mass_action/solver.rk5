@@ -1,0 +1,7 @@
+# This file is setting the parameters for the solver to use in the
+# simulations. See documentation for availble solvers.
+
+RK5Adaptive   # solver to be used
+0 15          # start time, end time                (default 0 10)
+1 50	      # output format (1->vtk), data points (2 10)
+0.5 1e-5      # max step, error tolerance           (0.1 1e-5)

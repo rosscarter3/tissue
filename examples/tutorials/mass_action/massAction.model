@@ -1,0 +1,8 @@
+1 0 0
+
+MassAction::TwoToOne 1 2 3 0
+0.1   # k_1
+
+6     # r1_cell
+7     # r2_cell
+8     # P_cell
