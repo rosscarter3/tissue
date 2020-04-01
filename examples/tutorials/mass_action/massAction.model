@@ -1,5 +1,5 @@
 # Number of reactions. 3 Normal, 0 Division/Compartment change, 0 direction updates
-3 0 0
+4 0 0
 
 # This reaction is a linear production of the molecular species stored in c_index at rate k_c
 Creation::Zero 1 1 1
@@ -19,3 +19,9 @@ MassAction::TwoToOne 1 2 3 0
 6     # r1_index
 7     # r2_index
 8     # P_index
+
+# Simple diffusion. The species stored in c_index diffuses
+# at a rate of p_0 between cells
+ DiffusionSimple 1 1 1
+ 0.3   # p_0
+ 8     # c_index
