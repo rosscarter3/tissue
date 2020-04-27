@@ -206,6 +206,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
   // HJ: some yet needs to be moved from mechanical.h
+  else if(idValue=="Force::ForceFromPlane")
+    return new Force::ForceFromPlane(paraValue, indValue);
   else if(idValue=="Force::Cylinder" ||
 	  idValue=="CylinderForce")
     return new Force::Cylinder(paraValue,indValue);

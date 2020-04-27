@@ -13,6 +13,58 @@
 
 
 namespace Force {
+
+    ForceFromPlane::ForceFromPlane(std::vector<double> &paraValue,
+         std::vector<std::vector<size_t>> &indValue) {
+    // Do some checks on the parameters and variable indeces
+    //
+    if (paraValue.size() != 2) {
+      std::cerr << "Force::ForceFromPlane::"
+    << "ForceFromPlane() "
+    << "Uses two parameters K_force direction(-1 -> inwards)"
+    << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // if (paraValue[1] != 1.0 && paraValue[1] != -1.0) {
+    //   std::cerr << "Force::ForceFromPlane::"
+    // << "ForceFromPlane() "
+    // << "direction (second parameter) needs to be 1 (outward) "
+    // << "or -1 (inwards)." << std::endl;
+    //   exit(EXIT_FAILURE);
+    // }
+    if (indValue.size() != 0) {
+      std::cerr << "Force::ForceFromPlane::"
+    << "ForceFromPlane() "
+    << "No indices used." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    // Set the variable values
+    //
+    setId("Force::ForceFromPlane");
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+
+    // Set the parameter identities
+    //
+    std::vector<std::string> tmp(numParameter());
+    tmp[0] = "K_force";
+    tmp[1] = "direction";
+    setParameterId(tmp);
+  }
+
+  void ForceFromPlane::
+  derivs(Tissue &T, DataMatrix &cellData,
+   DataMatrix &wallData, DataMatrix &vertexData,
+   DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+   DataMatrix &vertexDerivs) {
+    double f = parameter(0);
+    size_t dir = parameter(1);
+    // For each vertex
+    for (size_t i = 0; i < T.numVertex(); ++i) {
+      double d = vertexData[i][dir];
+      vertexDerivs[i][dir] += f * d;
+    }
+  }
   
   Cylinder::Cylinder(std::vector<double> &paraValue,
 		     std::vector<std::vector<size_t>> &indValue) {
@@ -21,7 +73,7 @@ namespace Force {
     if (paraValue.size() != 2) {
       std::cerr << "Force::Cylinder::"
 		<< "Cylinder() "
-		<< "Uses two parameters K_force direction(-1 -> inwards)"
+		<< "Uses two parameters K_force direction(0:x, 1:y, 2:z)"
 		<< std::endl;
       exit(EXIT_FAILURE);
     }
@@ -65,13 +117,13 @@ namespace Force {
       // On cylinder
       double norm = 0.0;
       for (size_t d = 0; d < lastPosIndex; d++)
-	norm += vertexData[i][d] * vertexData[i][d];
+	      norm += vertexData[i][d] * vertexData[i][d];
       if (norm > 0.0)
-	norm = 1.0 / std::sqrt(norm);
+	      norm = 1.0 / std::sqrt(norm);
       else
-	norm = 0.0;
+	      norm = 0.0;
       for (size_t d = 0; d < lastPosIndex; d++)
-	vertexDerivs[i][d] += coeff * norm * vertexData[i][d];
+	      vertexDerivs[i][d] += coeff * norm * vertexData[i][d];
     }
   }
   
