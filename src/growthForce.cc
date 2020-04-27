@@ -180,36 +180,37 @@ namespace GrowthForce {
     ForceToCell(std::vector<double> &paraValue, 
      std::vector< std::vector<size_t> > 
      &indValue ) {      
-  //     // Do some checks on the parameters and variable indeces
-  //     //
-  //     if( paraValue.size()!=2 || ( paraValue[1]!=0 && paraValue[1]!=1) ) {
-  // std::cerr << "GrowthForce::CenterTriangulation::ForceToCell::"
-  //     << "ForceToCell() " << std::endl
-  //     << "Uses two parameters k_growth and r_pow (0,1)" << std::endl;
-  // exit(EXIT_FAILURE);
-  //     }  
-  //     if( indValue.size() != 1 || indValue[0].size() != 1 ) {
-  // std::cerr << "GrowthForce::CenterTriangulation::ForceToCell::"
-  //     << "ForceToCell() " << std::endl
-  //     << "Start of additional Cell variable indices (center(x,y,z) "
-  //     << "L_1,...,L_n, n=num vertex) is given in first level. "
-  //     << "See Documentation for namespace CenterTriangulation."
-  //     << std::endl;
-  // exit(EXIT_FAILURE);
-  //     }
-  //     // Set the variable values
-  //     //
-  //     setId("GrowthForce::CenterTriangulation::ForceToCell");
-  //     setParameter(paraValue);  
-  //     setVariableIndex(indValue);
+      // Do some checks on the parameters and variable indeces
+      //
+      if( paraValue.size()!=2 || ( paraValue[1]!=0 && paraValue[1]!=1) ) {
+        std::cerr << "GrowthForce::CenterTriangulation::ForceToCell::"
+          << "ForceToCell() " << std::endl
+          << "Uses two parameters k_growth and r_pow (0,1)" << std::endl;
+        exit(EXIT_FAILURE);
+      }  
+      if( indValue.size() != 1 || indValue[0].size() != 2 ) {
+        std::cerr << "GrowthForce::CenterTriangulation::ForceToCell::"
+            << "ForceToCell() " << std::endl
+            << "CellData index of cell to point force towards and"
+            << "Start of additional Cell variable indices (center(x,y,z) "
+            << "L_1,...,L_n, n=num vertex) are given in first level. "
+            << "See Documentation for namespace CenterTriangulation."
+            << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      // Set the variable values
+      //
+      setId("GrowthForce::CenterTriangulation::ForceToCell");
+      setParameter(paraValue);  
+      setVariableIndex(indValue);
       
-  //     // Set the parameter identities
-  //     //
-  //     std::vector<std::string> tmp( numParameter() );
-  //     tmp.resize( numParameter() );
-  //     tmp[0] = "k_growth";
-  //     tmp[0] = "r_pow";
-  //     setParameterId( tmp );
+      // Set the parameter identities
+      //
+      std::vector<std::string> tmp( numParameter() );
+      tmp.resize( numParameter() );
+      tmp[0] = "k_growth";
+      tmp[0] = "r_pow";
+      setParameterId( tmp );
     }
 
     void ForceToCell::
@@ -221,44 +222,69 @@ namespace GrowthForce {
      DataMatrix &wallDerivs,
      DataMatrix &vertexDerivs ) {
       
-      // size_t numVertices = T.numVertex();
-      // size_t numCells = T.numCell();
-      // size_t dimension=vertexData[0].size();
-      
-      // // Move vertices / apply force to vertices
-      // for( size_t i=0 ; i<numVertices ; ++i ) {
-      //   double fac=parameter(0);
-      //   if( parameter(1)==0.0 ) {
-      //     double r=0.0;
-      //     for( size_t d=0 ; d<dimension ; ++d )
-      //       r += vertexData[i][d]*vertexData[i][d];
-      //     if( r>0.0 )
-      //       r = std::sqrt(r);
-      //     if( r>0.0 )
-      //       fac /= r;
-      //     else
-      //       fac=0.0;
-      //   }
-      //   for( size_t d=0 ; d<dimension ; ++d )
-      //     vertexDerivs[i][d] += fac*vertexData[i][d];
-      // }
-      // // Move / apply force to vertices defined in cell centers 
-      // for( size_t i=0 ; i<numCells ; ++i ) {
-      //   double fac=parameter(0);
-      //   if( parameter(1)==0.0 ) {
-      //     double r=0.0;
-      //     for( size_t d=variableIndex(0,0) ; d<variableIndex(0,0)+dimension ; ++d )
-      //       r += cellData[i][d]*cellData[i][d];
-      //     if( r>0.0 )
-      //       r = std::sqrt(r);
-      //     if( r>0.0 )
-      //       fac /= r;
-      //     else
-      //       fac=0.0;
-      //   }
-      //   for( size_t d=variableIndex(0,0) ; d<variableIndex(0,0)+dimension ; ++d )
-      //     cellDerivs[i][d] += fac*cellData[i][d];
-      // }
+      size_t numVertices = T.numVertex();
+      size_t numCells = T.numCell();
+      size_t dimension=vertexData[0].size();
+      size_t forceCellData = variableIndex(0,1);
+
+      double fac = parameter(0);
+      int v = 0;
+      // Move vertices / apply force to vertices
+      for( size_t i=0 ; i<numVertices ; ++i ) {
+        std::vector<double> force {0.0,0.0,0.0};
+        std::vector<double> vertPos {vertexData[i][0], vertexData[i][1], vertexData[i][2]};
+        for (size_t c=0; c < T.vertex(i).numCell(); c++){
+          size_t cid = T.vertex(i).cell(c)->index();
+          int abv_id = cellData[cid][forceCellData];
+          if (abv_id > 0){
+            std::vector<double> abv_ctrd = T.cell(abv_id).positionFromVertex(vertexData);
+            for (size_t d = 0; d < dimension; d++){
+              force[d] += (abv_ctrd[d] - vertPos[d]);
+            }
+          }
+        }
+        double r = 0.0;
+        for (size_t d = 0; d < dimension; d++)
+          r += force[d]*force[d];
+        if( r>0.0 )
+          r = std::sqrt(r);
+        if( r>0.0 )
+          fac /= r;
+        else
+          fac=0.0;
+        
+        for( size_t d=0 ; d<dimension ; ++d )
+           vertexDerivs[i][d] += fac*force[d];
+      }
+
+      // Move / apply force to vertices defined in cell centers 
+      for( size_t i=0 ; i<numCells ; ++i ) {
+        double fac=parameter(0);
+        std::vector<double> force {0.0,0.0,0.0};
+        int abv_id = cellData[i][forceCellData];
+        std::vector<double> vertPos {cellData[i][variableIndex(0,0)+0],
+                                     cellData[i][variableIndex(0,0)+1],
+                                     cellData[i][variableIndex(0,0)+2]};
+        if (abv_id > 0){
+          std::vector<double> abv_ctrd = T.cell(abv_id).positionFromVertex(vertexData);
+          for (size_t d = 0; d < dimension; d++){
+            force[d] += (abv_ctrd[d] - vertPos[d]);
+          }
+        }
+        double r=0.0;
+        for( size_t d=variableIndex(0,0) ; d<variableIndex(0,0)+dimension ; ++d )
+          r += force[d]*force[d];
+        if( r>0.0 )
+          r = std::sqrt(r);
+        if( r>0.0 )
+          fac /= r;
+        else
+          fac=0.0;
+        
+        for( size_t d=0 ; d<dimension ; ++d )
+          cellDerivs[i][variableIndex(0,0)+d] += fac*force[d];
+      }
+
     }
 
 

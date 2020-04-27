@@ -149,11 +149,13 @@ namespace GrowthForce {
     ///  
     ///  UPDATE BELOW
     ///
-    ///  The tissue grows from vertex movement radially outwards,  and also
-    /// includes moving the vertex defining the 'center' of the cells in the
-    /// center triangulated mesh. The update is given by
-    /// @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
-    /// @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
+    ///  The tissue grows from vertex movement towards a cell whose ID is supplied in cellData,
+    ///  and also
+    ///  includes moving the vertex defining the 'center' of the cells in the
+    ///  center triangulated mesh. The update is given by
+    ///  @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
+    ///  @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
+    ///  r is distance to centroid of supplied cell 
     ///
     /// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
     /// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
@@ -162,6 +164,7 @@ namespace GrowthForce {
     /// GrowthForce::CenterTriangulation::Radial 2 1 1
     /// p_0 p_1
     /// InternalVarStartIndex
+    /// cellStoreIndex
     /// @endverbatim
     /// @see Force::Radial (same but without moving the central vertices)
     /// @note Used to be named MoveVertexRadiallycenterTriangulation (still allowed).
