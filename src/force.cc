@@ -64,6 +64,38 @@ namespace Force {
       double d = vertexData[i][dir];
       vertexDerivs[i][dir] += f * d;
     }
+
+    // move COM and update CT wall lengths if tissue is center triangulated
+    // if (Tissue.CTStatus){
+    size_t numVariable=cellData[0].size();
+    size_t dimension = 3;
+    std::vector<double> com(dimension);  
+
+    for (size_t cellIndex = 0; cellIndex < cellData.size(); ++cellIndex ){
+      // move cell center
+      double d = cellData[cellIndex][numVariable+dir];
+      cellDerivs[cellIndex][numVariable+dir] += f * d;
+
+      // size_t numInternalWall = T.cell(cellIndex).numVertex();
+      // com = T.cell(cellIndex).positionFromVertex(vertexData);
+
+      // recalculate internal wall lengths
+      // for (size_t k=0; k<numInternalWall; ++k) {
+      //   Vertex *tmpVertex = T.cell(cellIndex).vertex(k); 
+      //   size_t vertexIndex = tmpVertex->index();
+      //   double distance = std::sqrt( (com[0]-vertexData[vertexIndex][0])*
+      //                                (com[0]-vertexData[vertexIndex][0])+
+      //                                (com[1]-vertexData[vertexIndex][1])*
+      //                                (com[1]-vertexData[vertexIndex][1])+
+      //                                (com[2]-vertexData[vertexIndex][2])*
+      //                                (com[2]-vertexData[vertexIndex][2]) );   
+      //   cellData[cellIndex][numVariable+dimension+k] = distance;
+      // }
+
+    }
+    // }
+   
+
   }
   
   Cylinder::Cylinder(std::vector<double> &paraValue,
