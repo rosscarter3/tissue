@@ -8,6 +8,113 @@
 #include "network.h"
 #include "baseReaction.h"
 
+LinMMPolarization::LinMMPolarization(std::vector<double> &paraValue,
+    std::vector<std::vector<size_t> > &indValue) {
+
+  // Do some checks on the parameters and variable indeces
+  if (paraValue.size() != 1) {
+    std::cerr << "LinMMPolarization::LinMMPolarization() "
+      << "uses one parameter (b/a).\n";
+    exit(0);
+  }
+  if (indValue.size() != 2 || indValue[0].size() != 2 ||
+      indValue[1].size() != 2) {
+    std::cerr << "LinMMPolarization() "
+      << "Polarized molecule + polarization signal indeces needed in "
+      << "level 1.\n"
+      << "Variable indices for size parameter and membrane index for PIN needed at second level.\n";
+    exit(0);
+  }
+
+  // Set the variable values
+  setId("LinMMPolarization");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  std::vector<std::string> tmp(numParameter());
+  tmp.resize(numParameter());
+  tmp[0] = "b/a";
+  setParameterId(tmp);
+}
+
+void LinMMPolarization::derivs(Tissue &T,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs ) 
+{  
+  // TODO this should probably change, but is maintained to mirror Organism
+  // implementation
+  size_t numCells = T.numCell();
+  size_t cellPINIdx = variableIndex(0, 0);
+  size_t cellAuxinIdx = variableIndex(0, 1);
+  size_t cellVolumeIdx = variableIndex(1, 0);
+  size_t wallPINIdx = variableIndex(1, 1);
+
+  for (size_t i=0 ; i < numCells ; ++i ) {
+
+    // Retrieve volume of cell
+    double Vi = cellData[i][cellVolumeIdx]; // Volume of the compartment
+    if (Vi <= 0.0) {
+      std::cerr << "LinMMPolarization::derivs() Given volume "
+        << Vi << " unphysical.\n";
+      exit(-1);
+    }
+
+    // Polarization coefficient normalization constant
+    double sum=0.0;
+    size_t numCellNeighs=0;
+    size_t numWalls = T.cell(i).numWall();
+    for (size_t n = 0; n < numWalls; ++n) {
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+        numCellNeighs++;
+
+        if (T.cell(i).wall(n)->cell1()->index() == i)
+          sum += cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
+        else
+          sum += cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
+      }
+    }
+
+    if (numCellNeighs == 0) {
+      return;
+    }
+
+    // Calculate polarization coefficient normalization constant
+    //sum /= numCellNeighs; // To lower dep on num neighs
+    sum += parameter(0);
+    double inv_sum = 1.0 / sum; // To use mult instead of div
+
+    // Loop over cell walls and polarize accordingly
+    for (size_t n=0; n < numWalls; ++n) {
+      size_t c1Idx = T.cell(i).wall(n)->cell1()->index();
+
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+
+        size_t neighIdx = c1Idx == i ? T.cell(i).wall(n)->cell1()->index() : c1Idx;
+
+        double Vj = cellData[neighIdx][cellVolumeIdx]; 
+        if (Vj <= 0.0) {
+          std::cerr << "LinMMPolarization::derivs Given volume "
+            << Vj << " unphysical.\n";
+          exit(-1);
+        }
+
+        // Calculate PIN and set as wall variable
+        double Pij = cellData[i][cellPINIdx] * 
+                     cellData[neighIdx][cellAuxinIdx] * inv_sum;
+        wallData[T.cell(i).wall(n)->index()][wallPINIdx] = Pij;
+      }
+    }
+  }
+}
+
+
 AuxinModelSimple1::
 AuxinModelSimple1(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > 
