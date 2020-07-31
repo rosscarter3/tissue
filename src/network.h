@@ -53,6 +53,26 @@ class LinMMPolarization : public BaseReaction {
 };
 
 
+///
+/// @brief TODO
+///
+class CellCellAuxinTransport : public BaseReaction {
+  
+ public:
+  
+  CellCellAuxinTransport(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
+
 
 ///
 /// @brief A stress-based PIN1 and MT polarization model

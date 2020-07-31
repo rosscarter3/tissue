@@ -421,9 +421,11 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new ActiveTransportWall(paraValue,indValue);
 
   //network.h,network.cc
-   else if(idValue=="LinMMPolarization")
+  else if(idValue=="LinMMPolarization")
     return new LinMMPolarization(paraValue,indValue);
- else if(idValue=="AuxinModelSimple1")
+  else if(idValue=="CellCellAuxinTransport")
+    return new CellCellAuxinTransport(paraValue,indValue);
+  else if(idValue=="AuxinModelSimple1")
     return new AuxinModelSimple1(paraValue,indValue);
   else if(idValue=="AuxinModel1")
     return new AuxinModel1(paraValue,indValue);
