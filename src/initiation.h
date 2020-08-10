@@ -43,59 +43,59 @@ namespace Initiation {
   /// @endverbatim
   ///
   class RandomBoolean : public BaseReaction {
-  
-  public:
 
-    double localTime_=0.0; //variable to update time using h in update function
-    double nextTime_=0.0; //variable updated to hold the next time it will launch the procedure
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    RandomBoolean(std::vector<double> &paraValue, 
-		  std::vector< std::vector<size_t> > &indValue );
-    
-    ///
-    /// @brief Derivative function for this reaction class (does nothing for this class).
-    ///
-    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-    
-    /// @brief Initiation made before simulation
-    ///
-    /// @see BaseReaction::initiate()
-    ///
-    void initiate(Tissue &T,
-                  DataMatrix &cellData,
-                  DataMatrix &walldata,
-                  DataMatrix &vertexData,
-                  DataMatrix &cellderivs,
-                  DataMatrix &wallderivs,
-                  DataMatrix &vertexDerivs );        
+    public:
 
-  ///
-  /// @see BaseReaction::update()
-  ///
-  void update(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &walldata,
-	      DataMatrix &vertexData,
-	      double h);
+      double localTime_=0.0; //variable to update time using h in update function
+      double nextTime_=0.0; //variable updated to hold the next time it will launch the procedure
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      RandomBoolean(std::vector<double> &paraValue, 
+          std::vector< std::vector<size_t> > &indValue );
+
+      ///
+      /// @brief Derivative function for this reaction class (does nothing for this class).
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &wallData,
+          DataMatrix &vertexData,
+          DataMatrix &cellDerivs,
+          DataMatrix &wallDerivs,
+          DataMatrix &vertexDerivs );
+
+      /// @brief Initiation made before simulation
+      ///
+      /// @see BaseReaction::initiate()
+      ///
+      void initiate(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          DataMatrix &cellderivs,
+          DataMatrix &wallderivs,
+          DataMatrix &vertexDerivs );        
+
+      ///
+      /// @see BaseReaction::update()
+      ///
+      void update(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          double h);
   };
 
   ///
@@ -120,59 +120,113 @@ namespace Initiation {
   /// @endverbatim
   ///
   class RandomBooleanBiased : public BaseReaction {
-  
-  public:
 
-    double localTime_=0.0; //variable to update time using h in update function
-    double nextTime_=0.0; //variable updated to hold the next time it will launch the procedure
-    ///
-    /// @brief Main constructor
-    ///
-    /// This is the main constructor which sets the parameters and variable
-    /// indices that defines the reaction.
-    ///
-    /// @param paraValue vector with parameters
-    ///
-    /// @param indValue vector of vectors with variable indices
-    ///
-    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-    ///
-    RandomBooleanBiased(std::vector<double> &paraValue, 
-			std::vector< std::vector<size_t> > &indValue );
-    
-    ///
-    /// @brief Derivative function for this reaction class (does nothing for this class).
-    ///
-    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-    ///
-    void derivs(Tissue &T,
-                DataMatrix &cellData,
-                DataMatrix &wallData,
-                DataMatrix &vertexData,
-                DataMatrix &cellDerivs,
-                DataMatrix &wallDerivs,
-                DataMatrix &vertexDerivs );
-    
-    /// @brief Initiation made before simulation
-    ///
-    /// @see BaseReaction::initiate()
-    ///
-    void initiate(Tissue &T,
-                  DataMatrix &cellData,
-                  DataMatrix &walldata,
-                  DataMatrix &vertexData,
-                  DataMatrix &cellderivs,
-                  DataMatrix &wallderivs,
-                  DataMatrix &vertexDerivs );        
+    public:
 
-  ///
-  /// @see BaseReaction::update()
-  ///
-  void update(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &walldata,
-	      DataMatrix &vertexData,
-	      double h);
+      double localTime_=0.0; //variable to update time using h in update function
+      double nextTime_=0.0; //variable updated to hold the next time it will launch the procedure
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      RandomBooleanBiased(std::vector<double> &paraValue, 
+          std::vector< std::vector<size_t> > &indValue );
+
+      ///
+      /// @brief Derivative function for this reaction class (does nothing for this class).
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &wallData,
+          DataMatrix &vertexData,
+          DataMatrix &cellDerivs,
+          DataMatrix &wallDerivs,
+          DataMatrix &vertexDerivs );
+
+      /// @brief Initiation made before simulation
+      ///
+      /// @see BaseReaction::initiate()
+      ///
+      void initiate(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          DataMatrix &cellderivs,
+          DataMatrix &wallderivs,
+          DataMatrix &vertexDerivs );        
+
+      ///
+      /// @see BaseReaction::update()
+      ///
+      void update(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          double h);
+  };
+
+  class FaceArea2D : public BaseReaction {
+
+    public:
+
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      FaceArea2D(std::vector<double> &paraValue, 
+          std::vector< std::vector<size_t> > &indValue );
+
+      ///
+      /// @brief Derivative function for this reaction class (does nothing for this class).
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &wallData,
+          DataMatrix &vertexData,
+          DataMatrix &cellDerivs,
+          DataMatrix &wallDerivs,
+          DataMatrix &vertexDerivs );
+
+      /// @brief Initiation made before simulation
+      ///
+      /// @see BaseReaction::initiate()
+      ///
+      void initiate(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          DataMatrix &cellderivs,
+          DataMatrix &wallderivs,
+          DataMatrix &vertexDerivs );        
+
+      ///
+      /// @see BaseReaction::update()
+      ///
+      void update(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          double h);
   };
 
 } // end of namespace Initiation
