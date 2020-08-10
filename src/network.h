@@ -1,4 +1,3 @@
-
 // Filename     : network.h
 // Description  : Classes describing complete models updates
 // Author(s)    : Henrik Jonsson (henrik@thep.lu.se)
@@ -35,11 +34,11 @@
 /// The only parameter given to this function is K=b/a. The volumes for
 /// the cells are also included for correct concentration update.
 ///
-class LinMMPolarization : public BaseReaction {
+class LinPolarizationFast : public BaseReaction {
   
  public:
   
-  LinMMPolarization(std::vector<double> &paraValue, 
+  LinPolarizationFast(std::vector<double> &paraValue, 
 		    std::vector< std::vector<size_t> > 
 		    &indValue );
   
@@ -52,6 +51,44 @@ class LinMMPolarization : public BaseReaction {
 	      DataMatrix &vertexDerivs );
 };
 
+///
+/// @brief This reaction polarizes cells with a linear function, without
+/// calculating transport of the molecules.
+///
+/// The Polarized transporter molecule P is divided into the cell cytosol
+/// (P_i) and its membranes (P_ij) following the dynamics
+///
+/// 
+///
+///
+/// where \e k is summed over neighboring cells, \e A is the polarizing signal
+/// and \e a, \e b are constants. The polarization is assumed to be fast and
+/// the fixed point values are assumed
+///
+/// 
+///
+///
+/// where \e P is the total amount of polarized molecule in a cell.
+///
+/// The only parameter given to this function is K=b/a. The volumes for
+/// the cells are also included for correct concentration update.
+///
+class SpatialLinPolarizationFast : public BaseReaction {
+  
+ public:
+  
+  SpatialLinPolarizationFast(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
 
 ///
 /// @brief TODO
