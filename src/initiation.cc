@@ -266,7 +266,7 @@ namespace Initiation {
         &indValue )
     {
       // Do some checks on the parameters and variable indeces
-      if (paraValue.size() != 0) {
+      if (paraValue.size() != 0 && paraValue.size() != 1) {
         std::cerr << "Initiation::FaceArea2D::"
           << "FaceArea2D() "
           << "takes a single optional parameter." << std::endl;
