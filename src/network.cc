@@ -119,19 +119,19 @@ void LinPolarizationFast::derivs(Tissue &T,
 }
 
 
-SpatialLinPolarizationFast::SpatialLinPolarizationFast(std::vector<double> &paraValue,
+LinPolarizationFastExact::LinPolarizationFastExact(std::vector<double> &paraValue,
     std::vector<std::vector<size_t> > &indValue) {
 
   // Do some checks on the parameters and variable indeces
   if (paraValue.size() != 1) {
-    std::cerr << "SpatialLinPolarizationFast::SpatialLinPolarizationFast() "
+    std::cerr << "LinPolarizationFastExact::LinPolarizationFastExact() "
       << "uses one parameter (b/a).\n";
     exit(0);
   }
   if (indValue.size() != 2 || 
       indValue[0].size() != 2 ||
       indValue[1].size() != 3) {
-    std::cerr << "SpatialLinPolarizationFast() "
+    std::cerr << "LinPolarizationFastExact() "
       << "Polarized molecule + polarization signal indeces needed in "
       << "level 1.\n"
       << "Variable indices for cell volume and membrane area, as well as " 
@@ -141,7 +141,7 @@ SpatialLinPolarizationFast::SpatialLinPolarizationFast(std::vector<double> &para
 
 
   // Set the variable values
-  setId("SpatialLinPolarizationFast");
+  setId("LinPolarizationFastExact");
   setParameter(paraValue);
   setVariableIndex(indValue);
 
@@ -152,7 +152,7 @@ SpatialLinPolarizationFast::SpatialLinPolarizationFast(std::vector<double> &para
   setParameterId(tmp);
 }
 
-void SpatialLinPolarizationFast::derivs(Tissue &T,
+void LinPolarizationFastExact::derivs(Tissue &T,
     DataMatrix &cellData,
     DataMatrix &wallData,
     DataMatrix &vertexData,
@@ -173,7 +173,7 @@ void SpatialLinPolarizationFast::derivs(Tissue &T,
     // Retrieve volume of cell
     double Vi = cellData[i][cellVolumeIdx]; // Volume of the compartment
     if (Vi <= 0.0) {
-      std::cerr << "SpatialLinPolarizationFast::derivs() Given volume Vi="
+      std::cerr << "LinPolarizationFastExact::derivs() Given volume Vi="
         << Vi << " unphysical.\n";
       exit(-1);
     }
@@ -186,11 +186,14 @@ void SpatialLinPolarizationFast::derivs(Tissue &T,
       if (T.cell(i).wall(n)->cell1() != T.background() &&
           T.cell(i).wall(n)->cell2() != T.background()) { 
         numCellNeighs++;
-
+        
+        size_t wallIdx = T.cell(i).wall(n)->index();
         if (T.cell(i).wall(n)->cell1()->index() == i)
-          sum += cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
+          sum += wallData[n][wallAreaIdx] * 
+                 cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
         else
-          sum += cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
+          sum += wallData[n][wallAreaIdx] * 
+                 cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
       }
     }
 
@@ -199,7 +202,6 @@ void SpatialLinPolarizationFast::derivs(Tissue &T,
     }
 
     // Calculate polarization coefficient normalization constant
-    //sum /= numCellNeighs; // To lower dep on num neighs
     sum += parameter(0);
     double inv_sum = 1.0 / sum; // To use mult instead of div
 
@@ -215,7 +217,7 @@ void SpatialLinPolarizationFast::derivs(Tissue &T,
 
         double Vj = cellData[neighIdx][cellVolumeIdx]; 
         if (Vj <= 0.0) {
-          std::cerr << "SpatialLinPolarizationFast::derivs Given volume Vj="
+          std::cerr << "LinPolarizationFastExact::derivs Given volume Vj="
             << Vj << " unphysical.\n";
           exit(-1);
         }
@@ -225,8 +227,7 @@ void SpatialLinPolarizationFast::derivs(Tissue &T,
         // concentration under the assumption of "fast" PIN cycling. It is therefore 
         // not added towards wallDerivs.
         double Pij = cellData[i][cellVolumeIdx] *
-                     cellData[i][cellPINIdx] / 
-                     wallData[wallIdx][wallAreaIdx] *
+                     cellData[i][cellPINIdx] *
                      cellData[neighIdx][cellAuxinIdx] * inv_sum;
         wallData[T.cell(i).wall(n)->index()][c1Idx == i ? wallPINIdx : wallPINIdx + 1] = Pij;
       }

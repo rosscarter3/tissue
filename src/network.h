@@ -73,11 +73,11 @@ class LinPolarizationFast : public BaseReaction {
 /// The only parameter given to this function is K=b/a. The volumes for
 /// the cells are also included for correct concentration update.
 ///
-class SpatialLinPolarizationFast : public BaseReaction {
+class LinPolarizationFastExact : public BaseReaction {
   
  public:
   
-  SpatialLinPolarizationFast(std::vector<double> &paraValue, 
+  LinPolarizationFastExact(std::vector<double> &paraValue, 
 		    std::vector< std::vector<size_t> > 
 		    &indValue );
   

@@ -423,8 +423,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   //network.h,network.cc
   else if(idValue=="LinPolarizationFast")
     return new LinPolarizationFast(paraValue,indValue);
-  else if(idValue=="SpatialLinPolarizationFast")
-    return new SpatialLinPolarizationFast(paraValue,indValue);
+  else if(idValue=="LinPolarizationFastExact")
+    return new LinPolarizationFastExact(paraValue,indValue);
   else if(idValue=="CellCellAuxinTransport")
     return new CellCellAuxinTransport(paraValue,indValue);
   else if(idValue=="AuxinModelSimple1")
