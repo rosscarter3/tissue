@@ -189,10 +189,10 @@ void LinPolarizationFastExact::derivs(Tissue &T,
         
         size_t wallIdx = T.cell(i).wall(n)->index();
         if (T.cell(i).wall(n)->cell1()->index() == i)
-          sum += wallData[n][wallAreaIdx] * 
+          sum += wallData[wallIdx][wallAreaIdx] * 
                  cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
         else
-          sum += wallData[n][wallAreaIdx] * 
+          sum += wallData[wallIdx][wallAreaIdx] * 
                  cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
       }
     }
@@ -211,7 +211,6 @@ void LinPolarizationFastExact::derivs(Tissue &T,
       if (T.cell(i).wall(n)->cell1() != T.background() &&
           T.cell(i).wall(n)->cell2() != T.background()) { 
 
-        size_t wallIdx = T.cell(i).wall(n)->index();
         size_t c1Idx = T.cell(i).wall(n)->cell1()->index();
         size_t neighIdx = c1Idx == i ? T.cell(i).wall(n)->cell2()->index() : c1Idx;
 
@@ -1344,15 +1343,15 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() //&& mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     
@@ -1525,16 +1524,16 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
 
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() // && mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     
@@ -1718,15 +1717,15 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() // && mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     
