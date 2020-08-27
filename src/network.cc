@@ -225,7 +225,7 @@ void LinPolarizationFastExact::derivs(Tissue &T,
         // Note: This value is solved directly from the corresponding auxin 
         // concentration under the assumption of "fast" PIN cycling. It is therefore 
         // not added towards wallDerivs.
-        double Pij = cellData[i][cellVolumeIdx] *
+        double Pij = // cellData[i][cellVolumeIdx] *
                      cellData[i][cellPINIdx] *
                      cellData[neighIdx][cellAuxinIdx] * inv_sum;
         wallData[T.cell(i).wall(n)->index()][c1Idx == i ? wallPINIdx : wallPINIdx + 1] = Pij;
@@ -353,7 +353,6 @@ void CellCellAuxinTransport::derivs(Tissue &T,
             double AUX_ij = wallData[w_idx][a_idx + idxAdd];  
             double PIN_ji = wallData[w_idx][p_idx + (idxAdd + 1) % 2];
             double AUX_ji = wallData[w_idx][a_idx + (idxAdd + 1) % 2];
-// std::cerr << p_idx << " " << a_idx << " " << idxAdd << " " << (idxAdd + 1) % 2 << std::endl;
  
             // TODO: This sets all four indices, whereas we in the case above
             // only set two of them (and assume that the next one is the index
@@ -373,17 +372,13 @@ void CellCellAuxinTransport::derivs(Tissue &T,
             double iFlux = (parameter(2) + parameter(3) * AUX_ij) *
                            (parameter(0) + parameter(1) * PIN_ji) *
                             cellData[j][auxin_idx] / denominator;
-            double flux = iFlux - oFlux;
-// std::cerr << "Auxini " << cellData[i][auxin_idx] << std::endl;
-// std::cerr << "PINij " << PIN_ij << std::endl;
-// std::cerr << "AUXij " << AUX_ij << std::endl;
-// std::cerr << "flux " << flux << std::endl;
-            cellDerivs[i][auxin_idx] += flux * area_ij / V_i;
-            cellDerivs[j][auxin_idx] -= flux * area_ij / V_j;
+            double flux = area_ij * (iFlux - oFlux);
+
+            cellDerivs[i][auxin_idx] += flux / V_i;
+            cellDerivs[j][auxin_idx] -= flux / V_j;
 
             // Save flux in variable if the parameter is set
             if (saveFlux) {
-//              std::cerr << "printing fluxes " << std::endl;
               wallData[w_idx][variableIndex(1, 3) + idxAdd] = -flux;
               wallData[w_idx][variableIndex(1, 3) + (idxAdd + 1) % 2] = flux;
             }
