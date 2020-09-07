@@ -886,7 +886,7 @@ namespace Pressure3D {
 		<< std::endl;
       exit(EXIT_FAILURE);
     }
-    if (paraValue[1] <= 0.0) {
+    if (paraValue[2] <= 0.0) {
       std::cerr << "Pressure3D::Linear::Linear() "
 		<< "time span (for ramping up forces) must be positive." << std::endl;
       exit(EXIT_FAILURE);
