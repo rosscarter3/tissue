@@ -1,4 +1,3 @@
-
 // Filename     : network.h
 // Description  : Classes describing complete models updates
 // Author(s)    : Henrik Jonsson (henrik@thep.lu.se)
@@ -12,6 +11,105 @@
 
 #include"tissue.h"
 #include"baseReaction.h"
+
+///
+/// @brief This reaction polarizes cells with a linear function, without
+/// calculating transport of the molecules.
+///
+/// The Polarized transporter molecule P is divided into the cell cytosol
+/// (P_i) and its membranes (P_ij) following the dynamics
+///
+/// @f[ dP_i/dt = -a P_i \sum_k A_k + b \sum_k P_{ik} @f]
+/// @f[ dP_{ij}/dt = a P_i A_j - b P_{ij} @f]
+///
+/// where \e k is summed over neighboring cells, \e A is the polarizing signal
+/// and \e a, \e b are constants. The polarization is assumed to be fast and
+/// the fixed point values are assumed
+///
+/// @f[ P_i = (b/a)*P / (\sum_k A_k + b/a) @f]
+/// @f[ P_{ij} = P * A_j / (\sum_k A_k + (b/a)) @f]
+///
+/// where \e P is the total amount of polarized molecule in a cell.
+///
+/// The only parameter given to this function is K=b/a. The volumes for
+/// the cells are also included for correct concentration update.
+///
+class LinPolarizationFast : public BaseReaction {
+  
+ public:
+  
+  LinPolarizationFast(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
+
+///
+/// @brief This reaction polarizes cells with a linear function, without
+/// calculating transport of the molecules.
+///
+/// The Polarized transporter molecule P is divided into the cell cytosol
+/// (P_i) and its membranes (P_ij) following the dynamics
+///
+/// 
+///
+///
+/// where \e k is summed over neighboring cells, \e A is the polarizing signal
+/// and \e a, \e b are constants. The polarization is assumed to be fast and
+/// the fixed point values are assumed
+///
+/// 
+///
+///
+/// where \e P is the total amount of polarized molecule in a cell.
+///
+/// The only parameter given to this function is K=b/a. The volumes for
+/// the cells are also included for correct concentration update.
+///
+class LinPolarizationFastExact : public BaseReaction {
+  
+ public:
+  
+  LinPolarizationFastExact(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
+
+///
+/// @brief TODO
+///
+class CellCellAuxinTransport : public BaseReaction {
+  
+ public:
+  
+  CellCellAuxinTransport(std::vector<double> &paraValue, 
+		    std::vector< std::vector<size_t> > 
+		    &indValue );
+  
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
+
 
 ///
 /// @brief A stress-based PIN1 and MT polarization model

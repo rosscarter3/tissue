@@ -421,7 +421,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new ActiveTransportWall(paraValue,indValue);
 
   //network.h,network.cc
- else if(idValue=="AuxinModelSimple1")
+  else if(idValue=="LinPolarizationFast")
+    return new LinPolarizationFast(paraValue,indValue);
+  else if(idValue=="LinPolarizationFastExact")
+    return new LinPolarizationFastExact(paraValue,indValue);
+  else if(idValue=="CellCellAuxinTransport")
+    return new CellCellAuxinTransport(paraValue,indValue);
+  else if(idValue=="AuxinModelSimple1")
     return new AuxinModelSimple1(paraValue,indValue);
   else if(idValue=="AuxinModel1")
     return new AuxinModel1(paraValue,indValue);
@@ -726,6 +732,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Initiation::RandomBoolean(paraValue, indValue);
   else if (idValue=="Initiation::RandomBooleanBiased")
     return new Initiation::RandomBooleanBiased(paraValue, indValue);
+  else if (idValue=="Initiation::FaceArea2D")
+    return new Initiation::FaceArea2D(paraValue, indValue);
   
   //Namespace Hypocotyl3D, hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")
