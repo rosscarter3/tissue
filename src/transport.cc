@@ -473,7 +473,69 @@ derivs(Tissue &T,
   }
 }
 
+void Diffusion2d::
+derivsWithAbs(Tissue &T,
+              DataMatrix &cellData,
+              DataMatrix &wallData,
+              DataMatrix &vertexData,
+              DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs,
+              DataMatrix &vertexDerivs,
+              DataMatrix &sdydtCell,
+              DataMatrix &sdydtWall,
+              DataMatrix &sdydtVertex)
+{
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  size_t dimension=vertexData[0].size();
+  assert( aI<cellData[0].size());
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+      T.cell(i).wall(n)->cell2() != T.background() ) {
+    size_t neighIndex;
+    if( T.cell(i).wall(n)->cell1()->index()==i )
+      neighIndex = T.cell(i).wall(n)->cell2()->index();
+    else {
+      neighIndex = T.cell(i).wall(n)->cell1()->index();
+    }
 
+    // calculate distance between compartments
+
+    std::vector<double> neighpos = T.cell(neighIndex).positionFromVertex();
+    std::vector<double> cellpos  = T.cell(i).positionFromVertex();
+
+    double distance=0;
+
+        for(size_t d=0;d<dimension; ++d)
+      distance += (neighpos[d] - cellpos[d])*(neighpos[d] - cellpos[d]);
+
+    distance = std::sqrt(distance);
+
+    //std::cerr << "distance = " << distance << "\n";
+        
+        size_t v1=T.cell(i).wall(n)->vertex1()-> index();
+        size_t v2=T.cell(i).wall(n)->vertex2()-> index();
+        double contactLength=0;
+        for(size_t d=0;d<dimension; ++d)
+          contactLength+=(vertexData[v1][d]-vertexData[v2][d])*(vertexData[v1][d]-vertexData[v2][d]);
+        contactLength=std::sqrt(contactLength);
+    double cellVolume = T.cell(i).calculateVolume(vertexData);
+        cellDerivs[i][aI] -=
+          parameter(0)*contactLength*(cellData[i][aI] - cellData[neighIndex][aI])/(cellVolume*distance);
+    cellVolume = T.cell(neighIndex).calculateVolume(vertexData);
+        cellDerivs[neighIndex][aI] +=
+          parameter(0)*contactLength*(cellData[i][aI] - cellData[neighIndex][aI])/(cellVolume*distance);
+          sdydtCell[i][aI] += 0;
+          sdydtCell[neighIndex][aI] += 0;
+      }
+    }
+  }
+}
 
  ActiveTransportCellEfflux::
  ActiveTransportCellEfflux(std::vector<double> &paraValue, 
