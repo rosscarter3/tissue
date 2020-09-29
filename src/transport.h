@@ -116,6 +116,8 @@ class MembraneDiffusionSimple2 : public BaseReaction {
 /// @endverbatim
 ///
 ///
+/// Note: it has been implemented in the stochastic Chemical Langevin function, but it will behave as deterministic for the moment.
+///
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class DiffusionSimple : public BaseReaction {
@@ -133,6 +135,17 @@ class DiffusionSimple : public BaseReaction {
 	      DataMatrix &cellDerivs,
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
+
+void derivsWithAbs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs,
+       DataMatrix &sdydtCell,
+       DataMatrix &sdydtWall,
+       DataMatrix &sdydtVertex);
 };
 
 ///

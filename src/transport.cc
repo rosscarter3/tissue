@@ -242,6 +242,46 @@ derivs(Tissue &T,
   }
 }
 
+void DiffusionSimple::
+derivsWithAbs(Tissue &T,
+              DataMatrix &cellData,
+              DataMatrix &wallData,
+              DataMatrix &vertexData,
+              DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs,
+              DataMatrix &vertexDerivs,
+              DataMatrix &sdydtCell,
+              DataMatrix &sdydtWall,
+              DataMatrix &sdydtVertex)
+{
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  assert( aI<cellData[0].size());
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+      T.cell(i).wall(n)->cell2() != T.background() ) {
+    size_t neighIndex;
+    if( T.cell(i).wall(n)->cell1()->index()==i )
+      neighIndex = T.cell(i).wall(n)->cell2()->index();
+    else {
+      neighIndex = T.cell(i).wall(n)->cell1()->index();
+    }
+    if (i<neighIndex) { //Both directions at once
+      cellDerivs[i][aI] -= parameter(0)*(cellData[i][aI] - cellData[neighIndex][aI]);
+      cellDerivs[neighIndex][aI] += parameter(0)*(cellData[i][aI] - cellData[neighIndex][aI]);
+         sdydtCell[i][aI] += 0;
+         sdydtCell[neighIndex][aI] += 0;
+    }
+      }
+    }
+  }
+}
+
 DiffusionConductiveSimple::
 DiffusionConductiveSimple(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > 
