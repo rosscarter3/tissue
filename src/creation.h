@@ -368,18 +368,22 @@ namespace Creation {
   };
 
   ///
-  /// @brief In the cells with given indices a molecule is produced/created with constant rate.
+  /// @brief In the cells with indices given in a list a molecule is created with constant rate.
   ///
-  /// @details The variable update is for each cell given by ( SIGN= -1, higher production for
-  /// lower values of the coordinate)
-  /// @f[ \frac{dc}{dt} = k_c @f] if cell index is in the given list
+  /// @details The variable update is for each cell given by
+  /// @f[ \frac{dc}{dt} = k_c @f]
+  /// if cell index is in the given list
   /// In a model file the reaction is defined as
   /// @verbatim
-  /// Creation::FromList 1 2 1 n
+  /// Creation::FromList 1/2 2 1 n
   /// k_c
+  /// [numberFlag] # if 1 const num instead of conc added 
   /// c_index
-  /// a list of indices with n members
+  /// a list of n cell indices 
   /// @endverbatim
+  /// If the second parameter (numberFlag) is provided and the given value is one, the
+  /// constant production is in number of molecules, i.e. production constant is divided by
+  /// cell size.
   ///
   class FromList: public BaseReaction {
   private: 
