@@ -71,6 +71,8 @@ createCompartmentChange(std::vector<double> &paraValue,
     return new Division::ForceDirection(paraValue, indValue);
   else if (idValue == "Division::ShortestPath2D")
     return new Division::ShortestPath2D(paraValue, indValue);
+  else if (idValue == "Division::ShortestPath2DConcentration")
+    return new Division::ShortestPath2DConcentration(paraValue, indValue);
   else if (idValue == "DivisionShortestPath" ||
 	   idValue == "Division::ShortestPath")
     return new Division::ShortestPath(paraValue, indValue);

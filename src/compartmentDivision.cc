@@ -1966,7 +1966,7 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
        DataMatrix &cellDerivs, DataMatrix &wallDerivs,
        DataMatrix &vertexDerivs) {
     double conc = cellData[i][variableIndex(0, 0)];
-    size_t n = parameter(4);
+    size_t n = parameter(3);
     double K = parameter(2);
     double volThreshold = 0.0;
     volThreshold = parameter(0) + parameter(1) * (std::pow(conc, n) / (std::pow(K, n) + std::pow(conc, n)));
@@ -3239,6 +3239,314 @@ void ForceDirection::update(Tissue *T, size_t i, DataMatrix &cellData,
   }
 
   double ShortestPath2D::f(double a, double sigma, double A, double B) {
+    double tmp = -A * std::cos(a) / (std::sin(a) * std::sin(a));
+    tmp += B * std::cos(myMath::pi() + sigma - a) /
+      (std::sin(sigma - a) * std::sin(sigma - a));
+    return tmp;
+  }
+
+  ShortestPath2DConcentration::ShortestPath2DConcentration(std::vector<double> &paraValue,
+							   std::vector<std::vector<size_t>> &indValue) {
+    if (paraValue.size() != 7) {
+      std::cerr
+        << "Division::ShortestPath2DConcentration::ShortestPath2DConcentration() "
+        << "Four parameters are used V_threshold, V_threshold_max, "
+	<< "K_hill, n_hill, Lwall_fraction, "
+        << "Lwall_threshold, and COM (1 = COM, 0 = Random)."
+        << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if ((indValue.size() == 2 && indValue[1].size() != 1) ||
+	(indValue.size() != 1 && indValue.size() != 2) ) {
+      std::cerr << "Division::ShortestPath2DConcentration::ShortestPath2DConcentration() "
+		<< "First level: Variable indices for volume dependent cell "
+		<< "variables are used." << std::endl
+		<< "Second level: Cell concentration index."
+		<< std::endl;
+      exit(EXIT_FAILURE);
+    }
+    
+    setId("Division::ShortestPath2DConcentration");
+    setNumChange(1);
+    setParameter(paraValue);
+    setVariableIndex(indValue);
+    
+    std::vector<std::string> tmp(numParameter());
+    tmp.resize(numParameter());
+    tmp[0] = "V_threshold";
+    tmp[1] = "V_threshold_max";
+    tmp[2] = "K_hill";
+    tmp[3] = "n_hill";
+    tmp[4] = "Lwall_fraction";
+    tmp[5] = "Lwall_threshold";
+    tmp[6] = "COM";
+    setParameterId(tmp);
+  }
+
+  int ShortestPath2DConcentration::
+  flag(Tissue *T, size_t i, DataMatrix &cellData,
+       DataMatrix &wallData, DataMatrix &vertexData,
+       DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs) {
+    double conc = cellData[i][variableIndex(1, 0)];
+    size_t n = parameter(3);
+    double K = parameter(2);
+    double volThreshold = 0.0;
+    volThreshold = parameter(0) + parameter(1) * (std::pow(conc, n) / (std::pow(K, n) + std::pow(conc, n)));
+    if (T->cell(i).calculateVolume(vertexData) > volThreshold) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  void ShortestPath2DConcentration::
+  update(Tissue *T, size_t i, DataMatrix &cellData,
+	 DataMatrix &wallData, DataMatrix &vertexData,
+	 DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs)
+  {
+    size_t dimension=vertexData[0].size(); 
+    if (dimension != 2)
+      {
+	std::cerr << "Division::ShortestPath2D only supports two dimensions."
+		  << std::endl
+		  << "Consider using Division::ShortestPath." << std::endl;
+	std::exit(EXIT_FAILURE);
+      }
+    
+    Cell &cell = T->cell(i);
+    std::vector<Candidate> candidates =
+      getCandidates(T, i, cellData, wallData, vertexData, cellDerivs,
+                    wallDerivs, vertexDerivs);
+    
+    if (candidates.size() == 0) {
+      std::cerr << "Division::shortestPath2D.update() WARNING, cell " << i
+		<< " marked for division but no candidate shortest path found."
+		<< std::endl;
+      return;
+    }
+    
+    Candidate winner = {std::numeric_limits<double>::max(), 0, 0, 0, 0, 0, 0};
+    for (size_t i = 0; i < candidates.size(); ++i) {
+      if (candidates[i].distance < winner.distance) {
+	winner = candidates[i];
+      }
+    }
+    
+    // std::cerr << "Winner: " << std::endl
+    //           << " distance = " << winner.distance << std::endl
+    //           << " p = (" << winner.px << ", " << winner.py << ")" << std::endl
+    //           << " q = (" << winner.qx << ", " << winner.qy << ")" <<
+    //           std::endl;
+    
+    assert(wallData.size() == T->numWall());
+    
+    std::vector<double> p(dimension);
+    p[0] = winner.px;
+    p[1] = winner.py;
+    std::vector<double> q(dimension);
+    q[0] = winner.qx;
+    q[1] = winner.qy;
+    
+    T->divideCell(&cell, winner.wall1, winner.wall2, p, q, cellData, wallData,
+		  vertexData, cellDerivs, wallDerivs, vertexDerivs,
+		  variableIndex(0), parameter(5));
+    size_t numWallTmp = wallData.size();
+    assert(numWallTmp + 3 == T->numWall());
+    
+  }
+
+  std::vector<ShortestPath2DConcentration::Candidate> ShortestPath2DConcentration::
+  getCandidates(
+		Tissue *T, size_t i, DataMatrix &cellData, DataMatrix &wallData,
+		DataMatrix &vertexData, DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs) {
+    Cell cell = T->cell(i);
+    
+    assert(cell.numWall() > 1);
+    
+    std::vector<double> o;
+    
+    if (parameter(6) == 1) {
+      o = cell.positionFromVertex(vertexData);
+    } else {
+      try {
+	o = cell.randomPositionInCell(vertexData);
+      } catch (Cell::FailedToFindRandomPositionInCellException) {
+	return std::vector<Candidate>();
+      }
+    }
+
+    double ox = o[0]; // central point COM if flaggged (p_3=1), random otherwise 
+    double oy = o[1];
+    
+    std::vector<Candidate> candidates;
+    
+    for (size_t i = 0; i < cell.numWall() - 1; ++i) {
+      for (size_t j = i + 1; j < cell.numWall(); ++j) {
+	Wall *wall1 = cell.wall(i);
+	Wall *wall2 = cell.wall(j);
+	size_t wall1Index = i;
+	size_t wall2Index = j;
+	
+	// std::cerr << "i = " << wall1->index() << " : j ="
+	// << wall2->index() << std::endl;
+	// std::cerr << "o = (" << ox << ", " << oy << ")"
+	// << std::endl;
+	
+	double x1x, x1y, x2x, x2y; // vertex positions for the first edge
+	double vx, vy; // first edge vector 
+	double x1px, x1py, x2px, x2py; // vertex position for second edge
+	double ux, uy; // second edge vector	
+	bool flippedVectors;
+	
+	do {
+	  flippedVectors = false;
+	  
+	  x1x = vertexData[wall1->vertex1()->index()][0];
+	  x1y = vertexData[wall1->vertex1()->index()][1];
+	  x2x = vertexData[wall1->vertex2()->index()][0];
+	  x2y = vertexData[wall1->vertex2()->index()][1];
+	  
+	  vx = x2x - x1x;
+	  vy = x2y - x1y;
+	  
+	  if (vx * (oy - x1y) - vy * (ox - x1x) > 0) { //flip first edge if xxx
+	    // std::cerr << "Change v" << std::endl;
+	    double tmpx = x1x;
+	    double tmpy = x1y;
+	    x1x = x2x;
+	    x1y = x2y;
+	    x2x = tmpx;
+	    x2y = tmpy;
+	    vx = -vx;
+	    vy = -vy;
+	  }
+	  
+	  x1px = vertexData[wall2->vertex1()->index()][0];
+	  x1py = vertexData[wall2->vertex1()->index()][1];
+	  x2px = vertexData[wall2->vertex2()->index()][0];
+	  x2py = vertexData[wall2->vertex2()->index()][1];
+	  
+	  ux = x2px - x1px;
+	  uy = x2py - x1py;
+	  
+	  if (ux * (oy - x1py) - uy * (ox - x1px) < 0) { // flip second edge if xxx
+	    // std::cerr << "Change u" <<
+	    // std::endl;
+	    double tmpx = x1px;
+	    double tmpy = x1py;
+	    x1px = x2px;
+	    x1py = x2py;
+	    x2px = tmpx;
+	    x2py = tmpy;
+	    ux = -ux;
+	    uy = -uy;
+	  }
+	  
+	  if (vx * uy - vy * ux > 0) { // change edge1 2 and vice versa if xxx
+	    // std::cerr << "Flipped walls" <<
+	    // std::endl;
+	    Wall *tmp = wall1;
+	    wall1 = wall2;
+	    wall2 = tmp;
+	    size_t tmpIndex = wall1Index;
+	    wall1Index = wall2Index;
+	    wall2Index = tmpIndex;
+	    flippedVectors = true;
+	  }
+	} while (flippedVectors == true);
+	
+	double wx = ox - x1x;
+	double wy = oy - x1y;
+	double wpx = ox - x1px;
+	double wpy = oy - x1py;
+	
+	double dvx = wx - ((vx * wx + vy * wy) / (vx * vx + vy * vy)) * vx;
+	double dvy = wy - ((vx * wx + vy * wy) / (vx * vx + vy * vy)) * vy;
+	double dux = wpx - ((ux * wpx + uy * wpy) / (ux * ux + uy * uy)) * ux;
+	double duy = wpy - ((ux * wpx + uy * wpy) / (ux * ux + uy * uy)) * uy;
+
+	double A = std::sqrt(dvx * dvx + dvy * dvy);
+	double B = std::sqrt(dux * dux + duy * duy);
+	
+	double sigma =
+          std::acos((vx * ux + vy * uy) / (std::sqrt(vx * vx + vy * vy) *
+                                           std::sqrt(ux * ux + uy * uy)));
+	
+	double alpha = astar(sigma, A, B);
+	double beta = myMath::pi() + sigma - alpha;
+	
+	double t = (vx * wx + vy * wy) / (vx * vx + vy * vy);
+	double tp = t + (1.0 / std::sqrt(vx * vx + vy * vy)) * A *
+	  std::sin(alpha - 0.5 * myMath::pi()) /
+	  std::sin(alpha);
+	
+	double s = (ux * wpx + uy * wpy) / (ux * ux + uy * uy);
+	double sp = s + (1.0 / std::sqrt(ux * ux + uy * uy)) * B *
+	  std::sin(beta - 0.50 * myMath::pi()) / std::sin(beta);
+	
+	double px = x1x + tp * vx; // suggested position on edge 1
+	double py = x1y + tp * vy;
+	
+	double qx = x1px + sp * ux; // suggested position on edge 2
+	double qy = x1py + sp * uy;
+	
+	double distance =
+          std::sqrt((qx - px) * (qx - px) + (qy - py) * (qy - py));
+	
+	if (tp <= 0.0 || tp >= 1.0 || sp <= 0.0 || sp >= 1.0) { // discard selection if outside of walls
+	  // std::cerr << "Discard from possible wall combination" << std::endl;
+	  continue;
+	} else {
+	  // std::cerr << "Keep as possible wall combination" << std::endl;
+	  Candidate candidate;
+	  candidate.distance = distance;
+	  candidate.px = px;
+	  candidate.py = py;
+	  candidate.qx = qx;
+	  candidate.qy = qy;
+	  candidate.wall1 = wall1Index;
+	  candidate.wall2 = wall2Index;
+	  
+	  candidates.push_back(candidate);
+	}
+      }
+    } 
+    return candidates;
+  }
+  
+  double ShortestPath2DConcentration::astar(double sigma, double A, double B) {
+    double a = 0;
+    double b = myMath::pi();
+    double e = b - a;
+    double u = f(a, sigma, A, B);
+    double v = f(b, sigma, A, B);
+    double c;
+    
+    if (myMath::sign(u) == myMath::sign(v)) {
+      return 0;
+    }
+    
+    for (size_t k = 0; k < 10; ++k) {
+      e = 0.5 * e;
+      c = a + e;
+      double w = f(c, sigma, A, B);
+      
+      if (myMath::sign(w) != myMath::sign(u)) {
+	b = c;
+	v = w;
+      } else {
+	a = c;
+	u = w;
+      }
+    }
+    return c;
+  }
+
+  double ShortestPath2DConcentration::f(double a, double sigma, double A, double B) {
     double tmp = -A * std::cos(a) / (std::sin(a) * std::sin(a));
     tmp += B * std::cos(myMath::pi() + sigma - a) /
       (std::sin(sigma - a) * std::sin(sigma - a));
