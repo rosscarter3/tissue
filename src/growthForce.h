@@ -142,6 +142,65 @@ namespace GrowthForce {
 		  DataMatrix &wallDerivs,
 		  DataMatrix &vertexDerivs );
     };
+
+    ///
+    /// @brief Growth via a force acting towards the centroid of a cell whose
+    /// index is stored in cell data
+    ///  
+    ///  UPDATE BELOW
+    ///
+    ///  The tissue grows from vertex movement towards a cell whose ID is supplied in cellData,
+    ///  and also
+    ///  includes moving the vertex defining the 'center' of the cells in the
+    ///  center triangulated mesh. The update is given by
+    ///  @f[ \frac{dr}{dt} = p_{0} @f] (if @f$ p_1=0 @f$) or
+    ///  @f[ \frac{dr}{dt} = p_{0} r @f] (if @f$ p_{1}=1 @f$)
+    ///  r is distance to centroid of supplied cell 
+    ///
+    /// @f$ p_{0} @f$ is the rate (@f$ k_{growth} @f$),
+    /// @f$ p_{1} @f$ {0,1} is a flag determining which function to be used (@f$ r_{pow} @f$).
+    /// In a model file the reaction is defined as
+    /// @verbatim
+    /// GrowthForce::CenterTriangulation::Radial 2 1 1
+    /// p_0 p_1
+    /// InternalVarStartIndex
+    /// cellStoreIndex
+    /// @endverbatim
+    /// @see Force::Radial (same but without moving the central vertices)
+    /// @note Used to be named MoveVertexRadiallycenterTriangulation (still allowed).
+    ///
+    class ForceToCell : public BaseReaction {
+      
+    public:
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      ForceToCell(std::vector<double> &paraValue,
+       std::vector< std::vector<size_t> >
+       &indValue );
+      ///
+      /// @brief Derivative function for this reaction class
+      ///
+      /// @see BaseReaction::derivs(Tissue &T,...)
+      ///
+      void derivs(Tissue &T,
+      DataMatrix &cellData,
+      DataMatrix &wallData,
+      DataMatrix &vertexData,
+      DataMatrix &cellDerivs,
+      DataMatrix &wallDerivs,
+      DataMatrix &vertexDerivs );
+    };
+
   } // end namespace CenterTriangulation
 
   ///

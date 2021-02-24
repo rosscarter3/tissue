@@ -20,6 +20,41 @@
 /// These reaction are collected within this namespace.
 ///
 namespace Force {
+  ///
+  /// @brief Applies a force on each vertex proportianal to the distance of that vertex from a given
+  /// plane and perpendicular to that plane. For example, if y force required a force will be
+  /// generated in the y direction proportional to distance from xz plane in dircection 
+  ///
+  /// @details THis reaction applies a force to each vertex in the tissue proportional to the vertices
+  /// distance from a given axis (only really makes sense for a template where the centroid is at
+  /// (0,0,0)). This force is in the given direction perpendicualr to the plane formed by the other two
+  /// directions.
+  ///
+  /// @f[ \frac{dx(y,z)}{dt} = p_0 * x(y,z) @f]
+  ///
+  /// In a model file it is defined as: (UPDATE)
+  /// @verbatim
+  /// Force::ForceFromPlane 2 0
+  /// F
+  /// direction_flag (0:x, 1:y, 2:z)
+  /// @endverbatim
+  /// where F is the force magnitude and the direction flag is the required force direction (1,2,3)/(x,y,z)
+  ///
+  /// 
+  ///
+  class ForceFromPlane : public BaseReaction {
+  public:
+    ForceFromPlane(std::vector<double> &paraValue,
+       std::vector<std::vector<size_t>> &indValue);    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    DataMatrix &vertexData, DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+  };
 
   ///
   /// @brief Applies a force outwards (or inwards) perpendicular to a Cylinder surface direction

@@ -528,10 +528,11 @@ namespace Creation {
 	   &indValue ) 
   {  
     // Do some checks on the parameters and variable indeces
-    if( paraValue.size()!=1 ) {
+    if( paraValue.size()!=1 && paraValue.size()!=2 ) {
       std::cerr << "Creation::FromList::FromList() "
-		<< "Uses one parameter k_c, the constant production rate"
-		<<std::endl;
+		<< "Uses one or two parameter(s)  k_c, the constant production rate"
+		<< "and a flag(equal to 1) if constant -amount- creation is needed"
+		<< std::endl;
       exit(EXIT_FAILURE);
     }
     if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() < 1 ) {
@@ -550,6 +551,8 @@ namespace Creation {
     // Set the parameter identities
     std::vector<std::string> tmp( numParameter() );
     tmp[0] = "k_c";
+    if(numParameter()>1)
+      tmp[1] = "number_flag";
     setParameterId(tmp);
     proCells=indValue[1].size();
   }
@@ -563,13 +566,20 @@ namespace Creation {
 	 DataMatrix &wallDerivs,
 	 DataMatrix &vertexDerivs ) 
   {  
-    size_t cIndex = variableIndex(0,0);  
-    //For the cells in the list
-    for (size_t cellI = 0; cellI < proCells; ++cellI) {    
-      cellDerivs[variableIndex(1,cellI)][cIndex] += parameter(0);    
+    size_t cIndex = variableIndex(0,0);
+    if(numParameter()>1 && parameter(1)==1) {
+      //Add const number of molecules to the listed cells
+      for (size_t cellI = 0; cellI < proCells; ++cellI) 
+	cellDerivs[variableIndex(1,cellI)][cIndex] += parameter(0) /
+	  T.cell(cellI).calculateVolume(vertexData);
+    }
+    else {
+      //Add const conc to the listed cells 
+      for (size_t cellI = 0; cellI < proCells; ++cellI) 
+	cellDerivs[variableIndex(1,cellI)][cIndex] += parameter(0);
     }
   }
-
+  
   OneGeometric::
   OneGeometric(std::vector<double> &paraValue, 
 	       std::vector< std::vector<size_t> > 

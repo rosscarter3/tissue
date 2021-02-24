@@ -15,6 +15,289 @@
 #include <iostream>
 #include <sstream>
 
+namespace TRBS {
+
+  double AreaFromEdges(std::vector<double> &edgeLength) {
+    assert(edgeLength.size()==3);
+    return std::sqrt( ( edgeLength[0]+edgeLength[1]+edgeLength[2])*
+		      (-edgeLength[0]+edgeLength[1]+edgeLength[2])*
+		      ( edgeLength[0]-edgeLength[1]+edgeLength[2])*
+		      ( edgeLength[0]+edgeLength[1]-edgeLength[2])  )*0.25;
+  }
+
+  void CosFromEdges(std::vector<double> &restingLength, std::vector<double> &cosAngle) {
+    assert(restingLength.size()==3 && cosAngle.size()==3);
+    cosAngle[0] = (restingLength[0]*restingLength[0]+restingLength[2]*restingLength[2]
+		   -restingLength[1]*restingLength[1])
+      / (restingLength[0]*restingLength[2]*2);	
+    cosAngle[1] = (restingLength[0]*restingLength[0]+restingLength[1]*restingLength[1]
+		   -restingLength[2]*restingLength[2])
+      / (restingLength[0]*restingLength[1]*2);    
+    cosAngle[2] = (restingLength[1]*restingLength[1]+restingLength[2]*restingLength[2]
+		   -restingLength[0]*restingLength[0])
+      / (restingLength[1]*restingLength[2]*2);    
+  }
+  
+  void CotanFromCos(std::vector<double> &cosAngle, std::vector<double> &cotanAngle) {
+    assert(cosAngle.size()==cotanAngle.size());
+    for (size_t i=0;i<cotanAngle.size(); ++i) {
+      cotanAngle[i] = cosAngle[i]/std::sqrt(1-cosAngle[i]*cosAngle[i]);
+    }
+  }
+
+  void Stiffness(double lambda, double mio, double areaFactor, std::vector<double> &cotan,
+		 std::vector<double> &tensileStiffness, std::vector<double> &angularStiffness) {
+    assert( cotan.size()==tensileStiffnes.size() && cotan.size()==angularStiffness.size());
+    double fac = lambda+2.0*mio;
+    size_t numVertex=cotan.size();
+    for (size_t i=0; i<numVertex; ++i) {
+      size_t ip1 = (i+1)%numVertex;
+      size_t im1 = (i+2)%numVertex; //assumes a triangle
+      tensileStiffness[i] = (2*cotan[im1]*cotan[im1]*fac+2*mio)*areaFactor;
+      angularStiffness[i] = (2*cotan[im1]*cotan[ip1]*fac-2*mio)*areaFactor;
+    }
+  }
+
+  void BiQuadraticStrain(std::vector<double> &length, std::vector<double> &restingLength,
+			 std::vector<double> &Delta) {
+    size_t numVertex=length.size();
+    assert(restingLength.size()==numVertex && Delta.size()==numVertex);
+    for (size_t i=0; i<numVertex; ++i) {
+      Delta[i] = length[i]*length[i] - restingLength[i]*restingLength[i];
+    }
+  }
+
+  void ShapeVector(double Xa, double Xb, double Xc, std::vector< std::vector<double> > &shapeVector) {
+    shapeVector[0][0] = shapeVector[0][2] = shapeVector[2][2] = 0.0;
+    shapeVector[0][1] = 1/Xc;
+    shapeVector[1][0] = -1.0/Xb;
+    shapeVector[1][1] = (Xa-Xb)/(Xb*Xc);
+    shapeVector[1][2] = 1.0;
+    shapeVector[2][0] = 1.0/Xb;
+    shapeVector[2][1] = -Xa/(Xb*Xc);
+  }
+
+  void AddForceIsotropic(std::vector< std::vector<double> > &pos,
+			 std::vector<double> &tS, std::vector<double> &aS,
+			 std::vector<double> &Delta,std::vector< std::vector<double> > &Force) {
+    size_t dimension = pos.size();
+    assert(tS.size()==dimension && aS.size()==dimension && Delta.size()==dimension && Force.size()==dimension);
+    //for (size_t i=0; i<dimension; ++i) {
+    //for (size_t j=0; j<dimension; ++j) {
+    //	Force[i][j]= (tS[0]*Delta[0]+aS[1]*Delta[1]+aS[0]*Delta[2])*(pos[1][0]-pos[i][j])
+    //	  +          (tS[2]*Delta[2]+aS[2]*Delta[1]+aS[0]*Delta[0])*(pos[2][0]-pos[i][j]);
+    //}
+    //}
+	
+    Force[0][0]= (tS[0]*Delta[0]+aS[1]*Delta[1]+aS[0]*Delta[2])*(pos[1][0]-pos[0][0])
+      +          (tS[2]*Delta[2]+aS[2]*Delta[1]+aS[0]*Delta[0])*(pos[2][0]-pos[0][0]);
+
+    Force[0][1]= (tS[0]*Delta[0]+aS[1]*Delta[1]+aS[0]*Delta[2])*(pos[1][1]-pos[0][1])
+      +          (tS[2]*Delta[2]+aS[2]*Delta[1]+aS[0]*Delta[0])*(pos[2][1]-pos[0][1]);
+
+    Force[0][2]= (tS[0]*Delta[0]+aS[1]*Delta[1]+aS[0]*Delta[2])*(pos[1][2]-pos[0][2])
+      +          (tS[2]*Delta[2]+aS[2]*Delta[1]+aS[0]*Delta[0])*(pos[2][2]-pos[0][2]);
+
+    Force[1][0]= (tS[0]*Delta[0]+aS[0]*Delta[2]+aS[1]*Delta[1])*(pos[0][0]-pos[1][0])
+      +          (tS[1]*Delta[1]+aS[2]*Delta[2]+aS[1]*Delta[0])*(pos[2][0]-pos[1][0]);
+
+    Force[1][1]= (tS[0]*Delta[0]+aS[0]*Delta[2]+aS[1]*Delta[1])*(pos[0][1]-pos[1][1])
+      +          (tS[1]*Delta[1]+aS[2]*Delta[2]+aS[1]*Delta[0])*(pos[2][1]-pos[1][1]);
+
+    Force[1][2]= (tS[0]*Delta[0]+aS[0]*Delta[2]+aS[1]*Delta[1])*(pos[0][2]-pos[1][2])
+      +          (tS[1]*Delta[1]+aS[2]*Delta[2]+aS[1]*Delta[0])*(pos[2][2]-pos[1][2]);        
+
+    Force[2][0]= (tS[2]*Delta[2]+aS[0]*Delta[0]+aS[2]*Delta[1])*(pos[0][0]-pos[2][0])
+      +          (tS[1]*Delta[1]+aS[1]*Delta[0]+aS[2]*Delta[2])*(pos[1][0]-pos[2][0]);
+
+    Force[2][1]= (tS[2]*Delta[2]+aS[0]*Delta[0]+aS[2]*Delta[1])*(pos[0][1]-pos[2][1])
+      +          (tS[1]*Delta[1]+aS[1]*Delta[0]+aS[2]*Delta[2])*(pos[1][1]-pos[2][1]);
+
+    Force[2][2]= (tS[2]*Delta[2]+aS[0]*Delta[0]+aS[2]*Delta[1])*(pos[0][2]-pos[2][2])
+      +          (tS[1]*Delta[1]+aS[1]*Delta[0]+aS[2]*Delta[2])*(pos[1][2]-pos[2][2]);
+  }
+
+  void RotationMatrix(std::vector< std::vector<double> > &pos,std::vector< std::vector<double> > &rotation) {
+    size_t dimension=pos.size();
+    assert( rot.size()==dimension);
+    std::vector<double> xCurrent(dimension), bCurrent(dimension), zCurrent(dimension), yCurrent(dimension);
+    
+    double temp=std::sqrt((pos[2][0]-pos[1][0])*(pos[2][0]-pos[1][0])+
+			  (pos[2][1]-pos[1][1])*(pos[2][1]-pos[1][1])+
+			  (pos[2][2]-pos[1][2])*(pos[2][2]-pos[1][2])  );
+    double tempB=std::sqrt((pos[0][0]-pos[1][0])*(pos[0][0]-pos[1][0])+
+			   (pos[0][1]-pos[1][1])*(pos[0][1]-pos[1][1])+
+			   (pos[0][2]-pos[1][2])*(pos[0][2]-pos[1][2])  );
+    for (size_t i=0; i<dimension; ++i) {
+      xCurrent[i] = (pos[2][i]-pos[1][i])/temp;
+      bCurrent[i] = (pos[0][i]-pos[1][i])/tempB;
+    }      
+
+    zCurrent[0] = xCurrent[1]*bCurrent[2]-xCurrent[2]*bCurrent[1];
+    zCurrent[1] = xCurrent[2]*bCurrent[0]-xCurrent[0]*bCurrent[2];
+    zCurrent[2] = xCurrent[0]*bCurrent[1]-xCurrent[1]*bCurrent[0];
+
+    //normalise
+    temp = 1.0/std::sqrt(zCurrent[0]*zCurrent[0]+zCurrent[1]*zCurrent[1]+zCurrent[2]*zCurrent[2]);
+    for (size_t i=0; i<dimension; ++i) {
+      zCurrent[i] *= temp;
+    }      
+    yCurrent[0] = zCurrent[1]*xCurrent[2]-zCurrent[2]*xCurrent[1];
+    yCurrent[1] = zCurrent[2]*xCurrent[0]-zCurrent[0]*xCurrent[2];
+    yCurrent[2] = zCurrent[0]*xCurrent[1]-zCurrent[1]*xCurrent[0];
+      
+    for (size_t i=0; i<dimension; ++i) {
+      rotation[i][0] = xCurrent[i];
+      rotation[i][1] = yCurrent[i];
+      rotation[i][2] = zCurrent[i];
+    }
+  }
+
+  void Rotate(std::vector<double> &inVector, std::vector< std::vector<double> > &rotation,
+	      std::vector<double> &outVector) {
+    size_t dimension = rotation.size();
+    for (size_t i=0; i<dimension; ++i) {
+      outVector[i]=0.0;
+      for (size_t j=0; j<dimension; ++j) {
+	outVector[i] += rotation[j][i]*inVector[j];
+      }
+    }
+  }
+  void RotTensorRot(std::vector< std::vector<double> > &rotation,std::vector< std::vector<double> > &Tensor) {
+    size_t dimension=rotation.size();
+    std::vector<double> tmpVector3(dimension);
+    std::vector< std::vector<double> > tempR(dimension,tmpVector3);
+    for (size_t r=0; r<dimension; r++) 
+      for (size_t s=0; s<dimension; s++) 
+	for(size_t w=0; w<dimension; w++) 
+	  tempR[r][s] += rotation[r][w]*Tensor[w][s];
+    
+    for (size_t r=0; r<dimension; r++) 
+      for (size_t s=0; s<dimension; s++) {
+	Tensor[r][s]=0;
+	for(size_t w=0; w<dimension; w++) 
+	  Tensor[r][s] += tempR[r][w]*rotation[s][w]; 
+      }
+  }
+  void Normalise(std::vector<double> &inVector) {
+    double lengthFac = 0.0;
+    for (size_t i=0; i<inVector.size(); ++i)
+      lengthFac += inVector[i]*inVector[i];
+    assert(lengthFac>0.0);
+    lengthFac = 1.0 / std::sqrt(lengthFac);
+    for (size_t i=0; i<inVector.size(); ++i)
+      inVector[i] *= lengthFac;
+  }
+
+  void GetEigenVectors(std::vector< std::vector<double> > &eigenVectors,
+		       std::vector< std::vector<double> > &inMatrix, double epsilon) {
+    int I,J;    
+    double pivot=1;
+    double tanRotAngle, Si, Co;
+    TRBS::SetIdentity(eigenVectors);
+    size_t dimension = eigenVectors.size();
+    pivot=1;      
+    while (pivot>epsilon) {
+      pivot=std::fabs(inMatrix[1][0]);
+      I=1;
+      J=0;
+      if (std::fabs(inMatrix[2][0])>pivot) {
+	pivot=std::fabs(inMatrix[2][0]);
+	I=2;
+	J=0;
+      }
+      if (std::fabs(inMatrix[2][1])>pivot) {
+	pivot=std::fabs(inMatrix[2][1]);
+	I=2;
+	J=1;
+      }
+      if (std::fabs(inMatrix[I][I]-inMatrix[J][J])<epsilon) {
+	//RotAngle=pi/4;
+	Si=0.70710678118;
+	Co=0.70710678118;
+      }
+      else {
+	tanRotAngle=(2*inMatrix[I][J])/(inMatrix[J][J]-inMatrix[I][I]);
+	tanRotAngle=1/std::sqrt(1+tanRotAngle*tanRotAngle);
+	if(tanRotAngle<1)
+	  Si=0.70710678118*std::sqrt(1-tanRotAngle);
+	else
+	  Si=0.70710678118*std::sqrt(tanRotAngle-1);
+	Co=0.70710678118*std::sqrt(1+tanRotAngle);
+      }
+      std::vector<double> tmpVector(dimension);
+      std::vector< std::vector<double> > tempRot(dimension,tmpVector);
+      SetIdentity(tempRot);
+      tempRot[I][I]=Co;
+      tempRot[J][J]=Co;
+      tempRot[I][J]=Si;
+      tempRot[J][I]=-Si;
+      
+      std::vector< std::vector<double> > tempStress(dimension,tmpVector);
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w) 
+	    tempStress[r][s]=tempStress[r][s]+inMatrix[r][w]*tempRot[w][s];
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  inMatrix[r][s]=0.0;
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w) 
+	    inMatrix[r][s]=inMatrix[r][s]+tempRot[w][r]*tempStress[w][s];
+      
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  tempStress[r][s]=eigenVectors[r][s];
+      
+      for (size_t ii=0; ii<3; ++ii) {
+	for (size_t jj=0; jj<3; ++jj) {
+	  eigenVectors[ii][jj] = 0.0;
+	}
+      }
+      for (size_t r=0; r<dimension; ++r) 
+	for (size_t s=0; s<dimension; ++s) 
+	  for(size_t w=0; w<dimension; ++w)       
+	    eigenVectors[r][s]=eigenVectors[r][s]+tempStress[r][w]*tempRot[w][s];
+    } // end while
+    
+    // normalizing eigenvectors (remove if not necessary)  
+    double temp=std::sqrt(eigenVectors[0][0]*eigenVectors[0][0] +
+			  eigenVectors[1][0]*eigenVectors[1][0] +
+			  eigenVectors[2][0]*eigenVectors[2][0] );
+    if(temp>0){
+      eigenVectors[0][0]/=temp;
+      eigenVectors[1][0]/=temp;
+      eigenVectors[2][0]/=temp;
+    }
+    temp=std::sqrt(eigenVectors[0][1]*eigenVectors[0][1] +
+		   eigenVectors[1][1]*eigenVectors[1][1] +
+		   eigenVectors[2][1]*eigenVectors[2][1] );
+    if(temp>0){
+      eigenVectors[0][1]/=temp;
+      eigenVectors[1][1]/=temp;
+      eigenVectors[2][1]/=temp;
+    }
+    temp=std::sqrt(eigenVectors[0][2]*eigenVectors[0][2] +
+		   eigenVectors[1][2]*eigenVectors[1][2] +
+		   eigenVectors[2][2]*eigenVectors[2][2] );
+    if(temp>0){
+      eigenVectors[0][2]/=temp;
+      eigenVectors[1][2]/=temp;
+      eigenVectors[2][2]/=temp;
+    } 
+  }
+
+  void SetIdentity(std::vector< std::vector<double> > &matrix) {
+    for (size_t i=0; i<matrix.size(); ++i)
+      for (size_t j=0; j<matrix[i].size(); ++j)
+	(i==j) ? matrix[i][j]=1.0 : matrix[i][j]=0.0;
+  }
+  
+} // end namespace TRBS
+
 VertexFromTRBS::  
 VertexFromTRBS(std::vector<double> &paraValue, 
 	       std::vector< std::vector<size_t> > 

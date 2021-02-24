@@ -314,6 +314,82 @@ namespace WallMechanics {
           DataMatrix &wallDerivs,
           DataMatrix &vertexDerivs);
   };
+
+  ///
+  /// @brief A viscoelastic update of edges
+  ///
+  /// The update (in all dimensions) are given by
+  ///
+  /// @f[ \frac{dx_i}{dt} = @f] 
+  ///
+  /// In a model file the reaction is defined as:
+  ///
+  /// @verbatim
+  /// WallMechanics::ViscoElastic 2 1 1
+  /// eta        # viscosity
+  /// k          # spring constant
+  /// L_ij-index # index of the resting lenth
+  /// @endverbatim
+  /// or
+  /// @verbatim
+  /// WallMechanics::ViscoElastic 2 2 1 1
+  /// eta          # viscosity
+  /// k            # spring constant
+  /// L_ij-index   # index of the resting lenth
+  /// strain_index # optional wall index to store strain
+  /// @endverbatim
+  
+  ///
+  class ViscoElastic : public BaseReaction {
+
+  private:
+    DataMatrix historyData_;
+    std::vector<double> historyTime_;
+      
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ViscoElastic(std::vector<double> &paraValue, 
+		 std::vector< std::vector<size_t> > 
+		 &indValue);
+    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Tissue &T,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+    
+    void initiate(Tissue &T,
+		  DataMatrix &cellData,
+		  DataMatrix &walldata,
+		  DataMatrix &vertexData,
+		  DataMatrix &cellderivs,
+		  DataMatrix &wallderivs,
+		  DataMatrix &vertexDerivs );
+    void update(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData, 
+		double h);       
+  };
+  
 } // end namespace WallMechanics
 
 ///

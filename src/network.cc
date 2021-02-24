@@ -8,6 +8,388 @@
 #include "network.h"
 #include "baseReaction.h"
 
+LinPolarizationFast::LinPolarizationFast(std::vector<double> &paraValue,
+    std::vector<std::vector<size_t> > &indValue) {
+
+  // Do some checks on the parameters and variable indeces
+  if (paraValue.size() != 1) {
+    std::cerr << "LinPolarizationFast::LinPolarizationFast() "
+      << "uses one parameter (b/a).\n";
+    exit(0);
+  }
+  if (indValue.size() != 2 || 
+      indValue[0].size() != 2 ||
+      indValue[1].size() != 2) {
+    std::cerr << "LinPolarizationFast() "
+      << "Polarized molecule + polarization signal indeces needed in "
+      << "level 1.\n"
+      << "Variable indices for size parameter and membrane index for PIN needed at second level.\n";
+    exit(0);
+  }
+
+
+  // Set the variable values
+  setId("LinPolarizationFast");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  std::vector<std::string> tmp(numParameter());
+  tmp.resize(numParameter());
+  tmp[0] = "b/a";
+  setParameterId(tmp);
+}
+
+void LinPolarizationFast::derivs(Tissue &T,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs ) 
+{  
+  // implementation
+  size_t numCells = T.numCell();
+  size_t cellPINIdx = variableIndex(0, 0);
+  size_t cellAuxinIdx = variableIndex(0, 1);
+  size_t cellVolumeIdx = variableIndex(1, 0);
+  size_t wallPINIdx = variableIndex(1, 1);
+
+  for (size_t i=0 ; i < numCells ; ++i ) {
+
+    // Retrieve volume of cell
+    double Vi = cellData[i][cellVolumeIdx]; // Volume of the compartment
+    if (Vi <= 0.0) {
+      std::cerr << "LinPolarizationFast::derivs() Given volume Vi="
+        << Vi << " unphysical.\n";
+      exit(-1);
+    }
+
+    // Polarization coefficient normalization constant
+    double sum=0.0;
+    size_t numCellNeighs=0;
+    size_t numWalls = T.cell(i).numWall();
+    for (size_t n = 0; n < numWalls; ++n) {
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+        numCellNeighs++;
+
+        if (T.cell(i).wall(n)->cell1()->index() == i)
+          sum += cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
+        else
+          sum += cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
+      }
+    }
+
+    if (numCellNeighs == 0) {
+      return;
+    }
+
+    // Calculate polarization coefficient normalization constant
+    //sum /= numCellNeighs; // To lower dep on num neighs
+    sum += parameter(0);
+    double inv_sum = 1.0 / sum; // To use mult instead of div
+
+    // Loop over cell walls and polarize accordingly
+    for (size_t n=0; n < numWalls; ++n) {
+
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+
+        size_t c1Idx = T.cell(i).wall(n)->cell1()->index();
+        size_t neighIdx = c1Idx == i ? T.cell(i).wall(n)->cell2()->index() : c1Idx;
+
+        double Vj = cellData[neighIdx][cellVolumeIdx]; 
+        if (Vj <= 0.0) {
+          std::cerr << "LinPolarizationFast::derivs Given volume Vj="
+            << Vj << " unphysical.\n";
+          exit(-1);
+        }
+
+        // Calculate PIN and set as wall variable
+        // Note: This value is solved directly from the corresponding auxin 
+        // concentration under the assumption of "fast" PIN cycling. It is therefore 
+        // not added towards wallDerivs.
+        double Pij = cellData[i][cellPINIdx] * 
+                     cellData[neighIdx][cellAuxinIdx] * inv_sum;
+        wallData[T.cell(i).wall(n)->index()][c1Idx == i ? wallPINIdx : wallPINIdx + 1] = Pij;
+      }
+    }
+  }
+}
+
+
+LinPolarizationFastExact::LinPolarizationFastExact(std::vector<double> &paraValue,
+    std::vector<std::vector<size_t> > &indValue) {
+
+  // Do some checks on the parameters and variable indeces
+  if (paraValue.size() != 1) {
+    std::cerr << "LinPolarizationFastExact::LinPolarizationFastExact() "
+      << "uses one parameter (b/a).\n";
+    exit(0);
+  }
+  if (indValue.size() != 2 || 
+      indValue[0].size() != 2 ||
+      indValue[1].size() != 3) {
+    std::cerr << "LinPolarizationFastExact() "
+      << "Polarized molecule + polarization signal indeces needed in "
+      << "level 1.\n"
+      << "Variable indices for cell volume and membrane area, as well as " 
+      << "membrane PIN needed at second level.\n";
+    exit(0);
+  }
+
+
+  // Set the variable values
+  setId("LinPolarizationFastExact");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  std::vector<std::string> tmp(numParameter());
+  tmp.resize(numParameter());
+  tmp[0] = "b/a";
+  setParameterId(tmp);
+}
+
+void LinPolarizationFastExact::derivs(Tissue &T,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs ) 
+{  
+  // implementation
+  size_t numCells = T.numCell();
+  size_t cellPINIdx = variableIndex(0, 0);
+  size_t cellAuxinIdx = variableIndex(0, 1);
+  size_t cellVolumeIdx = variableIndex(1, 0);
+  size_t wallAreaIdx = variableIndex(1, 1);
+  size_t wallPINIdx = variableIndex(1, 2);
+
+  for (size_t i=0 ; i < numCells ; ++i ) {
+
+    // Retrieve volume of cell
+    double Vi = cellData[i][cellVolumeIdx]; // Volume of the compartment
+    if (Vi <= 0.0) {
+      std::cerr << "LinPolarizationFastExact::derivs() Given volume Vi="
+        << Vi << " unphysical.\n";
+      exit(-1);
+    }
+
+    // Polarization coefficient normalization constant
+    double sum=0.0;
+    size_t numCellNeighs=0;
+    size_t numWalls = T.cell(i).numWall();
+    for (size_t n = 0; n < numWalls; ++n) {
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+        numCellNeighs++;
+        
+        size_t wallIdx = T.cell(i).wall(n)->index();
+        if (T.cell(i).wall(n)->cell1()->index() == i)
+          sum += wallData[wallIdx][wallAreaIdx] * 
+                 cellData[T.cell(i).wall(n)->cell2()->index()][cellAuxinIdx];
+        else
+          sum += wallData[wallIdx][wallAreaIdx] * 
+                 cellData[T.cell(i).wall(n)->cell1()->index()][cellAuxinIdx];
+      }
+    }
+
+    if (numCellNeighs == 0) {
+      return;
+    }
+
+    // Calculate polarization coefficient normalization constant
+    sum += parameter(0);
+    double inv_sum = 1.0 / sum; // To use mult instead of div
+
+    // Loop over cell walls and polarize accordingly
+    for (size_t n=0; n < numWalls; ++n) {
+
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) { 
+
+        size_t c1Idx = T.cell(i).wall(n)->cell1()->index();
+        size_t neighIdx = c1Idx == i ? T.cell(i).wall(n)->cell2()->index() : c1Idx;
+
+        double Vj = cellData[neighIdx][cellVolumeIdx]; 
+        if (Vj <= 0.0) {
+          std::cerr << "LinPolarizationFastExact::derivs Given volume Vj="
+            << Vj << " unphysical.\n";
+          exit(-1);
+        }
+
+        // Calculate PIN and set as wall variable
+        // Note: This value is solved directly from the corresponding auxin 
+        // concentration under the assumption of "fast" PIN cycling. It is therefore 
+        // not added towards wallDerivs.
+        double Pij = // cellData[i][cellVolumeIdx] *
+                     cellData[i][cellPINIdx] *
+                     cellData[neighIdx][cellAuxinIdx] * inv_sum;
+        wallData[T.cell(i).wall(n)->index()][c1Idx == i ? wallPINIdx : wallPINIdx + 1] = Pij;
+      }
+    }
+  }
+}
+
+
+CellCellAuxinTransport::CellCellAuxinTransport(
+    std::vector<double> &paraValue,
+    std::vector<std::vector<size_t> > &indValue) {
+  // Do some checks on the parameters and variable indeces
+  //
+  if (paraValue.size() != 4) {
+    std::cerr << "CellCellAuxinTransport::CellCellAuxinTransport() "
+      << "Uses four parameters; \n"
+      << "d_1 (cell-wall passive trasport), p_p (pin-mediated "
+      "cell-wall transport, "
+      << "d_2 (wall-cell passive trasport), p_a (aux-mediated "
+      "wall-cell transport."
+      << std::endl;
+    exit(0);
+  }
+
+  if (indValue[0].size() != 2 || // Volume and wall area indices
+      (indValue.size() != 2 && indValue.size() != 3) ||
+      (indValue.size() == 3 && indValue[2].size() != 2) || // when giving P_i, A_i
+      (indValue[1].size() != 3 && indValue[1].size() != 4)) {
+    std::cerr
+      << "CellCellAuxinTransport::CellCellAuxinTransport() "
+      << "Two variable indices V_i and A_i needed at first level and at least three at second "
+      << "PIN_ij, AUX_ij, Auxin_i. A fourth second-level variable index can be supplied, "
+      "wherein auxin fluxes will be saved." << std::endl
+      << "A third level where indices for P_i and A_i are given is optional."
+      << std::endl;
+    exit(0);
+  }
+
+//std::cerr << indValue.size() << "\n";
+//for (size_t k = 0; k < indValue.size(); ++k) {
+//  std::cerr << indValue[k].size() << " | ";
+//  for (size_t kk = 0; kk < indValue[k].size(); ++kk) {
+//    std::cerr << indValue[k][kk] << " ";
+//  }
+//  std::cerr <<  "\n";
+//}
+//
+
+  // Set the variable values
+  //
+  setId("CellCellAuxinTransport");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  //
+  std::vector<std::string> tmp(numParameter());
+  tmp.resize(numParameter());
+  tmp[0] = "d_1";
+  tmp[1] = "p_p";
+  tmp[2] = "d_2";
+  tmp[3] = "p_a";
+  setParameterId(tmp);
+}
+
+void CellCellAuxinTransport::derivs(Tissue &T,
+    DataMatrix &cellData,
+    DataMatrix &wallData,
+    DataMatrix &vertexData,
+    DataMatrix &cellDerivs,
+    DataMatrix &wallDerivs,
+    DataMatrix &vertexDerivs)
+{
+
+  size_t v_idx = variableIndex(0, 0);
+  int l_idx = variableIndex(0, 1);
+  size_t p_idx = variableIndex(1, 0);
+  size_t a_idx = variableIndex(1, 1);
+  size_t auxin_idx = variableIndex(1, 2);
+  size_t numCells = T.numCell();
+  bool saveFlux = (numVariableIndex(1) == 4) ? true : false;
+
+  for (size_t i=0; i < numCells; i++) {
+    double V_i = cellData[i][v_idx];
+    if (V_i <= 0.0) {
+      std::cerr << "CellCellAuxinTransport::derivs() Given volume Vi="
+        << V_i << " unphysical.\n";
+      exit(-1);
+    }
+
+    size_t numCellNeighs=0;
+    size_t numWalls = T.cell(i).numWall();
+    for (size_t n = 0; n < numWalls; ++n) {
+      if (T.cell(i).wall(n)->cell1() != T.background() &&
+          T.cell(i).wall(n)->cell2() != T.background()) {
+        numCellNeighs++;
+        size_t c1Idx = T.cell(i).wall(n)->cell1()->index();
+        size_t w_idx = T.cell(i).wall(n)->index();
+
+        if (T.cell(i).wall(n)->cell1() != T.background() &&
+            T.cell(i).wall(n)->cell2() != T.background()) {
+          size_t j = c1Idx == i ? T.cell(i).wall(n)->cell2()->index() : c1Idx;
+          size_t idxAdd = c1Idx == i ? 0 : 1;
+
+          if (i < j) {
+            double V_j = cellData[j][v_idx];
+            if (V_j <= 0.0) {
+              std::cerr << "CellCellAuxinTransport::derivs Given volume Vj"
+                << V_j << " unphysical.\n";
+              exit(-1);
+            }
+
+            // Retrieve the values of interest
+            // TODO
+            double area_ij = l_idx == -1 ? 1 :  wallData[w_idx][l_idx]; 
+            
+            if (area_ij <= 0.0) {
+              std::cerr << "CellCellAuxinTransport::derivs Given wall area "
+                << area_ij << " unphysical.\n";
+              exit(-1);
+            }
+            
+            double PIN_ij = wallData[w_idx][p_idx + idxAdd]; 
+            double AUX_ij = wallData[w_idx][a_idx + idxAdd];  
+            double PIN_ji = wallData[w_idx][p_idx + (idxAdd + 1) % 2];
+            double AUX_ji = wallData[w_idx][a_idx + (idxAdd + 1) % 2];
+ 
+            // TODO: This sets all four indices, whereas we in the case above
+            // only set two of them (and assume that the next one is the index
+            // for the same species in the other direction.
+            if (numVariableIndexLevel() == 3) {
+              PIN_ij *= wallData[i][variableIndex(2, 0)];
+              AUX_ij *= wallData[i][variableIndex(2, 1)];
+              PIN_ji *= wallData[j][variableIndex(2, 0)];
+              AUX_ji *= wallData[j][variableIndex(2, 1)];
+            }
+
+            // Update auxin concentrations
+            double denominator = 2 * parameter(2) + parameter(3) * (AUX_ij + AUX_ji);
+            double oFlux = (parameter(2) + parameter(3) * AUX_ji) *
+                           (parameter(0) + parameter(1) * PIN_ij) *
+                            cellData[i][auxin_idx] / denominator;
+            double iFlux = (parameter(2) + parameter(3) * AUX_ij) *
+                           (parameter(0) + parameter(1) * PIN_ji) *
+                            cellData[j][auxin_idx] / denominator;
+            double flux = area_ij * (iFlux - oFlux);
+
+            cellDerivs[i][auxin_idx] += flux / V_i;
+            cellDerivs[j][auxin_idx] -= flux / V_j;
+
+            // Save flux in variable if the parameter is set
+            if (saveFlux) {
+              wallData[w_idx][variableIndex(1, 3) + idxAdd] = -flux;
+              wallData[w_idx][variableIndex(1, 3) + (idxAdd + 1) % 2] = flux;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 AuxinModelSimple1::
 AuxinModelSimple1(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > 
@@ -956,15 +1338,15 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() //&& mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     
@@ -1137,16 +1519,16 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
 
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() // && mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     
@@ -1330,15 +1712,15 @@ derivs(Tissue &T,
   size_t pidI = variableIndex(0,3);
   size_t xI = variableIndex(0,4);
   size_t l1I = variableIndex(0,5);
-  size_t mI;
-  mI = variableIndex(0,6);
+//  size_t mI;
+//  mI = variableIndex(0,6);
   assert( auxinI<cellData[0].size() &&
 	  pinI<cellData[0].size() &&
 	  auxI<cellData[0].size() &&
 	  pidI<cellData[0].size() &&
 	  xI<cellData[0].size() &&
-	  l1I<cellData[0].size() &&
-	  mI<cellData[0].size() );
+	  l1I<cellData[0].size() // && mI<cellData[0].size() 
+    );
   
   for( size_t i=0 ; i<numCells ; ++i ) {
     

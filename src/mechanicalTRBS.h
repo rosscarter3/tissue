@@ -13,6 +13,100 @@
 #include<cmath>
 
 ///
+/// @brief Mechanical models using the Triangular Biquadratic Spring (TRBS) for triangular plates
+///
+/// @details These reactions update the vertex positions from the mechanical feedback on 2D triangular
+/// elements.
+/// The theory of the mechanical model comes from H. Delingette,
+/// Triangular springs for modelling non-linear membranes, IEEE Trans
+/// Vis Comput Graph 14, 329-41 (2008)
+///
+/// @see https://gitlab.com/slcu/teamhj/publications/bozorg_etal_2014 (and bozorg_etal_2016) for examples
+///
+namespace TRBS {
+
+  // Some functions for general triangle manipulations
+  ///
+  /// @brief Calculates the triangular area from edges using Heron's formula
+  ///
+  double AreaFromEdges(std::vector<double> &edgeLength);
+
+  ///
+  /// @brief Calculates the cosine of the triangle angles from the edge lengths
+  ///
+  void CosFromEdges(std::vector<double> &restingLength, std::vector<double> &cosAngle);
+  ///
+  /// @brief Calculates the Cotanges of the angles of the triangle from the cosines
+  ///
+  void CotanFromCos(std::vector<double> &cosAngle, std::vector<double> &cotanAngle);
+  ///
+  /// @brief Calculates the tensile and angular stiffness from cotan vector
+  ///
+  void Stiffness(double lambda, double mio, double areaFactor, std::vector<double> &cotan,
+		 std::vector<double> &tensilStiffness, std::vector<double> &angularStiffness);
+  ///
+  /// @brief Calculates the BiQuadratic strain
+  ///
+  void BiQuadraticStrain(std::vector<double> &length, std::vector<double> &restingLength,
+			 std::vector<double> &Delta);
+  ///
+  /// @brief Shape vector matrix in local coordinate system from shape factors (P or Q = X)
+  ///
+  /// @details This matrix is the inverse of coordinate matrix. Only first two elements are used in calculations
+  /// i.e. shapeVector[3][2] although implemented as 3x3.      
+  ///
+  void ShapeVector(double Xa, double Xb, double Xc, std::vector< std::vector<double> > &shapeVector);
+  ///
+  /// @brief Calculates Forces from isotropic contribution of the material (youngT,poissonT)
+  ///
+  /// The calculation uses positions, tensile and angular stiffnesses and Delta and adds to the Force matrix.
+  ///
+  void AddForceIsotropic(std::vector< std::vector<double> > &position,
+			 std::vector<double> &tensileStiffness, std::vector<double> &angularStiffness,
+			 std::vector<double> &Delta,
+			 std::vector< std::vector<double> > &Force);
+  ///
+  /// @brief Calculates the rotation matrix from positions
+  ///
+  void RotationMatrix(std::vector< std::vector<double> > &position, std::vector< std::vector<double> > &rotation);
+
+  ///
+  /// @brief Rotates inVector into outVector using the rotation matrix
+  ///
+  void Rotate(std::vector<double> &inVector, std::vector< std::vector<double> > &rotation,
+	      std::vector<double> &outVector);
+
+  ///
+  /// @brief Rotates a tensor and saves the output in the input matrix
+  ///
+  void RotTensorRot(std::vector< std::vector<double> > &rotation,std::vector< std::vector<double> > &Tensor);
+
+  ///
+  /// @brief Normalise a vector to length 1.0
+  ///
+  void Normalise(std::vector<double> &inVector);
+
+  ///
+  /// @brief Extract eigenvectors from a matrix using Jacobi method
+  ///
+  /// @details Eigenvectors for the matrix are extracted using a Jacobi method. The eigenvectors are
+  /// normalised and stored in columns in the eigenVectors output
+  ///
+  void GetEigenVectors(std::vector< std::vector<double> > &eigenVectors,
+		       std::vector< std::vector<double> > &inMatrix, double epsilon=1.0e-06);
+
+  ///
+  /// @brief Sets the values of a matrix to the Identity matrix
+  ///
+  void SetIdentity(std::vector< std::vector<double> > &matrix);
+  
+  namespace CenterTriangulation {
+  } // end namespace CenterTriangulation
+
+  
+} // end namespace TRBS
+
+///
 /// @brief Triangular spring model for plates (2D walls) assuming
 /// triangular faces (cells).
 ///

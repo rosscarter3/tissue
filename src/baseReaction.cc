@@ -59,6 +59,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	   idValue == "CenterTriangulation::WallGrowth::Stress" ||
 	   idValue == "WallGrowthStresscenterTriangulation")
     return new WallGrowth::CenterTriangulation::Stress(paraValue, indValue);
+  else if (idValue == "WallGrowth::CenterTriangulation::StressConcentrationHill" ||
+	   idValue == "CenterTriangulation::WallGrowth::StressConcentrationHill" )
+    return new WallGrowth::CenterTriangulation::StressConcentrationHill(paraValue, indValue);
   else if (idValue == "WallGrowth::CenterTriangulation::StrainTRBS" ||
 	   idValue == "CenterTriangulation::WallGrowth::StrainTRBS")
     return new WallGrowth::CenterTriangulation::StrainTRBS(paraValue, indValue);
@@ -122,6 +125,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   else if(idValue=="WallMechanics::SpringEpidermalCell" ||
 	  idValue=="VertexFromEpidermalCellWallSpring")
     return new WallMechanics::SpringEpidermalCell(paraValue,indValue);
+  else if(idValue=="WallMechanics::ViscoElastic")
+    return new WallMechanics::ViscoElastic(paraValue,indValue);
   else if(idValue=="VertexFromWallSpringMTConcentrationHill")
     return new VertexFromWallSpringMTConcentrationHill(paraValue,indValue);
   else if(idValue=="VertexFromDoubleWallSpringMTConcentrationHill")
@@ -201,6 +206,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   // Forces acting on vertices, collected in namespace Force
   // force.h, force.cc
   // HJ: some yet needs to be moved from mechanical.h
+  else if(idValue=="Force::ForceFromPlane")
+    return new Force::ForceFromPlane(paraValue, indValue);
   else if(idValue=="Force::Cylinder" ||
 	  idValue=="CylinderForce")
     return new Force::Cylinder(paraValue,indValue);
@@ -251,6 +258,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
 	  idValue=="CenterTriangulation::GrowthForce::Radial" ||
 	  idValue == "MoveVertexRadiallycenterTriangulation")
     return new GrowthForce::CenterTriangulation::Radial(paraValue, indValue);
+  else if (idValue=="GrowthForce::centerTriangulation::ForceToCell" ||
+    idValue=="centerTriangulation::GrowthForce::ForceToCell")
+    return new GrowthForce::CenterTriangulation::ForceToCell(paraValue, indValue);
   else if(idValue=="GrowthForce::EpidermalRadial" ||
 	  idValue == "MoveEpidermalVertexRadially")
     return new GrowthForce::EpidermalRadial(paraValue, indValue);
@@ -411,7 +421,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new ActiveTransportWall(paraValue,indValue);
 
   //network.h,network.cc
- else if(idValue=="AuxinModelSimple1")
+  else if(idValue=="LinPolarizationFast")
+    return new LinPolarizationFast(paraValue,indValue);
+  else if(idValue=="LinPolarizationFastExact")
+    return new LinPolarizationFastExact(paraValue,indValue);
+  else if(idValue=="CellCellAuxinTransport")
+    return new CellCellAuxinTransport(paraValue,indValue);
+  else if(idValue=="AuxinModelSimple1")
     return new AuxinModelSimple1(paraValue,indValue);
   else if(idValue=="AuxinModel1")
     return new AuxinModel1(paraValue,indValue);
@@ -716,6 +732,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Initiation::RandomBoolean(paraValue, indValue);
   else if (idValue=="Initiation::RandomBooleanBiased")
     return new Initiation::RandomBooleanBiased(paraValue, indValue);
+  else if (idValue=="Initiation::FaceArea2D")
+    return new Initiation::FaceArea2D(paraValue, indValue);
   
   //Namespace Hypocotyl3D, hypocotyl3D.h
   else if (idValue == "Hypocotyl3D::limitZdis")

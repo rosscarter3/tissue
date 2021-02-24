@@ -1,0 +1,27 @@
+# Number of reactions. 3 Normal, 0 Division/Compartment change, 0 direction updates
+4 0 0
+
+# This reaction is a linear production of the molecular species stored in c_index at rate k_c
+Creation::Zero 1 1 1
+3      # k_c
+6      # c_index
+
+# this reaction is a non linear degredation of the species stored in c_index at rate k_c*[C]
+Degradation::One 1 1 1
+0.1   # k_c
+6     # c_index
+
+# A one way mass action reaction assume two reactants (r1 and r2) and a
+# product (P) created at rate k_1*[r1]*[r2]
+MassAction::TwoToOne 1 2 3 0
+0.1   # k_1
+
+6     # r1_index
+7     # r2_index
+8     # P_index
+
+# Simple diffusion. The species stored in c_index diffuses
+# at a rate of p_0 between cells
+ DiffusionSimple 1 1 1
+ 0.3   # p_0
+ 8     # c_index
