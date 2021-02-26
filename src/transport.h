@@ -19,11 +19,11 @@
 /// A reaction for passive diffusion of molecules localized in the membrane. The
 /// transport is between neighboring membrane compartments within the same cell
 /// described by:
-///  
-/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f] 
-///  
+///
+/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f]
+///
 /// where p_0 is the diffusion rate, i is the cell, j a membrane section, anf j+/- neighboring membrane sections.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -37,13 +37,13 @@
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class MembraneDiffusionSimple : public BaseReaction {
-  
+
  public:
-  
-  MembraneDiffusionSimple(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  MembraneDiffusionSimple(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -60,11 +60,11 @@ class MembraneDiffusionSimple : public BaseReaction {
 /// A reaction for passive diffusion of molecules localized in the membrane. The
 /// transport is between neighboring membrane compartments within the same cell
 /// described by:
-///  
-/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f] 
-///  
+///
+/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f]
+///
 /// where p_0 is the diffusion rate, i is the cell, j a membrane section, anf j+/- neighboring membrane sections.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -78,13 +78,13 @@ class MembraneDiffusionSimple : public BaseReaction {
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class MembraneDiffusionSimple2 : public BaseReaction {
-  
+
  public:
-  
-  MembraneDiffusionSimple2(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  MembraneDiffusionSimple2(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -102,11 +102,11 @@ class MembraneDiffusionSimple2 : public BaseReaction {
 /// A reaction for passive diffusion of molecules between neighboring cells.
 /// Note that cell volume and other topological properties are not taken into account.
 /// The diffusion is described by the equation
-///  
-/// @f[ \frac{dc_{i}}{dt} = - p_0 \sum_j ( c_{i} - c_{j}) @f] 
-///  
+///
+/// @f[ \frac{dc_{i}}{dt} = - p_0 \sum_j ( c_{i} - c_{j}) @f]
+///
 /// where p_0 is the diffusion rate, $c_i$ is the cell concentration and $c_j$ is the concentration in a neighboring cell.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -116,16 +116,18 @@ class MembraneDiffusionSimple2 : public BaseReaction {
 /// @endverbatim
 ///
 ///
+/// IMPORTANT Note: at the moment the implementation of the HeunIto solver for this function is not stochastic but deterministic.
+///
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class DiffusionSimple : public BaseReaction {
-  
+
  public:
-  
-  DiffusionSimple(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  DiffusionSimple(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -133,6 +135,17 @@ class DiffusionSimple : public BaseReaction {
 	      DataMatrix &cellDerivs,
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
+
+void derivsWithAbs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs,
+       DataMatrix &sdydtCell,
+       DataMatrix &sdydtWall,
+       DataMatrix &sdydtVertex);
 };
 
 ///
@@ -144,18 +157,18 @@ class DiffusionSimple : public BaseReaction {
 ///
 /// Note that cell volume and other topological properties are not taken into account.
 /// The  is described by the equation
-///  
-/// @f[ \frac{dc_{i}}{dt} = - p_0 \sum_j C_{ij} ( c_{i} - c_{j}) @f] 
+///
+/// @f[ \frac{dc_{i}}{dt} = - p_0 \sum_j C_{ij} ( c_{i} - c_{j}) @f]
 /// @f[ \frac{dC_{ij}}{dt} = p_1 ( \frac{Q_{ij}^{p_2}}{C_{ij}^{p_3+1}} - p_4) C_{ij}) @f]
 ///
 /// where
 ///
 /// @f[ Q_{ij} = C_{ij} (c_{i} - c_{j}) @f]
-///  
+///
 /// p_0 is the diffusion rate, $c_i$ is the cell concentration and $c_j$ is the concentration in a neighboring cell.
 /// $C_{ij}$ is the conductivity in the wall (between the two cells), $p_1$ is the update rate of the conductivity,
 /// $p_2$ is the 'flux' feedback control (=2 in Hu and Cai (2013)), $p_3$ is the control parameter from Hu and Cai (2013)
-/// [named gamma and phase transition at gamma=1/2]. $p_4$ is a 'degradation' parameter. 
+/// [named gamma and phase transition at gamma=1/2]. $p_4$ is a 'degradation' parameter.
 ///
 /// In a model file the reaction is defined as
 ///
@@ -169,11 +182,11 @@ class DiffusionSimple : public BaseReaction {
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class DiffusionConductiveSimple : public BaseReaction {
-  
+
  public:
-  
-  DiffusionConductiveSimple(std::vector<double> &paraValue, 
-			    std::vector< std::vector<size_t> > 
+
+  DiffusionConductiveSimple(std::vector<double> &paraValue,
+			    std::vector< std::vector<size_t> >
 			    &indValue );
   ///
   /// @brief Derivative function for this reaction class
@@ -195,13 +208,13 @@ class DiffusionConductiveSimple : public BaseReaction {
 /// A reaction for passive diffusion of molecules between neighboring cells.
 /// Unlike DiffusionSimple, cell volume and other topological properties are taken into account.
 /// The diffusion is described by the equation
-///  
-/// @f[ \frac{dc_{i}}{dt} = - p_0 A^{-1} \sum_j  L_{ij} ( c_{i} - c_{j}) @f] 
-///  
-/// where p_0 is the diffusion rate,$L_{ij}$ is the contact length between cells, 
-/// $A^{-1}$ is the cell volume, $c_i$ is the cell concentration and $c_j$ is the 
+///
+/// @f[ \frac{dc_{i}}{dt} = - p_0 A^{-1} \sum_j  L_{ij} ( c_{i} - c_{j}) @f]
+///
+/// where p_0 is the diffusion rate,$L_{ij}$ is the contact length between cells,
+/// $A^{-1}$ is the cell volume, $c_i$ is the cell concentration and $c_j$ is the
 /// concentration in a neighboring cell.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -210,17 +223,18 @@ class DiffusionConductiveSimple : public BaseReaction {
 /// c_index
 /// @endverbatim
 ///
+/// IMPORTANT Note: at the moment the implementation of the HeunIto solver for this function is not stochastic but deterministic.
 ///
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class Diffusion2d : public BaseReaction {
-  
+
 public:
-  
-  Diffusion2d(std::vector<double> &paraValue, 
-              std::vector< std::vector<size_t> > 
+
+  Diffusion2d(std::vector<double> &paraValue,
+              std::vector< std::vector<size_t> >
               &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -228,6 +242,16 @@ public:
 	      DataMatrix &cellDerivs,
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
+   void derivsWithAbs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs,
+       DataMatrix &sdydtCell,
+       DataMatrix &sdydtWall,
+       DataMatrix &sdydtVertex);
 };
 
 ///
@@ -236,12 +260,12 @@ public:
 /// A reaction for transport molecules from cell to cell dependent on a membrane localised efflux carrier. The
 /// transport is between neighboring cells
 /// is described by:
-///  
-///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (P_{ni} A_n - P_{in} A_i) @f] 
 ///
-///  
+///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (P_{ni} A_n - P_{in} A_i) @f]
+///
+///
 /// where p_0 is the tranpsort rate, i is the cell and n neighboring membrane sections.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -256,13 +280,13 @@ public:
 ///
 ///
 class ActiveTransportCellEfflux  : public BaseReaction {
-  
+
  public:
-  
-  ActiveTransportCellEfflux(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  ActiveTransportCellEfflux(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   ///
   /// @brief Derivative function for this reaction class
   ///
@@ -283,13 +307,13 @@ class ActiveTransportCellEfflux  : public BaseReaction {
 /// @details A reaction for transport molecules from cell to cell with one passive (diffusionLike) term and one
 /// dependent on a membrane localised efflux carrier. The transport is between neighboring cells
 /// is described by:
-///  
-///  @f[ \frac{dA_i}{dt} =  \sum_{neigh} ((p_{0} + p_{1}P_{ni}) A_n - (p_{0} + p_{1} P_{in}) A_i) @f] 
 ///
-///  
+///  @f[ \frac{dA_i}{dt} =  \sum_{neigh} ((p_{0} + p_{1}P_{ni}) A_n - (p_{0} + p_{1} P_{in}) A_i) @f]
+///
+///
 /// where p_0 is the passive tranport rate, p_1 is the active rate, i is the cell, n is the neighboring cell and
 /// in/ni are the neighboring membrane sections.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -306,13 +330,13 @@ class ActiveTransportCellEfflux  : public BaseReaction {
 /// @see ActiveTransportCellEfflux
 ///
 class DiffusionActiveTransportCell : public BaseReaction {
-  
+
  public:
-  
-  DiffusionActiveTransportCell(std::vector<double> &paraValue, 
-			       std::vector< std::vector<size_t> > 
+
+  DiffusionActiveTransportCell(std::vector<double> &paraValue,
+			       std::vector< std::vector<size_t> >
 			       &indValue );
-  
+
   ///
   /// @brief Derivative function for this reaction class
   ///
@@ -337,12 +361,12 @@ class DiffusionActiveTransportCell : public BaseReaction {
 /// A reaction for transport molecules from cell to cell dependent on a membrane localised efflux carrier. The
 /// transport is between neighboring cells
 /// is described by:
-///  
-///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (P_{ni} /frac{A_n}{A_n+K} - P_{in} /frac{A_i}{A_i+K}) @f] 
 ///
-///  
+///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (P_{ni} /frac{A_n}{A_n+K} - P_{in} /frac{A_i}{A_i+K}) @f]
+///
+///
 /// where p_0 is the tranpsort rate, i is the cell and n neighboring membrane sections.
-///  
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -356,16 +380,16 @@ class DiffusionActiveTransportCell : public BaseReaction {
 ///
 ///
 ///
- 
+
 
 class ActiveTransportCellEffluxMM  : public BaseReaction {
-  
+
  public:
-  
-  ActiveTransportCellEffluxMM(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  ActiveTransportCellEffluxMM(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -383,16 +407,16 @@ class ActiveTransportCellEffluxMM  : public BaseReaction {
 /// A reaction for transport molecules from cell to wall to cell dependent on a membrane localised efflux carrier and an syymetrically localised influx carrier . The
 /// transport is between neighboring cells
 /// is described by:
-///  
-/// @f[ \frac{dA_i}{dt} =  \sum_{j} ( (p_0+p_1 [AUX]_i) A_{ij} ) 
+///
+/// @f[ \frac{dA_i}{dt} =  \sum_{j} ( (p_0+p_1 [AUX]_i) A_{ij} )
 /// - \sum_{j} (p_2+ p_3 P_{ij}) A_i @f]
-///  
+///
 /// @f[ \frac{dA_{ij}}{dt} = (from above) + p_4 (A_{ji}-A_{ij}) @f]
 ///
-///  
+///
 /// where p_0 is the passive influx rate, p_1 is influx dependant on AUX in cell,
-///  p_2 is passive efflux, p_3 is PIN dependent efflux, 
-///  
+///  p_2 is passive efflux, p_3 is PIN dependent efflux,
+///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
@@ -406,16 +430,16 @@ class ActiveTransportCellEffluxMM  : public BaseReaction {
 ///
 ///
 ///
- 
+
 
 class ActiveTransportWall  : public BaseReaction {
-  
+
  public:
-  
-  ActiveTransportWall(std::vector<double> &paraValue, 
-			  std::vector< std::vector<size_t> > 
+
+  ActiveTransportWall(std::vector<double> &paraValue,
+			  std::vector< std::vector<size_t> >
 			  &indValue );
-  
+
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
 	      DataMatrix &wallData,
@@ -429,5 +453,3 @@ class ActiveTransportWall  : public BaseReaction {
 
 
 #endif
-
-
