@@ -20,6 +20,7 @@ src/tags
 
 # Mac OS X
 .DS_Store
+*DS_Store*
 
 # Temporary and output files
 *.data
