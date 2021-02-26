@@ -374,7 +374,38 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
-  /// @brief Divides a cell when volume above a threshold
+  /// @brief Divides a cell when volume above a threshold where the threshold
+  /// is determined as an increasing Hill function of a concentration inside the
+  /// cell.
+  /// Divides a cell when volume above a concentration-determined threshold.
+  /// New wall is created
+  /// in a random direction through center of mass.
+  
+  class VolumeRandomDirectionConcentration : public BaseCompartmentChange {
+    
+  public:
+    
+    VolumeRandomDirectionConcentration(std::vector<double> &paraValue, 
+				       std::vector< std::vector<size_t> > 
+				       &indValue );
+    
+    int flag(Tissue *T,size_t i,
+	     DataMatrix &cellData,
+	     DataMatrix &wallData,
+	     DataMatrix &vertexData,
+	     DataMatrix &cellDerivs,
+	     DataMatrix &wallDerivs,
+	     DataMatrix &vertexDerivs );
+    void update(Tissue* T,size_t i,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );  
+  };
+
+    /// @brief Divides a cell when volume above a threshold
   /// Divides a cell when volume above a threshold. New wall is created
   ///  in a random direction through center of mass.
   
@@ -537,6 +568,73 @@ namespace Division {
 		DataMatrix &vertexDerivs);  
     
     std::vector<ShortestPath2D::Candidate> 
+      getCandidates(Tissue* T, size_t i,
+		    DataMatrix &cellData,
+		    DataMatrix &wallData,
+		    DataMatrix &vertexData,
+		    DataMatrix &cellDerivs,
+		    DataMatrix &wallDerivs,
+		    DataMatrix &vertexDerivs);
+    
+    double astar(double sigma, double A, double B);
+    double f(double a, double sigma, double A, double B);
+  };
+
+  ///
+  /// @brief Divides a cell (in 2D) along the shortest path through center of mass (or random point).
+  ///
+  /// @details Divides a cell in 2D when volume above a threshold, @f$V_{threshold}@f$
+  /// with new wall created at shortest path that divides the cell through COM
+  /// (almost Volume in equal parts), or through a random internal point.
+  /// Parameters and variable indices are standard and in addition a time
+  /// variable can be set and 'read' at division to measure time since previous division.
+  /// In a model file, the reaction is given by 
+  /// @verbatim
+  /// Division::ShortestPath2D 7 2 K 1 
+  /// V_{threshold}
+  /// V_{threshold-max}
+  /// K_{hill}
+  /// n_{hill}
+  /// L^{wall}_{frac} (relative of new wall)
+  /// L^{wall}_{threshold} (disallowed closeness)
+  /// centerCom flag(0:random, 1:COM)
+  ///
+  /// I_k (optional volume (and other variables that should be divided with size) related index to be updated)
+  ///
+  /// cell concentration index (optional)
+  /// @endverbatim
+  /// @see Division::ShortestPath for 3D version also applicable for CenterTriangulation
+  ///
+  class ShortestPath2DConcentration : public BaseCompartmentChange
+  {
+  public:
+    struct Candidate {
+      double distance;
+      size_t wall1;
+      size_t wall2;
+      double px, py;
+      double qx, qy;
+    };
+    
+    ShortestPath2DConcentration(std::vector<double> &paraValue, 
+				std::vector< std::vector<size_t> > &indValue);
+    
+    int flag(Tissue *T, size_t i,
+	     DataMatrix &cellData,
+	     DataMatrix &wallData,
+	     DataMatrix &vertexData,
+	     DataMatrix &cellDerivs,
+	     DataMatrix &wallDerivs,
+	     DataMatrix &vertexDerivs);
+    void update(Tissue* T, size_t i,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs);  
+    
+    std::vector<ShortestPath2DConcentration::Candidate> 
       getCandidates(Tissue* T, size_t i,
 		    DataMatrix &cellData,
 		    DataMatrix &wallData,

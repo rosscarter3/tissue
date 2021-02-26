@@ -49,6 +49,9 @@ createCompartmentChange(std::vector<double> &paraValue,
   else if(idValue=="DivisionVolumeRandomDirection" ||
 	  idValue=="Division::VolumeRandomDirection")
     return new Division::VolumeRandomDirection(paraValue,indValue);
+  else if(idValue=="DivisionVolumeRandomDirectionConcentration" ||
+	  idValue=="Division::VolumeRandomDirectionConcentration")
+    return new Division::VolumeRandomDirectionConcentration(paraValue,indValue);
   // Division::CenterTriangulation::**
   else if(idValue=="DivisionVolumeRandomDirectionCenterTriangulation" ||
 	  idValue=="Division::VolumeRandomDirectionCenterTriangulation")
@@ -68,6 +71,8 @@ createCompartmentChange(std::vector<double> &paraValue,
     return new Division::ForceDirection(paraValue, indValue);
   else if (idValue == "Division::ShortestPath2D")
     return new Division::ShortestPath2D(paraValue, indValue);
+  else if (idValue == "Division::ShortestPath2DConcentration")
+    return new Division::ShortestPath2DConcentration(paraValue, indValue);
   else if (idValue == "DivisionShortestPath" ||
 	   idValue == "Division::ShortestPath")
     return new Division::ShortestPath(paraValue, indValue);
