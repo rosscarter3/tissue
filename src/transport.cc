@@ -950,7 +950,7 @@ derivs(Tissue &T,
        DataMatrix &vertexDerivs ) 
 {  
   size_t numCells = T.numCell();
-  size_t aI = variableIndex(0,0);//auxin
+  size_t aI = variableIndex(0,0);//auxin (cell)
   size_t awI = variableIndex(1,0);//aux/lax (membrane/wall)
   
   
@@ -967,7 +967,7 @@ derivs(Tissue &T,
 	// cell-cell transport
 	size_t iNeighbor = T.cell(i).wall(k)->cell2()->index();
 	if (i<iNeighbor) {
-	  double fac = parameter(0)*(wallData[i][awI]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI+1]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
+	  double fac = parameter(0)*(wallData[j][awI]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI+1]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
 	  cellDerivs[i][aI] += fac;
 	  cellDerivs[iNeighbor][aI] -= fac;
 	  if (numVariableIndexLevel()==3) { //update flux
@@ -986,7 +986,7 @@ derivs(Tissue &T,
 	// cell-cell transport
 	size_t iNeighbor = T.cell(i).wall(k)->cell1()->index();
 	if (i<iNeighbor) {
-	  double fac = parameter(0)*(wallData[i][awI+1]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
+	  double fac = parameter(0)*(wallData[j][awI+1]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
 	  cellDerivs[i][aI] += fac;
 	  cellDerivs[iNeighbor][aI] -= fac;
 	  if (numVariableIndexLevel()==3) { //update flux

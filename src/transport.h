@@ -465,7 +465,7 @@ class ActiveTransportWall  : public BaseReaction {
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
-/// ActiveTransportCellEffluxMM 1 2[3] 1 1 [1]
+/// InfluxActiveTransportCell 1 2[3] 1 1 [1]
 /// p_0
 /// A_{cellIndex}
 /// P_{wallindex}
