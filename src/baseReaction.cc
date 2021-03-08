@@ -419,6 +419,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new ActiveTransportCellEffluxMM(paraValue,indValue);
   else if(idValue=="ActiveTransportWall")
     return new ActiveTransportWall(paraValue,indValue);
+  else if(idValue=="InfluxActiveTransportCell")
+    return new InfluxActiveTransportCell(paraValue,indValue);
 
   //network.h,network.cc
   else if(idValue=="LinPolarizationFast")

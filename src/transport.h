@@ -450,6 +450,54 @@ class ActiveTransportWall  : public BaseReaction {
 };
 
 
+///
+/// @brief A cell to cell influx transport reaction
+///
+/// A reaction for transport molecules from cell to cell dependent on a membrane localised influx carrier. The
+/// transport is between neighboring cells
+/// is described by:
+///
+///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (/frac{A_n}{A_i+A_n} [AUX]_{in} - /frac{A_i}{A_i+A_n} [AUX]_{ni}) @f]
+///
+///
+/// where p_0 is the tranpsort rate, i is the cell and n neighboring membrane sections.
+///
+/// In a model file the reaction is defined as
+///
+/// @verbatim
+/// ActiveTransportCellEffluxMM 1 2[3] 1 1 [1]
+/// p_0
+/// A_{cellIndex}
+/// P_{wallindex}
+/// @endverbatim
+/// 
+/// where the reaction assumes that each wall keeps two variables per membrane molecule.
+///
+///
+///
+
+
+class InfluxActiveTransportCell : public BaseReaction {
+
+ public:
+
+  InfluxActiveTransportCell(std::vector<double> &paraValue,
+			       std::vector< std::vector<size_t> >
+			       &indValue );
+
+  ///
+  /// @brief Derivative function for this reaction class
+  ///
+  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+  ///
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+};
 
 
 #endif
