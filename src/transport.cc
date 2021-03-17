@@ -909,10 +909,10 @@ InfluxActiveTransportCell(std::vector<double> &paraValue,
   
   //Do some checks on the parameters and variable indeces
   //
-  if( paraValue.size()!=1 ) {
+  if( paraValue.size()!=2 ) {
     std::cerr << "InfluxActiveTransportCell::"
  	      << "InfluxActiveTransportCell() "
- 	      << "1 parameters used (see Documentation or transport.h)"
+ 	      << "2 parameters used (see Documentation or transport.h)"
 	      << std::endl;
     exit(EXIT_FAILURE);
   }
@@ -937,6 +937,7 @@ InfluxActiveTransportCell(std::vector<double> &paraValue,
   std::vector<std::string> tmp( numParameter() );
   tmp.resize( numParameter() );
   tmp[0] = "T";
+  tmp[1] = "k0";
   setParameterId( tmp );
 }
 
@@ -967,8 +968,9 @@ derivs(Tissue &T,
 	// cell-cell transport
 	size_t iNeighbor = T.cell(i).wall(k)->cell2()->index();
 	if (i<iNeighbor) {
-	  double fac = parameter(0)*(wallData[j][awI]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI+1]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
-	  cellDerivs[i][aI] += fac;
+	 double facnorm = parameter(1)+wallData[j][awI]+wallData[j][awI+1];
+	 double fac = parameter(0)*(wallData[j][awI]*cellData[iNeighbor][aI]/facnorm-wallData[j][awI+1]*cellData[i][aI]/facnorm);
+	 cellDerivs[i][aI] += fac;
 	  cellDerivs[iNeighbor][aI] -= fac;
 	  if (numVariableIndexLevel()==3) { //update flux
 	    if (fac>=0.0) {
@@ -986,7 +988,8 @@ derivs(Tissue &T,
 	// cell-cell transport
 	size_t iNeighbor = T.cell(i).wall(k)->cell1()->index();
 	if (i<iNeighbor) {
-	  double fac = parameter(0)*(wallData[j][awI+1]*cellData[iNeighbor][aI]/(cellData[i][aI]+cellData[iNeighbor][aI])-wallData[j][awI]*cellData[i][aI]/(cellData[i][aI]+cellData[iNeighbor][aI]));
+	  double facnorm = parameter(1)+wallData[j][awI]+wallData[j][awI+1];
+	  double fac = parameter(0)*(wallData[j][awI+1]*cellData[iNeighbor][aI]/facnorm-wallData[j][awI]*cellData[i][aI]/facnorm);
 	  cellDerivs[i][aI] += fac;
 	  cellDerivs[iNeighbor][aI] -= fac;
 	  if (numVariableIndexLevel()==3) { //update flux

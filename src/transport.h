@@ -457,21 +457,21 @@ class ActiveTransportWall  : public BaseReaction {
 /// transport is between neighboring cells
 /// is described by:
 ///
-///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (/frac{A_n}{A_i+A_n} [AUX]_{in} - /frac{A_i}{A_i+A_n} [AUX]_{ni}) @f]
+///  @f[ \frac{dA_i}{dt} =  p_0 \sum_{neigh} (/frac{A_n}{k_0+[AUX]_{in}+[AUX]_{ni}} [AUX]_{in} - /frac{A_i}{k_0+[AUX]_{in}+[AUX]_{ni}} [AUX]_{ni}) @f]
 ///
 ///
-/// where p_0 is the tranpsort rate, i is the cell and n neighboring membrane sections.
+/// where p_0 is the tranpsort rate, k_0 is the transport normalisation constant, i is the cell and n neighboring membrane sections.
 ///
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
-/// InfluxActiveTransportCell 1 2[3] 1 1 [1]
-/// p_0
+/// InfluxActiveTransportCell 2 2[3] 1 1 [1]
+/// p_0 k_0
 /// A_{cellIndex}
 /// P_{wallindex}
 /// @endverbatim
 /// 
-/// where the reaction assumes that each wall keeps two variables per membrane molecule.
+/// where the reaction assumes that each wall keeps two variables of influx carrier (and flux) per membrane molecule.
 ///
 ///
 ///
