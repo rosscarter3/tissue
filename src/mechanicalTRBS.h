@@ -596,7 +596,7 @@ private:
 /// strainAnisotropy-Index 
 /// stressAnisotropy-Index
 /// areaRatioIndex 
-/// isoEnergyIndex 
+/// youngT-index 
 /// anisoEnergyIndex 
 /// youngL-index/heterpogeneity_index 
 /// MTstressIndex 

@@ -2818,8 +2818,8 @@ VertexFromTRBScenterTriangulationMT(std::vector<double> &paraValue,
 	      << "VertexFromTRBScenterTriangulationMT() "
 	      << "11 indices including (0)Wall length index and (1)MT direction initial "
               << "index and (2)strain and (3)stress "
-	      << "anisotropy indices and indices for storing (4)area ratio, (5)isotropic energy  "
-              << "and (6)anisotropic energy and (7)young_fiber and (8)MTstress  and strart indices  "
+	      << "anisotropy indices and indices for storing (4)area ratio, (5)transverse Modulus  "
+              << "and (6)anisotropic energy and (7)Longitudinal_modulus and (8)MTstress  and strart indices  "
               << "for storing (9)stress tensor(6 elements) and (10)normal vector to cell plane  " 
               << "(3 elements) given in first level." 
 	      << "Start of additional Cell variable indices (center(x,y,z) "
@@ -2924,8 +2924,9 @@ derivs(Tissue &T,
   // cellData[0][24]=deltaVolume;
  
   //HJ: removed due to unused variable warning
-  //size_t MTindex           =variableIndex(0,1);	 
-  //size_t isoEnergyIndex    =variableIndex(0,5);	
+  //size_t MTindex           =variableIndex(0,1);
+  //RC: Changed output of iso energy to transverse modulus
+  size_t youngTIndex    =variableIndex(0,5);	
   size_t anisoEnergyIndex  =variableIndex(0,6);	
   size_t youngLIndex       =variableIndex(0,7);	
    
@@ -2963,6 +2964,7 @@ derivs(Tissue &T,
     if( parameter(4)==1){  // material anisotropy via FiberModel
       youngL = cellData[cellIndex][youngLIndex]; 
       youngT = 2*youngMatrix+youngFiber-youngL; 
+      cellData[cellIndex][youngTIndex] = youngT;
     }
     else {
       if( parameter(4)==0 ){ // constant anisotropic material
