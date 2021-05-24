@@ -56,6 +56,8 @@ Developers (incomplete list):
 * Laura Brown
 * Pawel Krupinski
 * Behruz Bozorg 
+* Ross Carter
+* Argyris Zardilis
 
 <h2>Binaries</h2>
 
