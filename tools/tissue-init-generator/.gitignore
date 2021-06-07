@@ -1,0 +1,12 @@
+*sublime*
+
+# Compiled files
+*.pyc
+
+# Editor files
+*.swp
+src/tags
+*~
+
+# Mac OS X
+.DS_Store

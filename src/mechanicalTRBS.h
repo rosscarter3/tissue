@@ -452,7 +452,7 @@ class VertexFromTRBSMT : public BaseReaction {
 /// strainAnisotropy-Index 
 /// stressAnisotropy-Index
 /// areaRatioIndex 
-/// isoEnergyIndex 
+/// youngT-index 
 /// anisoEnergyIndex 
 /// youngL-index/heterpogeneity_index 
 /// MTstressIndex 
@@ -482,7 +482,7 @@ class VertexFromTRBSMT : public BaseReaction {
 /// strainAnisotropy-Index 
 /// stressAnisotropy-Index
 /// areaRatioIndex 
-/// isoEnergyIndex 
+/// youngT-index 
 /// anisoEnergyIndex 
 /// youngL-index 
 /// MTstressIndex 

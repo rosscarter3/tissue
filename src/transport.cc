@@ -242,6 +242,46 @@ derivs(Tissue &T,
   }
 }
 
+void DiffusionSimple::
+derivsWithAbs(Tissue &T,
+              DataMatrix &cellData,
+              DataMatrix &wallData,
+              DataMatrix &vertexData,
+              DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs,
+              DataMatrix &vertexDerivs,
+              DataMatrix &sdydtCell,
+              DataMatrix &sdydtWall,
+              DataMatrix &sdydtVertex)
+{
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  assert( aI<cellData[0].size());
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+      T.cell(i).wall(n)->cell2() != T.background() ) {
+    size_t neighIndex;
+    if( T.cell(i).wall(n)->cell1()->index()==i )
+      neighIndex = T.cell(i).wall(n)->cell2()->index();
+    else {
+      neighIndex = T.cell(i).wall(n)->cell1()->index();
+    }
+    if (i<neighIndex) { //Both directions at once
+      cellDerivs[i][aI] -= parameter(0)*(cellData[i][aI] - cellData[neighIndex][aI]);
+      cellDerivs[neighIndex][aI] += parameter(0)*(cellData[i][aI] - cellData[neighIndex][aI]);
+         sdydtCell[i][aI] += 0;
+         sdydtCell[neighIndex][aI] += 0;
+    }
+      }
+    }
+  }
+}
+
 DiffusionConductiveSimple::
 DiffusionConductiveSimple(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > 
@@ -433,7 +473,69 @@ derivs(Tissue &T,
   }
 }
 
+void Diffusion2d::
+derivsWithAbs(Tissue &T,
+              DataMatrix &cellData,
+              DataMatrix &wallData,
+              DataMatrix &vertexData,
+              DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs,
+              DataMatrix &vertexDerivs,
+              DataMatrix &sdydtCell,
+              DataMatrix &sdydtWall,
+              DataMatrix &sdydtVertex)
+{
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  size_t dimension=vertexData[0].size();
+  assert( aI<cellData[0].size());
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+      T.cell(i).wall(n)->cell2() != T.background() ) {
+    size_t neighIndex;
+    if( T.cell(i).wall(n)->cell1()->index()==i )
+      neighIndex = T.cell(i).wall(n)->cell2()->index();
+    else {
+      neighIndex = T.cell(i).wall(n)->cell1()->index();
+    }
 
+    // calculate distance between compartments
+
+    std::vector<double> neighpos = T.cell(neighIndex).positionFromVertex();
+    std::vector<double> cellpos  = T.cell(i).positionFromVertex();
+
+    double distance=0;
+
+        for(size_t d=0;d<dimension; ++d)
+      distance += (neighpos[d] - cellpos[d])*(neighpos[d] - cellpos[d]);
+
+    distance = std::sqrt(distance);
+
+    //std::cerr << "distance = " << distance << "\n";
+        
+        size_t v1=T.cell(i).wall(n)->vertex1()-> index();
+        size_t v2=T.cell(i).wall(n)->vertex2()-> index();
+        double contactLength=0;
+        for(size_t d=0;d<dimension; ++d)
+          contactLength+=(vertexData[v1][d]-vertexData[v2][d])*(vertexData[v1][d]-vertexData[v2][d]);
+        contactLength=std::sqrt(contactLength);
+    double cellVolume = T.cell(i).calculateVolume(vertexData);
+        cellDerivs[i][aI] -=
+          parameter(0)*contactLength*(cellData[i][aI] - cellData[neighIndex][aI])/(cellVolume*distance);
+    cellVolume = T.cell(neighIndex).calculateVolume(vertexData);
+        cellDerivs[neighIndex][aI] +=
+          parameter(0)*contactLength*(cellData[i][aI] - cellData[neighIndex][aI])/(cellVolume*distance);
+          sdydtCell[i][aI] += 0;
+          sdydtCell[neighIndex][aI] += 0;
+      }
+    }
+  }
+}
 
  ActiveTransportCellEfflux::
  ActiveTransportCellEfflux(std::vector<double> &paraValue, 
@@ -799,4 +901,110 @@ derivs(Tissue &T,
   }
 }
 
+
+InfluxActiveTransportCell::
+InfluxActiveTransportCell(std::vector<double> &paraValue, 
+			     std::vector< std::vector<size_t> > 
+			     &indValue ) {
+  
+  //Do some checks on the parameters and variable indeces
+  //
+  if( paraValue.size()!=2 ) {
+    std::cerr << "InfluxActiveTransportCell::"
+ 	      << "InfluxActiveTransportCell() "
+ 	      << "2 parameters used (see Documentation or transport.h)"
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  if( (indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1) &&
+      (indValue.size() != 3 || indValue[0].size() != 1 || indValue[1].size() != 1 || indValue[2].size() != 1)
+      ) {
+    std::cerr << "InfluxActiveTransportCell::"
+	      << "InfluxActiveTransportCell() "
+	      << "One cell variable index (auxin) at first level and one wall variable"
+	      << "index (AUX/LAX) at second level are always used." << std::endl;
+    std::cerr << "An extra wall index for saving/updating flux can be given in third level." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  //Set the variable values
+  //
+  setId("InfluxActiveTransportCell");
+  setParameter(paraValue);  
+  setVariableIndex(indValue);
+  
+  //Set the parameter identities
+  //
+  std::vector<std::string> tmp( numParameter() );
+  tmp.resize( numParameter() );
+  tmp[0] = "T";
+  tmp[1] = "k0";
+  setParameterId( tmp );
+}
+
+void InfluxActiveTransportCell::
+derivs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs ) 
+{  
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);//auxin (cell)
+  size_t awI = variableIndex(1,0);//aux/lax (membrane/wall)
+  
+  
+  assert( aI<cellData[0].size() &&
+	  pwI<wallData[0].size() );
+  
+  for (size_t i=0; i<numCells; ++i) {
+    
+    //Auxin transport and protein cycling
+    size_t numWalls = T.cell(i).numWall();
+    for (size_t k=0; k<numWalls; ++k) {
+      size_t j = T.cell(i).wall(k)->index();
+      if( T.cell(i).wall(k)->cell1()->index() == i && T.cell(i).wall(k)->cell2() != T.background() ) {
+	// cell-cell transport
+	size_t iNeighbor = T.cell(i).wall(k)->cell2()->index();
+	if (i<iNeighbor) {
+	 double facnorm = parameter(1)+wallData[j][awI]+wallData[j][awI+1];
+	 double fac = parameter(0)*(wallData[j][awI]*cellData[iNeighbor][aI]/facnorm-wallData[j][awI+1]*cellData[i][aI]/facnorm);
+	 cellDerivs[i][aI] += fac;
+	  cellDerivs[iNeighbor][aI] -= fac;
+	  if (numVariableIndexLevel()==3) { //update flux
+	    if (fac>=0.0) {
+	      wallData[j][variableIndex(2,0)] += fac;
+	      wallData[j][variableIndex(2,0)+1] += 0.0;
+	    }
+	    else {
+	      wallData[j][variableIndex(2,0)] += 0.0;
+	      wallData[j][variableIndex(2,0)+1] += -fac;
+	    }
+	  }
+	}
+      }
+      else if( T.cell(i).wall(k)->cell2()->index() == i && T.cell(i).wall(k)->cell1() != T.background() ) {
+	// cell-cell transport
+	size_t iNeighbor = T.cell(i).wall(k)->cell1()->index();
+	if (i<iNeighbor) {
+	  double facnorm = parameter(1)+wallData[j][awI]+wallData[j][awI+1];
+	  double fac = parameter(0)*(wallData[j][awI+1]*cellData[iNeighbor][aI]/facnorm-wallData[j][awI]*cellData[i][aI]/facnorm);
+	  cellDerivs[i][aI] += fac;
+	  cellDerivs[iNeighbor][aI] -= fac;
+	  if (numVariableIndexLevel()==3) { //update flux
+	    if (fac>=0.0) {
+	      wallData[j][variableIndex(2,0)+1] += fac;
+	      wallData[j][variableIndex(2,0)] += 0.0;
+	    }
+	    else {
+	      wallData[j][variableIndex(2,0)+1] += 0.0;
+	      wallData[j][variableIndex(2,0)] += -fac;
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
 

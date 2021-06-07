@@ -2831,9 +2831,9 @@ void MoveVerticesRandomlyCapCylinder::initiate(Tissue &T, DataMatrix &cellData,
   double fac = parameter(0);
 
   double PI = 3.14159265;
-  double R = 10;
-  double zmax = 15;
-  double zmin = -15;
+  double R = 50;
+  double zmax = 75;
+  double zmin = -75;
 
   // Move vertices
   for (size_t VertexIndex = 0; VertexIndex < numVertices; ++VertexIndex) {
@@ -2850,7 +2850,7 @@ void MoveVerticesRandomlyCapCylinder::initiate(Tissue &T, DataMatrix &cellData,
     //   vertexData[ VertexIndex][2]+=fac*(d-0.5);
     // }
 
-    if ((z < zmin && z > -24.8) || (z > zmax && z < 24.8)) {
+    if ((z < zmin && z > -130) || (z > zmax && z < 130)) {
       double teta = 0;
       if (z < zmin) {
         teta = std::atan((std::sqrt(x * x + y * y)) / (z - zmin));
@@ -2869,15 +2869,15 @@ void MoveVerticesRandomlyCapCylinder::initiate(Tissue &T, DataMatrix &cellData,
 
       teta += fac * (d - 0.5);
       phi += 0.3 * fac * (f - 0.5);
-      if (z < zmin && z > -24.8) {
+      if (z < zmin && z > -130) {
         vertexData[VertexIndex][0] = R * (std::sin(teta)) * (std::cos(phi));
         vertexData[VertexIndex][1] = R * (std::sin(teta)) * (std::sin(phi));
-        vertexData[VertexIndex][2] = -15 + R * (std::cos(teta));
+        vertexData[VertexIndex][2] = -75 + R * (std::cos(teta));
       }
-      if (z > zmax && z < 24.8) {
+      if (z > zmax && z < 130) {
         vertexData[VertexIndex][0] = R * (std::sin(teta)) * (std::cos(phi));
         vertexData[VertexIndex][1] = R * (std::sin(teta)) * (std::sin(phi));
-        vertexData[VertexIndex][2] = 15 + (R * (std::cos(teta)));
+        vertexData[VertexIndex][2] = 75 + (R * (std::cos(teta)));
       }
     }
 
@@ -2891,8 +2891,8 @@ void MoveVerticesRandomlyCapCylinder::initiate(Tissue &T, DataMatrix &cellData,
 
     // }
 
-    std::cerr << "                                " << a / c << "  " << b / c
-              << std::endl;
+    // std::cerr << "                                " << a / c << "  " << b / c
+    //           << std::endl;
   }
 }
 
