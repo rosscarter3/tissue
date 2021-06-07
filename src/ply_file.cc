@@ -35,7 +35,7 @@ void PLY_file::operator<<(Tissue const& t)
 {
   std::ofstream ofs(filename.c_str());
   PLY_ostream ply_os(ofs);
-  ply_os.bare_geometry_output() = bare_geometry_output();
+  ply_os.bare_geometry_output() = false;//bare_geometry_output();
   ply_os.center_triangulation_output() = center_triangulation_output();
   ply_os << t;
   ofs.close();

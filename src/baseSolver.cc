@@ -409,6 +409,8 @@ void BaseSolver::print(std::ostream &os) {
   // ply output
   //
   else if (printFlag_ == 6) {
+    static size_t numCellVar = T_->cell(0).numVariable();
+    setTissueVariables(numCellVar);
     std::ostringstream ssCount;
     ssCount << tCount;
     std::string fname = "vtk/output_" + ssCount.str() + ".ply";
