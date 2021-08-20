@@ -198,6 +198,121 @@ derivsWithAbs(Tissue &T,
   }
 }
 
+DiffusionSimpleOne::
+DiffusionSimpleOne(std::vector<double> &paraValue, 
+		  std::vector< std::vector<size_t> > 
+		  &indValue ) {
+
+  //Do some checks on the parameters and variable indeces
+  //
+  if( paraValue.size() !=1 ) {
+    std::cerr << "DiffusionSimpleOne::"
+	      << "DiffusionSimpleOne() "
+	      << "One parameter (diffusion constant) used: p_0" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 1) {
+    std::cerr << "DiffusionSimpleOne::"
+	      << "DiffusionSimpleOne() "
+	      << "Two levels of one variable index each is used" << std::endl;
+    exit(EXIT_FAILURE);
+  }
+  //Set the variable values
+  //
+  setId("DiffusionSimple");
+  setParameter(paraValue);  
+  setVariableIndex(indValue);
+  
+  //Set the parameter identities
+  //
+  std::vector<std::string> tmp( numParameter() );
+  tmp.resize( numParameter() );
+  tmp[0] = "p_0";
+  
+  setParameterId( tmp );
+}
+
+void DiffusionSimpleOne::
+derivs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs ) 
+{  
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  size_t hI = variableIndex(1,0);
+  assert( aI<cellData[0].size() && hI<cellData[0].size() );
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+	  T.cell(i).wall(n)->cell2() != T.background() ) { 
+	size_t neighIndex;
+	if( T.cell(i).wall(n)->cell1()->index()==i )
+	  neighIndex = T.cell(i).wall(n)->cell2()->index();				
+	else {
+	  neighIndex = T.cell(i).wall(n)->cell1()->index();				
+	}
+	if (i<neighIndex) { //Both directions at once
+	  double fac = parameter(0)*(cellData[i][aI]*cellData[i][hI] -
+				     cellData[neighIndex][aI]*cellData[neighIndex][hI]);
+	  cellDerivs[i][aI] -= fac;
+	  cellDerivs[neighIndex][aI] += fac;
+	}
+      }
+    }
+  }
+}
+
+void DiffusionSimpleOne::
+derivsWithAbs(Tissue &T,
+              DataMatrix &cellData,
+              DataMatrix &wallData,
+              DataMatrix &vertexData,
+              DataMatrix &cellDerivs,
+              DataMatrix &wallDerivs,
+              DataMatrix &vertexDerivs,
+              DataMatrix &sdydtCell,
+              DataMatrix &sdydtWall,
+              DataMatrix &sdydtVertex)
+{
+  size_t numCells = T.numCell();
+  size_t aI = variableIndex(0,0);
+  size_t hI = variableIndex(1,0);
+  assert( aI<cellData[0].size() && hI<cellData[0].size() );
+  
+  for( size_t i=0 ; i<numCells ; ++i ) {
+    
+    size_t numWalls=T.cell(i).numWall();
+    
+    for( size_t n=0 ; n<numWalls ; ++n ) {
+      if( T.cell(i).wall(n)->cell1() != T.background() &&
+	  T.cell(i).wall(n)->cell2() != T.background() ) {
+	size_t neighIndex;
+	if( T.cell(i).wall(n)->cell1()->index()==i )
+	  neighIndex = T.cell(i).wall(n)->cell2()->index();
+	else {
+	  neighIndex = T.cell(i).wall(n)->cell1()->index();
+	}
+	if (i<neighIndex) { //Both directions at once
+	  double fac = parameter(0)*(cellData[i][aI]*cellData[i][hI] -
+				     cellData[neighIndex][aI]*cellData[neighIndex][hI]);
+	  cellDerivs[i][aI] -= fac;
+	  cellDerivs[neighIndex][aI] += fac;
+	  sdydtCell[i][aI] += 0.0;
+	  sdydtCell[neighIndex][aI] += 0.0;
+	}
+      }
+    }
+  }
+}
+
 DiffusionConductiveSimple::
 DiffusionConductiveSimple(std::vector<double> &paraValue, 
 		  std::vector< std::vector<size_t> > 

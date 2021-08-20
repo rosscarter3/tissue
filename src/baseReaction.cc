@@ -408,6 +408,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new MembraneDiffusionSimple(paraValue,indValue);
   else if(idValue=="DiffusionSimple")
     return new DiffusionSimple(paraValue,indValue);
+  else if(idValue=="DiffusionSimpleOne")
+    return new DiffusionSimpleOne(paraValue,indValue);
   else if(idValue=="DiffusionConductiveSimple")
     return new DiffusionConductiveSimple(paraValue,indValue);
   else if(idValue=="Diffusion2D")
