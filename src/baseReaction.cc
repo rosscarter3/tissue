@@ -406,8 +406,6 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
   //transport.h,transport.cc
   else if(idValue=="MembraneDiffusionSimple")
     return new MembraneDiffusionSimple(paraValue,indValue);
-  else if(idValue=="MembraneDiffusionSimple2")
-    return new MembraneDiffusionSimple2(paraValue,indValue);
   else if(idValue=="DiffusionSimple")
     return new DiffusionSimple(paraValue,indValue);
   else if(idValue=="DiffusionConductiveSimple")
@@ -749,6 +747,13 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     return new Hypocotyl3D::VertexFromTRBScenterTriangulationMT(paraValue, indValue);
   
   // Obselete reactions
+  if(idValue=="MembraneDiffusionSimple2") {
+    std::cerr << "BaseReaction::createReaction() EXITING: "
+	      << "Reaction MembraneDiffusionSimple2 has been removed (20210820) since only working on"
+	      << " a single cell."
+	      << std::endl;
+    exit(EXIT_FAILURE);
+  }
   if(idValue=="Calculate::MaxVelocity" ||
      idValue=="maxVelocity") {
     std::cerr << "BaseReaction::createReaction() EXITING: "
