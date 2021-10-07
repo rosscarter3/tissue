@@ -20,9 +20,10 @@
 /// transport is between neighboring membrane compartments within the same cell
 /// described by:
 ///
-/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f]
+/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij-1} - P_{ij+1}) @f]
 ///
-/// where p_0 is the diffusion rate, i is the cell, j a membrane section, anf j+/- neighboring membrane sections.
+/// where p_0 is the diffusion rate, i is the cell, j a membrane section, and j+/-1
+/// neighboring membrane sections.
 ///
 /// In a model file the reaction is defined as
 ///
@@ -32,7 +33,8 @@
 /// P_{wallindex}
 /// @endverbatim
 ///
-/// where the reaction assumes that each wall keeps two variables per membrane molecule.
+/// where the reaction assumes that each edge stores two variables per membrane molecule
+/// (index given plus the following).
 ///
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
@@ -52,49 +54,6 @@ class MembraneDiffusionSimple : public BaseReaction {
 	      DataMatrix &wallDerivs,
 	      DataMatrix &vertexDerivs );
 };
-
-
-///
-/// @brief A membrane diffusion reaction
-///
-/// A reaction for passive diffusion of molecules localized in the membrane. The
-/// transport is between neighboring membrane compartments within the same cell
-/// described by:
-///
-/// @f[ \frac{dP_{ij}}{dt} = - p_0 ( 2 P_{ij} - P_{ij} - P_{ij}) @f]
-///
-/// where p_0 is the diffusion rate, i is the cell, j a membrane section, anf j+/- neighboring membrane sections.
-///
-/// In a model file the reaction is defined as
-///
-/// @verbatim
-/// MembraneDiffusionSimple 1 1 1
-/// p_0
-/// P_{wallindex}
-/// @endverbatim
-///
-/// where the reaction assumes that each wall keeps two variables per membrane molecule.
-///
-/// @note The Simple in the name reflects the fact that no geometric factors are included.
-///
-class MembraneDiffusionSimple2 : public BaseReaction {
-
- public:
-
-  MembraneDiffusionSimple2(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-};
-
-
 
 ///
 /// @brief A cell-to-cell diffusion reaction
@@ -116,7 +75,8 @@ class MembraneDiffusionSimple2 : public BaseReaction {
 /// @endverbatim
 ///
 ///
-/// IMPORTANT Note: at the moment the implementation of the HeunIto solver for this function is not stochastic but deterministic.
+/// IMPORTANT Note: at the moment the implementation of the HeunIto solver for this function is not
+/// stochastic but deterministic.
 ///
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
@@ -127,6 +87,63 @@ class DiffusionSimple : public BaseReaction {
   DiffusionSimple(std::vector<double> &paraValue,
 			  std::vector< std::vector<size_t> >
 			  &indValue );
+
+  void derivs(Tissue &T,
+	      DataMatrix &cellData,
+	      DataMatrix &wallData,
+	      DataMatrix &vertexData,
+	      DataMatrix &cellDerivs,
+	      DataMatrix &wallDerivs,
+	      DataMatrix &vertexDerivs );
+
+void derivsWithAbs(Tissue &T,
+       DataMatrix &cellData,
+       DataMatrix &wallData,
+       DataMatrix &vertexData,
+       DataMatrix &cellDerivs,
+       DataMatrix &wallDerivs,
+       DataMatrix &vertexDerivs,
+       DataMatrix &sdydtCell,
+       DataMatrix &sdydtWall,
+       DataMatrix &sdydtVertex);
+};
+
+///
+/// @brief A cell-to-cell diffusion reaction dependent on a helper molecule
+///
+/// A reaction for passive diffusion of molecules between neighboring cells.
+/// Note that cell volume and other topological properties are not taken into account.
+/// The diffusion is described by the equation
+///
+/// @f[ \frac{dc_{i}}{dt} = - p_0 \sum_j ( c_{i}h_{i} - c_{j}h_{j}) @f]
+///
+/// where @f$p_0@f$ is the diffusion rate, @f$c_i@f$ is the cell concentration and @f$c_j@f$ is the
+/// concentration in a neighboring cell of the trasnsported molecule and @h_{i/j}@f$ are the cellular
+/// concentrations of the helper molecule.
+///
+/// In a model file the reaction is defined as
+///
+/// @verbatim
+/// DiffusionSimpleOne 1 2 1 1
+/// p_0
+/// c_index
+/// h_index
+/// @endverbatim
+///
+///
+/// IMPORTANT Note: at the moment the implementation of the HeunIto solver for this function is
+/// not stochastic but deterministic.
+///
+/// @note The Simple in the name reflects the fact that no geometric factors are included.
+/// @note The One in the name reflects the dependance on a second 'transporter' molecule.
+///
+class DiffusionSimpleOne : public BaseReaction {
+
+ public:
+
+  DiffusionSimpleOne(std::vector<double> &paraValue,
+		     std::vector< std::vector<size_t> >
+		     &indValue );
 
   void derivs(Tissue &T,
 	      DataMatrix &cellData,
