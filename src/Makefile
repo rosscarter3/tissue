@@ -27,21 +27,25 @@ UNAME_A := $(shell uname -p)    # architecture
 # Default (should not be used in most cases)
 CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
 LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+$(info "Default Flags Set")
 
 # Linux (assume default)
 ifeq ($(UNAME_S),Linux)
+	$(info "Linux Flags Set")
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Cygwin 10.0
 ifeq ($(UNAME_S),CYGWIN_NT-10.0)
+	$(info "Cygwin Flags Set")
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
     LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Mac OS X
 ifeq ($(UNAME_S),Darwin)
+	$(info "Mac Flags Set")
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
 endif
