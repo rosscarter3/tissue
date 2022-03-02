@@ -168,9 +168,9 @@ namespace FiberModel {
       }
       if ( parameter(2)==2 ){ // Hill-like Fiber model instantenous update for fiber deposition model
 	size_t fiberLIndex=variableIndex(1,1);
-	youngFiber= cellData[cellIndex][YoungLIndex];
+	//youngFiber= cellData[cellIndex][YoungLIndex];
       
-	cellData[cellIndex][fiberLIndex] =
+	cellData[cellIndex][YoungLIndex] =
 	  0.5*(1+(std::pow(anisotropy,Nh)
 		  /(std::pow((1-anisotropy),Nh)*std::pow(Kh,Nh)+std::pow(anisotropy,Nh))))* youngFiber;      
       }

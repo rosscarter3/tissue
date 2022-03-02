@@ -15,10 +15,12 @@
 
 /// 
 /// @brief Reactions updates of turgor pressure and growth resulting from dynamic turgor pressure
-/// (water potantial etc)
+/// and water movement (using water potantial etc)
 ///
-/// @details Reactions updating turgor pressure e.g. via water potential and growth reactions following this.
-/// Vertex positions are updated to generate increase (or possibly decrease) of 2D cell volumes. Additional cell
+/// @details Reactions updating turgor pressure e.g. via water potential and water volume growth reactions
+/// following this.
+/// Vertex positions are updated to generate increase (or possibly decrease) of 2D cell volumes, and turgor is
+/// calculated by water potential and water movement can be calculated. Additional cell
 /// variables are updated and used for dynamic variables.
 ///
 /// @note These reactions have never been used in publications and should be checked before used in a
@@ -35,10 +37,10 @@ namespace TurgorGrowth {
   /// where @f$V_w@f$ is the water volume, T is the turgor, @f$p_0@f$ is the update rate, @f$p_1@f$ is the
   /// osmotic potential and @f$p_2@f$ is an scaling factor. Also @f$p_3@f$ = denyShrinkFlag
   /// and @f$p_4@f$ = allowNegTurgorFlag can be set to restrict the behavior.
-  /// The turgor, T, is calculated as @f$T=V_w-V@f$, the difference between the current water volume
+  /// The turgor, T, is calculated as @f$T=(V_w-V)/V@f$, the difference between the current water volume
   /// and cell (face) volume. In a model file the reaction is defined as
   /// @verbatim
-  /// WaterVolumeFromTurgor 5 1/2 1 [1]
+  /// TurgorGrowth::WaterVolume 5 1/2 1 [1]
   /// k_p
   /// P_max
   /// k_pp
@@ -47,7 +49,7 @@ namespace TurgorGrowth {
   ///
   /// WaterVolume
   /// [Turgor_save] @endverbatim
-  ///
+  /// @note Used to be called WaterVolumeFrom Turgor
   class WaterVolume : public BaseReaction
   {
   public:

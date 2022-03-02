@@ -1593,6 +1593,13 @@ void BaseSolver::print(std::ostream &os) {
 
   else if (printFlag_ == 60) {  // paper I fig3  parameter scan for alighnmen
                                 // between MT stress and P-strain
+    if (tCount == 0) { 
+      if( T_->numReaction()<=6 || cellData_[0].size()<=32 ) { //will try to print out of scope
+	std::cerr << "BaseSolver::print() printFlag=60 requires specific numbers of reactions and cell variables."
+		  << std::endl;
+	exit(EXIT_FAILURE);
+	  }
+    }
 
     os << T_->reaction(1)->parameter(1) << " " << T_->reaction(6)->parameter(1)
        << " " << cellData_[0][18] << " " << cellData_[0][23] << " "
@@ -1789,7 +1796,29 @@ void BaseSolver::print(std::ostream &os) {
     //   }
     // }
   }
-
+  else if (printFlag_ == 69) {  // For scans in BB Thesis PIII, fig 1
+    size_t r1 = 1; // young
+    size_t p1 = 1;
+    size_t r2 = 2; // Sx
+    size_t p2 = 0;
+    if (tCount == 0) { 
+      if( T_->numReaction()<=r1 || T_->numReaction()<=r2 || cellData_[0].size()<=32 ) { //will try to print out of scope
+	std::cerr << "BaseSolver::print() printFlag=60 requires specific numbers of reactions and cell variables."
+		  << std::endl;
+	exit(EXIT_FAILURE);
+	  }
+    }
+    os << T_->reaction(r1)->parameter(p1) << " " << T_->reaction(r2)->parameter(p2)
+       << " " << cellData_[0][18] << " " << cellData_[0][23] << " "
+       << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]
+       << " " << cellData_[0][28] << " " << cellData_[0][7] << " "
+       << cellData_[0][32] << std::endl;
+    //        young-Fiber     forceY    stress-anisotropy    cos(tet(MT,stress))
+    //        cos(tet(stress,strain)),
+    // strain aniso, strain1, strain2, stress1, stress2.
+    // os << T_->reaction(0)->parameter(0);
+  }
+    
   // For Hypocotyl paper Bou Daher (2018)
   // 70 and 71, should not be changed unless
   // gitlab.com/slcu/teamhj/behruz/3DHypocotyl is
@@ -2279,6 +2308,30 @@ void BaseSolver::print(std::ostream &os) {
   else if (printFlag_ == 107) {  // Init style
     printInit(os);
   }
+  else if (printFlag_ == 169) {  // For scanning Sx and Sy in parascan_stressXY.auto in patchtest repository
+    size_t r1 = 2; // Sx
+    size_t p1 = 0;
+    size_t r2 = 2; // Sy
+    size_t p2 = 1;
+    if (tCount == 0) { 
+      if( T_->numReaction()<=r1 || T_->numReaction()<=r2 || cellData_[0].size()<=32 ) { //will try to print out of scope
+	std::cerr << "BaseSolver::print() printFlag=60 requires specific numbers of reactions and cell variables."
+		  << std::endl;
+	exit(EXIT_FAILURE);
+	  }
+    }
+    os << T_->reaction(r1)->parameter(p1) << " " << T_->reaction(r2)->parameter(p2)
+       << " " << cellData_[0][18] << " " << cellData_[0][23] << " "
+       << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]
+       << " " << cellData_[0][28] << " " << cellData_[0][7] << " "
+       << cellData_[0][32] << std::endl;
+    //        young-Fiber     forceY    stress-anisotropy    cos(tet(MT,stress))
+    //        cos(tet(stress,strain)),
+    // strain aniso, strain1, strain2, stress1, stress2.
+    // os << T_->reaction(0)->parameter(0);
+  }
+
+
   else if (printFlag_ == 999) {  // Print plane from reaction
         int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
 

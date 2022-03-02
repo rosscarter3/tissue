@@ -216,6 +216,53 @@ namespace Creation {
 		DataMatrix &wallDerivs,
 		DataMatrix &vertexDerivs );
   };
+
+  ///
+  /// @brief In each cell a molecule is produced/created with rate dependent on the distance of the cell
+  /// from the center of a cylinder along the z axis
+  ///
+  /// @details The variable update is for each cell given by ( SIGN= -1, production inside the sphere)
+  /// @f[ \frac{dc}{dt} = V \frac{r^n + R^n}{R^n} @f]
+  /// or (SIGN = +1, production outside the sphere),
+  /// @f[ \frac{dc}{dt} = V \frac{r^n + R^n}{R^n} @f]
+  /// where @f$ V, R, n, SIGN@f$ are constant parameters, @f$ c @f$ is the variable to be updated
+  /// and @f$ r @f$ the distance of the cell to the center of a cylinder along the z axis with radius @f$ R @f$.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Creation::SpatialCylinder 4 1 1
+  /// V R n SIGN
+  /// c_index
+  /// @endverbatim
+  ///
+  class SpatialCylinder : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    SpatialCylinder(std::vector<double> &paraValue, 
+		  std::vector< std::vector<size_t> > &indValue );    
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
   
   ///
   /// @brief In each cell a molecule is produced/created with rate dependent on the distance of the cell from a ring

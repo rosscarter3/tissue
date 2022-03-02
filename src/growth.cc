@@ -763,8 +763,8 @@ namespace WallGrowth {
           equil=false;
       }
       //std::cerr << equil << std::endl; //to check if it is ever updating
-      if(equil && deltat>0.0) {// If close to mechanical equilibrum        
-      //if(true) {  // If no check to be done
+      //if(equil && deltat>0.0) {// If close to mechanical equilibrum        
+      if(true) {  // If no check to be done
         growthtime+=h;  
         //std::cerr<<scaletmp<<std::endl;
         std::vector<std::vector<double> > mainWalls(numWalls);
@@ -1531,6 +1531,378 @@ namespace WallGrowth {
  
     // }
     // reserve end
+
+
+    StrainTRBSConcentrationHill::
+    StrainTRBSConcentrationHill(std::vector<double> &paraValue, 
+	   std::vector< std::vector<size_t> > 
+	   &indValue ) {
+
+      //Do some checks on the parameters and variable indeces
+      if( paraValue.size()!=7) {
+	std::cerr << "WallGrowthStrainTRBScenterTriangulationConcentrationHill::"
+		  << "WallGrowthStrainTRBScenterTriangulationConcentrationHill() "
+		  << "Uses three parameters k_growth, strain_threshold and velocity threshold"
+                  << std::endl;
+	exit(EXIT_FAILURE);
+      }
+        
+      if( indValue.size() !=4 || 
+          indValue[0].size() !=1 || 
+          indValue[1].size() !=1 || 
+          (indValue[2].size() !=1 && indValue[3].size() !=1) ) {
+	std::cerr << "WallGrowthStrainTRBScenterTriangulation::"
+		  << "WallGrowthStrainTRBScenterTriangulation() "
+                  << "wall length index is given in first level,"
+		  << "Start of additional Cell variable indices (center(x,y,z) "
+		  << "L_1,...,L_n, n=num vertex) is given in second level, " 
+		  << "and velocity_value_strore_index and concentration "
+		  << std::endl;
+	exit(EXIT_FAILURE);
+      }
+      //Set the variable values
+      //
+      setId("WallGrowthStrainTRBScenterTriangulationConcentrationHill");
+      setParameter(paraValue);  
+      setVariableIndex(indValue);
+      
+      //Set the parameter identities
+      //
+
+      std::vector<std::string> tmp( numParameter() );
+      tmp.resize( numParameter() );
+      tmp[0] = "k_growth";
+      tmp[1] = "k_growth_hill";
+      tmp[2] = "k_hill";
+      tmp[3] = "n_hill";
+      tmp[4] = "s_threshold";
+      tmp[5] = "velocity_threshold";
+      tmp[6] = "doubleFlag";
+      
+      setParameterId( tmp );
+    }
+    
+    void StrainTRBSConcentrationHill::
+    derivs(Tissue &T,
+	   DataMatrix &cellData,
+	   DataMatrix &wallData,
+	   DataMatrix &vertexData,
+	   DataMatrix &cellDerivs,
+	   DataMatrix &wallDerivs,
+	   DataMatrix &vertexDerivs ) {
+    }
+
+    void StrainTRBSConcentrationHill::
+    update(Tissue &T,
+	   DataMatrix &cellData,
+	   DataMatrix &wallData,
+	   DataMatrix &vertexData,
+           double h )
+    {
+      size_t dimension = vertexData[0].size();
+      size_t numCells = T.numCell();
+      size_t numWalls = T.numWall();
+      size_t wallLengthIndex= variableIndex(0,0);
+      size_t comIndex = variableIndex(1,0);
+      size_t lengthInternalIndex = comIndex+dimension;
+      size_t velocityStoreIndex = variableIndex(2,0);
+      size_t concentrationIndex = variableIndex(3,0);
+      double k_hill = parameter(2);
+      double n_hill = parameter(3);
+      double strainThreshold=parameter(4);
+      double velocityThreshold=parameter(5);
+      size_t growthInd=30;
+
+      static double growthtime=0;
+      static double deltat=0;
+      deltat +=h; 
+            
+      bool equil=true;
+      for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex){        
+        if(cellData[cellIndex][velocityStoreIndex]>velocityThreshold)
+          equil=false;
+      }
+      //std::cerr << equil << std::endl; //to check if it is ever updating
+      //if(equil && deltat>0.0) {// If close to mechanical equilibrum        
+      if(true) {  // If no check to be done
+        growthtime+=h;  
+        //std::cerr<<scaletmp<<std::endl;
+        std::vector<std::vector<double> > mainWalls(numWalls);
+        std::vector<std::vector<std::vector<double> > > internalWalls(numCells);
+        
+        for (size_t wallIndex=0 ; wallIndex<numWalls ; ++wallIndex)
+          mainWalls[wallIndex].resize(2);
+        for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex){
+          size_t numCellWalls = T.cell(cellIndex).numWall();
+          internalWalls[cellIndex].resize(numCellWalls);
+          for (size_t cellWallIndex=0 ; cellWallIndex<numCellWalls ; ++cellWallIndex)
+            internalWalls[cellIndex][cellWallIndex].resize(2);
+        }
+        
+        for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) {
+          //if(cellData[cellIndex][37]!=0) { // hypocotyl             
+          
+          size_t numCellWalls = T.cell(cellIndex).numWall(); 
+          
+          cellData[cellIndex][growthInd]=0;
+          
+          for (size_t wallIndex=0; wallIndex<numCellWalls; ++wallIndex) { 
+            size_t wallIndexPlusOneMod = (wallIndex+1)%numCellWalls;
+            //size_t v1 = com;
+            size_t v2 = T.cell(cellIndex).vertex(wallIndex)->index();
+            size_t v3 = T.cell(cellIndex).vertex(wallIndexPlusOneMod)->index();
+            //size_t w1 = internal wallIndex
+            size_t w2 = T.cell(cellIndex).wall(wallIndex)->index();
+            //size_t w3 = internal wallIndex+1
+            
+            DataMatrix position(3,vertexData[v2]);
+            for (size_t d=0; d<dimension; ++d)
+              position[0][d] = cellData[cellIndex][comIndex+d]; // com position
+            //position[1] = vertexData[v2]; // given by initiation
+            position[2] = vertexData[v3];
+                        
+            std::vector<double> restingLength(3);
+            if(parameter(6)==1){ // double resting length        
+              restingLength[0] = cellData[cellIndex][lengthInternalIndex + 2*wallIndex+1];
+              restingLength[2] = cellData[cellIndex][lengthInternalIndex + 2*wallIndexPlusOneMod];      
+              
+              restingLength[1] = wallData[w2][wallLengthIndex]+
+                cellData[cellIndex][lengthInternalIndex+2*numCellWalls+wallIndex];
+            }
+            else{           // single resting length
+              restingLength[0] = cellData[cellIndex][lengthInternalIndex + wallIndex];
+              restingLength[2] = cellData[cellIndex][lengthInternalIndex + wallIndexPlusOneMod];      
+              restingLength[1] = wallData[w2][wallLengthIndex];
+            } 
+            
+            // double restingArea=std::sqrt( ( restingLength[0]+restingLength[1]+restingLength[2])*
+            //                               (-restingLength[0]+restingLength[1]+restingLength[2])*
+            //                               ( restingLength[0]-restingLength[1]+restingLength[2])*
+            //                               ( restingLength[0]+restingLength[1]-restingLength[2])  )*0.25;
+	    std::vector<double> length(3);
+            length[0] = std::sqrt( (position[0][0]-position[1][0])*(position[0][0]-position[1][0]) +
+                                   (position[0][1]-position[1][1])*(position[0][1]-position[1][1]) +
+                                   (position[0][2]-position[1][2])*(position[0][2]-position[1][2]) );            
+            length[1] = T.wall(w2).lengthFromVertexPosition(vertexData);
+	    length[2] = std::sqrt( (position[0][0]-position[2][0])*(position[0][0]-position[2][0]) +
+                                   (position[0][1]-position[2][1])*(position[0][1]-position[2][1]) +
+                                   (position[0][2]-position[2][2])*(position[0][2]-position[2][2]) );
+            
+            //Current shape local coordinate of the element  (counterclockwise ordering of nodes/edges)
+            double CurrentAngle1=std::acos(  (length[0]*length[0]+
+                                              length[1]*length[1]-
+                                              length[2]*length[2])/
+                                             (length[0]*length[1]*2)    );
+            
+            double Qa=std::cos(CurrentAngle1)*length[0];
+            double Qc=std::sin(CurrentAngle1)*length[0];
+            double Qb=length[1];
+                        
+            double RestingAngle1=std::acos(  (restingLength[0]*restingLength[0]+
+                                              restingLength[1]*restingLength[1]-
+                                              restingLength[2]*restingLength[2])/
+                                             (restingLength[0]*restingLength[1]*2)    );
+            
+            double Pa=std::cos(RestingAngle1)*restingLength[0];
+            double Pc=std::sin(RestingAngle1)*restingLength[0];
+            double Pb=restingLength[1];
+            
+            // shape vector matrix in resting shape in local coordinate system  = 
+            // inverse of coordinate matrix ( only first two elements i.e. ShapeVectorResting[3][2] )      
+            double ShapeVectorResting[3][3]={ {  0   ,       1/Pc      , 0 }, 
+                                              {-1/Pb , (Pa-Pb)/(Pb*Pc) , 1 },       
+                                              { 1/Pb ,     -Pa/(Pb*Pc) , 0 }  };
+            
+            double positionLocal[3][2]={ {Qa , Qc}, 
+                                         {0  , 0 },  
+                                         {Qb , 0 }  };
+            
+            double DeformGrad[2][2]={{0,0},{0,0}}; // F= Qi x Di
+            for ( int ii=0 ; ii<3 ; ++ii ) {
+              DeformGrad[0][0]=DeformGrad[0][0]+positionLocal[ii][0]*ShapeVectorResting[ii][0];
+              DeformGrad[1][0]=DeformGrad[1][0]+positionLocal[ii][1]*ShapeVectorResting[ii][0];
+              DeformGrad[0][1]=DeformGrad[0][1]+positionLocal[ii][0]*ShapeVectorResting[ii][1];
+              DeformGrad[1][1]=DeformGrad[1][1]+positionLocal[ii][1]*ShapeVectorResting[ii][1];
+            }
+            
+            size_t growthVecInd=0;
+            size_t growthVal1Ind=7;
+            size_t growthVal2Ind=11;
+
+            // size_t growthVecInd=32;
+            // size_t growthVal1Ind=35;
+            // size_t growthVal2Ind=15;
+
+            double growthVal1=cellData[cellIndex][growthVal1Ind];
+            double growthVal2=cellData[cellIndex][growthVal2Ind];
+
+
+            double growthCurrGlob[3]={cellData[cellIndex][growthVecInd  ],
+                                      cellData[cellIndex][growthVecInd+1],
+                                      cellData[cellIndex][growthVecInd+2] };
+            
+            
+            double tempA=std::sqrt((position[2][0]-position[1][0])*(position[2][0]-position[1][0])+
+                                   (position[2][1]-position[1][1])*(position[2][1]-position[1][1])+
+                                   (position[2][2]-position[1][2])*(position[2][2]-position[1][2])  );
+            
+            double tempB=std::sqrt((position[0][0]-position[1][0])*(position[0][0]-position[1][0])+
+                                   (position[0][1]-position[1][1])*(position[0][1]-position[1][1])+
+                                   (position[0][2]-position[1][2])*(position[0][2]-position[1][2])  );
+            
+      
+            double Xcurrent[3]=      
+              { (position[2][0]-position[1][0])/tempA,
+                (position[2][1]-position[1][1])/tempA,
+                (position[2][2]-position[1][2])/tempA
+              };
+            
+            double Bcurrent[3]=      
+              { (position[0][0]-position[1][0])/tempB,
+                (position[0][1]-position[1][1])/tempB,
+                (position[0][2]-position[1][2])/tempB
+              };
+            
+            double Zcurrent[3]=      
+              { Xcurrent[1]*Bcurrent[2]-Xcurrent[2]*Bcurrent[1],
+                Xcurrent[2]*Bcurrent[0]-Xcurrent[0]*Bcurrent[2],
+                Xcurrent[0]*Bcurrent[1]-Xcurrent[1]*Bcurrent[0]
+              };
+            
+            tempA=std:: sqrt(Zcurrent[0]*Zcurrent[0]+Zcurrent[1]*Zcurrent[1]+Zcurrent[2]*Zcurrent[2]);
+            Zcurrent[0]=Zcurrent[0]/tempA;
+            Zcurrent[1]=Zcurrent[1]/tempA;
+            Zcurrent[2]=Zcurrent[2]/tempA;
+            
+            double Ycurrent[3]=      
+              { Zcurrent[1]*Xcurrent[2]-Zcurrent[2]*Xcurrent[1],
+                Zcurrent[2]*Xcurrent[0]-Zcurrent[0]*Xcurrent[2],
+                Zcurrent[0]*Xcurrent[1]-Zcurrent[1]*Xcurrent[0]
+              };
+            
+            double rotation[3][3]=
+              { {Xcurrent[0] , Ycurrent[0] , Zcurrent[0] },
+                {Xcurrent[1] , Ycurrent[1] , Zcurrent[1] },
+                {Xcurrent[2] , Ycurrent[2] , Zcurrent[2] } };
+      
+            // rotating the growth vector from global coordinate system to the local one in the current shape
+            double growthCurrLocal[3]=
+              {  rotation[0][0]*growthCurrGlob[0]+
+                 rotation[1][0]*growthCurrGlob[1]+
+                 rotation[2][0]*growthCurrGlob[2],
+                 
+                 rotation[0][1]*growthCurrGlob[0]+
+                 rotation[1][1]*growthCurrGlob[1]+
+                 rotation[2][1]*growthCurrGlob[2],
+                 
+                 rotation[0][2]*growthCurrGlob[0]+
+                 rotation[1][2]*growthCurrGlob[1]+
+                 rotation[2][2]*growthCurrGlob[2]
+              };
+
+            // transform the growth vector from current local to the resting local
+            double growthRestLocal[2]={ DeformGrad[1][1] *growthCurrLocal[0]-DeformGrad[0][1]*growthCurrLocal[1],
+                                        -DeformGrad[1][0]*growthCurrLocal[0]+DeformGrad[0][0]*growthCurrLocal[1]};
+            double tmpG=std::sqrt(growthRestLocal[0]*growthRestLocal[0]+growthRestLocal[1]*growthRestLocal[1]);
+            growthRestLocal[0]/=tmpG;
+            growthRestLocal[1]/=tmpG;
+            
+            std::vector<std::vector<double> > edgeRestLocal(3);
+	    for (size_t d=0; d< 3; ++d)
+              edgeRestLocal[d].resize(3);
+                        
+            edgeRestLocal[0][0]= -Pa;   //positionLocal[][0]-positionLocal[][0];
+            edgeRestLocal[0][1]= -Pc;   //positionLocal[][1]-positionLocal[][1];
+	    edgeRestLocal[1][0]= Pb;    //positionLocal[][0]-positionLocal[][0];
+            edgeRestLocal[1][1]= 0;     //positionLocal[][1]-positionLocal[][1];            
+            edgeRestLocal[2][0]= Pa-Pb; //positionLocal[][0]-positionLocal[][0];
+            edgeRestLocal[2][1]= Pc;    //positionLocal[][1]-positionLocal[][1];
+            
+            std:: vector<double> cosTet(3);
+            std:: vector<double> sinTet(3);
+            for (size_t j=0; j< 3; ++j){
+              cosTet[j]=std::fabs((growthRestLocal[0]*edgeRestLocal[j][0]+
+                                   growthRestLocal[1]*edgeRestLocal[j][1])/
+                                  restingLength[j]);
+              sinTet[j]=std::sqrt(std::fabs(1-cosTet[j]*cosTet[j]));
+              
+              if(cosTet[j]<0 || cosTet[j]>1)
+                std::cerr<<"in growth.cc/strainTRBS cosTet is wrong: "
+                         <<cosTet[j]<<" in cell here   ..."<<cellIndex<<std::endl;
+            }
+            
+            std::vector<std::vector<double> > restingComp(3);
+            for (size_t j=0; j< 3; ++j)
+              restingComp[j].resize(2);
+            
+            for (size_t j=0; j< 3; ++j){
+              restingComp[j][0]=restingLength[j]*cosTet[j];
+              restingComp[j][1]=restingLength[j]*sinTet[j];
+            }
+            
+            // for hypocotyl Siobhan
+            // if(cellIndex==408 && wallIndex==0){
+            //     // std::cout<<strainThreshold<<" "<<growthVal1<<" "<<growthVal2<<" "
+            //     //          <<growthtime<<" "<<deltat<<" "
+            //     //          <<vertexData[0][2]-vertexData[899][2]<<std::endl;
+            //     std::cout<<strainThreshold<<" "<<growthVal1<<" "<<growthVal2<<" "
+            //              <<(growthVal1-growthVal2)/growthVal1<<std::endl;
+                            
+            // }
+            
+            if (growthVal1>strainThreshold && growthVal2<strainThreshold){
+	      cellData[cellIndex][growthInd]+=1;
+	      double conc = cellData[cellIndex][concentrationIndex];
+	      double hillFactor = std::pow(conc, n_hill)/(std::pow(k_hill, n_hill)+std::pow(conc, n_hill));
+              double factor1=(parameter(0)+parameter(1)*hillFactor)*h*(growthVal1-strainThreshold);
+                                          
+              for (size_t j=0; j< 3; ++j)
+                restingComp[j][0]+=restingComp[j][0]*factor1;
+            }
+            if (growthVal1<strainThreshold && growthVal2>strainThreshold){
+	      cellData[cellIndex][growthInd]+=1;
+	      double conc = cellData[cellIndex][concentrationIndex];
+	      double hillFactor = std::pow(conc, n_hill)/(std::pow(k_hill, n_hill)+std::pow(conc, n_hill));
+	      double factor2=(parameter(0)+parameter(1)*hillFactor)*h*(growthVal2-strainThreshold);
+              
+              for (size_t j=0; j< 3; ++j)
+                restingComp[j][1]+=restingComp[j][1]*factor2;
+            }
+	    if (growthVal1>strainThreshold && growthVal2>strainThreshold){
+              cellData[cellIndex][growthInd]+=2;
+	      double conc = cellData[cellIndex][concentrationIndex];
+	      double hillFactor = std::pow(conc, n_hill)/(std::pow(k_hill, n_hill)+std::pow(conc, n_hill));
+	      double factor1=(parameter(0)+parameter(1)*hillFactor)*h*(growthVal1-strainThreshold);
+	      double factor2=(parameter(0)+parameter(1)*hillFactor)*h*(growthVal2-strainThreshold);
+
+              for (size_t j=0; j< 3; ++j){
+                restingComp[j][0]+=restingComp[j][0]*factor1;
+                restingComp[j][1]+=restingComp[j][1]*factor2;
+              }
+            }
+            
+            double internalTemp=std::sqrt(restingComp[0][0]*restingComp[0][0]+
+                                          restingComp[0][1]*restingComp[0][1]);
+            
+            double externalTemp=std::sqrt(restingComp[1][0]*restingComp[1][0]+
+                                          restingComp[1][1]*restingComp[1][1]);
+            
+            double internalTempPlusOne=std::sqrt(restingComp[2][0]*restingComp[2][0]+
+                                                 restingComp[2][1]*restingComp[2][1]);
+	    
+            cellData[cellIndex][lengthInternalIndex+2*numCellWalls+wallIndex]
+              =externalTemp-wallData[w2][wallLengthIndex];
+            cellData[cellIndex][lengthInternalIndex + 2*wallIndex+1]=internalTemp;
+            cellData[cellIndex][lengthInternalIndex + 2*wallIndexPlusOneMod]=internalTempPlusOne;
+          } // walls
+
+          // updating wall length
+          //} // if(cellData[cellIndex][36]==0)// hypocotyl 
+        } // cells
+        //std::cerr<<growthtime<<"  "<<totalAreatmp<<std::endl;
+      }      
+    }
+  
 
     VectorTRBS::
     VectorTRBS(std::vector<double> &paraValue, 

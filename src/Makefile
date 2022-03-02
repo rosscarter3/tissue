@@ -21,12 +21,17 @@ SHELL = /bin/sh
 CXX = g++
 
 # Make flags OS independent (note, not yet for Windows or debug or gprof options)
-UNAME_S := $(shell uname -s)
+UNAME_S := $(shell uname -s)    # os
+UNAME_A := $(shell uname -p)    # architecture
+
+# Default (should not be used in most cases)
+CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 
 # Linux (assume default)
 ifeq ($(UNAME_S),Linux)
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Cygwin 10.0
@@ -40,6 +45,10 @@ ifeq ($(UNAME_S),Darwin)
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
 endif
+
+# Adding anaconda to library paths
+CXXFLAGS += -I${CONDA_PREFIX}/include
+LDFLAGS  += -L${CONDA_PREFIX}/lib/
 
 #Sourcefiles etc.
 SIM_SRC = simulator/simulator.cc
