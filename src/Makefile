@@ -23,6 +23,10 @@ CXX = g++
 # Make flags OS independent (note, not yet for Windows or debug or gprof options)
 UNAME_S := $(shell uname -s)
 
+# Default (should not be used in most cases)
+CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+
 # Linux (assume default)
 ifeq ($(UNAME_S),Linux)
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
