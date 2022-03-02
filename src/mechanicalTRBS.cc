@@ -3087,6 +3087,22 @@ derivs(Tissue &T,
      
       }
 
+       if (parameter(4) == 9) {
+	 youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
+         youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;
+	 
+	 if (cellData[cellIndex][13] == 1.0 || cellData[cellIndex][13] == 0.0) {
+	   youngL = youngL * 2;
+	   youngT = youngT * 2;
+	 }
+
+	 if (cellData[cellIndex][13] == 2.0) {
+	   youngL = youngL * 0.5;
+	   youngT = youngT * 0.5;
+	 }
+
+       }
+
       // If( parameter(4)<0){  // for heterogeneous stiffness(adhoc)
       //   double hFactor=0;
       //   double Hthreshold=0.01;
