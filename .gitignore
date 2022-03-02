@@ -28,3 +28,6 @@ src/tags
 *.init
 *.tinit
 *.tmp
+.vscode/settings.json
+*.info
+*.gcno
