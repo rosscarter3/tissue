@@ -47,7 +47,7 @@ namespace TRBS {
 
   void Stiffness(double lambda, double mio, double areaFactor, std::vector<double> &cotan,
 		 std::vector<double> &tensileStiffness, std::vector<double> &angularStiffness) {
-    assert( cotan.size()==tensileStiffnes.size() && cotan.size()==angularStiffness.size());
+    assert( cotan.size()==tensileStiffness.size() && cotan.size()==angularStiffness.size());
     double fac = lambda+2.0*mio;
     size_t numVertex=cotan.size();
     for (size_t i=0; i<numVertex; ++i) {
@@ -119,7 +119,7 @@ namespace TRBS {
 
   void RotationMatrix(std::vector< std::vector<double> > &pos,std::vector< std::vector<double> > &rotation) {
     size_t dimension=pos.size();
-    assert( rot.size()==dimension);
+    assert( rotation.size()==dimension);
     std::vector<double> xCurrent(dimension), bCurrent(dimension), zCurrent(dimension), yCurrent(dimension);
     
     double temp=std::sqrt((pos[2][0]-pos[1][0])*(pos[2][0]-pos[1][0])+
