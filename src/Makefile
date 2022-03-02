@@ -20,26 +20,38 @@ SHELL = /bin/sh
 # Compilers and flags
 CXX = g++
 
+
+# Default (should not be used in most cases)
+CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+$(info "Default Flags Set")
+
 # Make flags OS independent (note, not yet for Windows or debug or gprof options)
-UNAME_S := $(shell uname -s)
 
 # Linux (assume default)
-ifeq ($(UNAME_S),Linux)
+ifeq ($(shell uname),Linux)
+    $(info "Linux Flags Set")
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Cygwin 10.0
-ifeq ($(UNAME_S),CYGWIN_NT-10.0)
+ifeq ($(shell uname),CYGWIN_NT-10.0)
+    $(info "Cygwin Flags Set")
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
     LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Mac OS X
-ifeq ($(UNAME_S),Darwin)
+ifeq ($(shell uname),Darwin)
+    $(info "Mac Flags Set")
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
 endif
+
+# Adding anaconda to library paths
+CXXFLAGS += -I${CONDA_PREFIX}/include
+LDFLAGS  += -L${CONDA_PREFIX}/lib/
 
 #Sourcefiles etc.
 SIM_SRC = simulator/simulator.cc
