@@ -85,13 +85,13 @@ void InflationDeflationStresses::derivs(Tissue &T, DataMatrix &cellData,
     }
 
     vertexDerivs[bl][0] += -1 * s;
-    vertexDerivs[bl][1] += -1 * sa * s;
+    vertexDerivs[bl][1] += -1 * (1 - sa) * s;
     vertexDerivs[br][0] += +1 * s;
-    vertexDerivs[br][1] += -1 * sa * s;
+    vertexDerivs[br][1] += -1 * (1 - sa) * s;
     vertexDerivs[tl][0] += -1 * s;
-    vertexDerivs[tl][1] += +1 * sa * s;
+    vertexDerivs[tl][1] += +1 * (1 - sa) * s;
     vertexDerivs[tr][0] += +1 * s;
-    vertexDerivs[tr][1] += +1 * sa * s;
+    vertexDerivs[tr][1] += +1 * (1 - sa) * s;
 }
 
 void InflationDeflationStresses::update(Tissue &T,

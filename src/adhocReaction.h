@@ -22,7 +22,7 @@
 /// for a time
 /// then another constant stress (at s1 for t2 - t1) and then a linear decrease
 /// (to s2 over t3 - t2)
-/// s_y = s_aniso * s_x
+/// s_y = (1 - s_aniso) * s_x
 ///
 /// assumes vertices are labelled as:
 ///
