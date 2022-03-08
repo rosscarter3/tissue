@@ -2332,17 +2332,14 @@ void BaseSolver::print(std::ostream &os) {
                 exit(EXIT_FAILURE);
             }
         }
-        os << T_->reaction(2)->parameter(0) << " " << T_->reaction(3)->parameter(1)
-           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "
-           << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]
-           << " " << cellData_[0][28] << " " << cellData_[0][7] << " "
-           << cellData_[0][32] << " " << T_->reaction(1)->parameter(0) << " "
-           << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "
-           << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;
-        //        young-Fiber     forceY    stress-anisotropy    cos(tet(MT,stress))
-        //        cos(tet(stress,strain)),
-        // strain aniso, strain1, strain2, stress1, stress2.
-        // Y_m, Y_f, Y_l, t_t
+        os << T_->reaction(2)->parameter(0) << " " << T_->reaction(3)->parameter(1)   // stress x, stress y
+           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "               // stress aniso, cos MT Stress
+           << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]  // cos stress strain, strain aniso, 1st strain
+           << " " << cellData_[0][28] << " " << cellData_[0][7] << " "                // 2nd stress, stress
+           << cellData_[0][15] << " " << T_->reaction(1)->parameter(0) << " "         // 2nd Strain, Y_m
+           << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "         // Y_f, Y_l
+           << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;                 // Y_t ??
+
     }
 
     else if (printFlag_ == 999) {  // Print plane from reaction
