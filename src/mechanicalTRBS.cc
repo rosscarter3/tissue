@@ -1,4 +1,4 @@
-//
+
 // Filename     : mechanicalTRBS.cc
 // Description  : Classes describing updates due to mechanical triangular biquadratic springs
 // Author(s)    : Behruz Bozorg, Henrik Jonsson (henrik@thep.lu.se)
@@ -2788,56 +2788,83 @@ VertexFromTRBScenterTriangulationMT(std::vector<double> &paraValue,
     &indValue ) 
 {  
   // Do some checks on the parameters and variable indeces
-  if( paraValue.size()!=11 ) { 
+  if (paraValue.size() != 11 && paraValue.size() != 13) { 
     std::cerr << "VertexFromTRBScenterTriangulationMT::"
       << "VertexFromTRBScenterTriangulationMT() "
-      << "Uses 11 parameters: "
-      << "0,1: young modulus(matrix and fibre) " 
-      << "2,3 : poisson ratio (longitudinal (MT) and transverse directions)"
-      << "4 : MF flag(0 constant material anisotropy ,1: material anisotropy via FiberModel " 
-      << "5 : neighbor weight for correlation " 
-      << "6 : max stress/strain  " 
-      << "7 : 2nd flag(0: plane strain, 1: plane stress) " 
-      << "8 : MT direction angle"
-      << "9 (MT update flag): 0:for no feedback or direct feedback by indices,"
-      << "                    1:for MT direction from 7th parameter TETA, 2:force to Stress,  "
-      << "                    3: force to Strain ,4:force to perp-strain "
-      << "10 : 1:independent resting length for the elements, otherwise: common length "
-      <<" also see line 2835 where an ad-hoc thing is implemented for parameter(9)==1 "
-      << std::endl;
+      << "Uses 11 or 13 parameters:" << std::endl 
+      << "0: Young modulus (matrix) " << std::endl
+      << "1: Young modulus (fibers) " << std::endl
+      << "2: Poisson ratio (longitudinal (MT) direction)" << std::endl
+      << "3: Poisson ratio (transverse direction)" << std::endl
+      << "4: MF flag:" << std::endl
+      << "    0: Constant material anisotropy" << std::endl
+      << "    1: Material anisotropy via FiberModel " << std::endl 
+      << "    2-9: Ad hoc methods (see code)" << std::endl 
+      << "    10: Material anisotropy via FiberModel, locally diminished by a given variable (e.g. auxin)" << std::endl 
+      << "5: Neighbor weight for correlation " << std::endl
+      << "6: Max stress/strain  " << std::endl
+      << "7: 2nd flag:" << std::endl
+      << "    0: plane strain" << std::endl
+      << "    1: plane stress" << std::endl 
+      << "8: MT direction angle"<< std::endl
+      << "9: MT update flag:" << std::endl
+      << "    0: For no feedback or direct feedback by indices"<< std::endl
+      << "    1: For MT direction from 7th parameter TETA" << std::endl
+      << "    2: Force to Stress" << std::endl
+      << "    3: Force to Strain" << std::endl
+      << "    4: Force to perp-strain" << std::endl
+      << "10: "<< std::endl
+      << "    1: independent resting length for the elements" << std::endl
+      << "    otherwise: common length " << std::endl
+      << "11: Hill K for variable-induced loosening (only used if MF flag is 10)" << std::endl
+      << "12: Hill n for variable-induced loosening (only used if MF flag is 10)" << std::endl;
 
     exit(0);
   }
 
-  if( (indValue.size()!=2 && indValue.size()!=4) || 
-      indValue[0].size()!=11 || indValue[1].size()!=1 ||
-      (indValue.size()==4 && (indValue[2].size()!=0 && indValue[2].size()!=1 && indValue[2].size()!=2 && indValue[2].size()!=3)) ||
-      (indValue.size()==4 && (indValue[3].size()!=0 && indValue[3].size()!=1 && indValue[3].size()!=2 ))
-    ) { 
+  bool badLevels = (indValue.size() != 2 && indValue.size()!=4);
+  bool badLevel1 = (indValue[0].size() != 11 && indValue[0].size() != 12);
+  bool badLevel2 = (indValue[1].size() != 1);
+  bool badLevel3 = (indValue.size() == 4 && (indValue[2].size() != 0 && indValue[2].size() != 1 && indValue[2].size() != 2 && indValue[2].size() != 3));
+  bool badLevel4 = (indValue.size() == 4 && (indValue[3].size() != 0 && indValue[3].size() != 1 && indValue[3].size() != 2));
+
+  if(badLevels || badLevel1 || badLevel2 || badLevel3 || badLevel4) { 
     std::cerr << "VertexFromTRBScenterTriangulationMT::"
-      << "VertexFromTRBScenterTriangulationMT() "
-      << "11 indices including (0)Wall length index and (1)MT direction initial "
-      << "index and (2)strain and (3)stress "
-      << "anisotropy indices and indices for storing (4)area ratio, (5)transverse Modulus  "
-      << "and (6)anisotropic energy and (7)Longitudinal_modulus and (8)MTstress  and strart indices  "
-      << "for storing (9)stress tensor(6 elements) and (10)normal vector to cell plane  " 
-      << "(3 elements) given in first level." 
-      << "Start of additional Cell variable indices (center(x,y,z) "
-      << "L_1,...,L_n, n=num vertex) is given in second level (typically at the end)." 
-      << "Optionally two additional levels can be given where the strain, perpendicular " 
-      << "to strain and  2nd strain can be stored in 3rd, stress and 2nd stress can be "
-      << "stored in 4th level directions/values(dx dy dz value) can be stored at given indices."
-      << "If no index given at 3rd level, strain will not be stored, if one index given strain "
-      << "will be stored and if two indices are given maximal and perpendicular strain will  "
-      << "be stored and if 3 indices are given 2nd strain direction values will be stored at 3rd index"
-      << "If no index given at 4th level, stress will not be stored, if one index given " 
-      << "stress will be stored and if two indices are given maximal and 2nd stress will be "
-      << "stored at 1st and 2nd index respectively "
+      << "VertexFromTRBScenterTriangulationMT() " << std::endl
+      << "    (1st level) 11-12 indices including:" << std::endl
+      << "        (0) Wall length" << std::endl
+      << "        (1) MT direction initial" << std::endl
+      << "        (2) Strain anisotropy" << std::endl
+      << "        (3) Stress anisotropy" << std::endl
+      << "        (4) Area ratio" << std::endl
+      << "        (5) Transverse modulus" << std::endl
+      << "        (6) Anisotropic energy" << std::endl
+      << "        (7) Longitudunal modulus" << std::endl
+      << "        (8) MT stress/strain" << std::endl
+      << "        (9) Stress tensor (6 elements)" << std::endl
+      << "        (10) Cell plane normal vector (3 elements)" << std::endl
+      << "        (11) Loosening compound (e.g. auxin)" << std::endl << std::endl
+
+      // TODO make sense of this information
+      << "    (2nd level) Additional cell variable indices (center(x,y,z) L_1,...,L_n)." 
+      << std::endl << std::endl
+
+      << "    Two additional levels can be given where the strain, perpendicular to " << std::endl
+      << "    strain, and 2nd strain can be stored:" 
+      << std::endl << std::endl
+      
+      << "    (3rd level - optional) If no index given at 3rd level, strain will not be stored. If one index is given strain " << std::endl
+      << "    will be stored, and if two indices are given maximal and perpendicular strain will" << std::endl
+      << "    be stored and if 3 indices are given 2nd strain direction values will be stored at 3rd index"
+      << std::endl << std::endl
+
+      << "    (4th level - optional) Stress and 2nd stress can be stored in the 4th level directions/values (dx dy dz value) can be stored at given indices." << std::endl
+      << "    If no index given at 4th level, stress will not be stored, if one index given " << std::endl 
+      << "    stress will be stored and if two indices are given maximal and 2nd stress will be "<< std::endl 
+      << "    stored at 1st and 2nd index respectively "
       << std::endl;
     exit(0);
   }
-
-
 
   // Set the variable values
   setId("VertexFromTRBScenterTriangulationMT");
@@ -2845,53 +2872,47 @@ VertexFromTRBScenterTriangulationMT(std::vector<double> &paraValue,
   setVariableIndex(indValue);
 
   // Set the parameter identities
-  std::vector<std::string> tmp( numParameter() );
-  tmp[0] = "Y_mod_M";   // Matrix Young modulus
-  tmp[1] = "Y_mod_F";   // Fiber Young modulus
-  tmp[2] = "P_ratio_L"; // Longitudinal Poisson ratio
-  tmp[3] = "P_ratio_T"; // Transverse Poisson ratio
-  tmp[4] = "MF flag";
-  tmp[5] = "neigborweight";
-  tmp[6] = "stressmax";
-  tmp[7] = "Strain-Stress flag";
-  tmp[8] = "TETA anisotropy";
-  tmp[9] = "MT update flag";
+  std::vector<std::string> tmp(numParameter());
+  tmp[0]  = "Y_mod_M";   // Matrix Young modulus
+  tmp[1]  = "Y_mod_F";   // Fiber Young modulus
+  tmp[2]  = "P_ratio_L"; // Longitudinal Poisson ratio
+  tmp[3]  = "P_ratio_T"; // Transverse Poisson ratio
+  tmp[4]  = "MF flag";
+  tmp[5]  = "neigborweight";
+  tmp[6]  = "stressmax";
+  tmp[7]  = "Strain-Stress flag";
+  tmp[8]  = "TETA anisotropy";
+  tmp[9]  = "MT update flag";
   tmp[10] = "unused";
+  if (numParameter() == 12) {
+    tmp[11] = "A";
+  }
 
   setParameterId( tmp );
 
-  if( parameter(2)<0 || parameter(2)>=0.5 || parameter(3)<0 || parameter(3)>=0.5 ) {
+  if (parameter(2) < 0 || parameter(2) >= 0.5 || parameter(3) < 0 || parameter(3) >= 0.5) {
     std::cerr << " VertexFromTRBScenterTriangulationMT::"
       << " VertexFromTRBScenterTriangulationMT() "
       << " poisson ratio must be 0 <= p < 0.5 " << std::endl;
     exit(0);
   }
 
-  // if( parameter(4)!=0 && parameter(4)!=1 && parameter(4)!=2 ) {
-  //   std::cerr << " VertexFromTRBScenterTriangulationMT::"
-  // 	      << " VertexFromTRBScenterTriangulationMT() "
-  // 	      << " 5th parameter must be 0 or 1  "
-  //             << " 0: constant material anisotropy, 1: material anisotropy via FiberModel  2: for energy landscape(see the code, do not use until you are sure)" << std::endl;
-  //   exit(0);
-  // }
-
-
-  if( parameter(7)!=0 && parameter(7)!=1 ) {
+  if (parameter(7) != 0 && parameter(7) != 1) {
     std::cerr << " VertexFromTRBScenterTriangulationMT::"
-      << " VertexFromTRBScenterTriangulationMT() "
-      << " 6th parameter must be 0 or 1(0:plane strain, 1:plane stress) " << std::endl;
+      << "VertexFromTRBScenterTriangulationMT()"
+      << " 6th parameter must be 0 (plane strain) or 1 (plane stress) " << std::endl;
     exit(0);
   }
 
-  if( parameter(9)!=0 && parameter(9)!=1 && parameter(9)!=2 && parameter(9)!=3 && parameter(9)!=4) {
+  if (parameter(9) != 0 && parameter(9) != 1 && parameter(9) != 2 && parameter(9) != 3 && parameter(9) != 4) {
     std::cerr << " VertexFromTRBScenterTriangulationMT::"
-      << " VertexFromTRBScenterTriangulationMT() "
-      << " 8th parameter must be 0/1/2/3/4"
-      << " 0: for no feedback or direct feedback by indices "
-      << " 1: for MT direction from 7th parameter TETA "
-      << " 2: force to Stress "
-      << " 3: force to Strain "
-      << " 4: force to perp-strain " << std::endl;
+      << "VertexFromTRBScenterTriangulationMT()"
+      << " 8th parameter must be an integer [0-4]:"
+      << "     0: for no feedback or direct feedback by indices "
+      << "     1: for MT direction from 7th parameter TETA "
+      << "     2: force to stress "
+      << "     3: force to strain "
+      << "     4: force to perp-strain " << std::endl;
     exit(0);
   }
 }
@@ -2906,42 +2927,38 @@ derivs(Tissue &T,
     DataMatrix &vertexDerivs ) {
 
   size_t dimension = 3;
-  assert (dimension==vertexData[0].size());
   size_t numCells = T.numCell();
-  size_t wallLengthIndex = variableIndex(0,0);
-  size_t comIndex = variableIndex(1,0);
-  size_t lengthInternalIndex = comIndex+dimension;
+  assert (dimension==vertexData[0].size());
 
-  // double TotalVolume=0;
-  // double deltaVolume=0;
-  // for(size_t vertexIndex=0; vertexIndex<numVertices; ++vertexIndex){ // stimating volume for equilibrium 
-  //   TotalVolume +=std::sqrt(vertexData[vertexIndex][0]*vertexData[vertexIndex][0] +
-  //                           vertexData[vertexIndex][1]*vertexData[vertexIndex][1] +
-  //                           vertexData[vertexIndex][2]*vertexData[vertexIndex][2] );
-  // }
-  // deltaVolume=TotalVolume-cellData[0][25];
-  // cellData[0][25]=TotalVolume;
-  // cellData[0][24]=deltaVolume;
+  // RC: Changed output of iso energy to transverse modulus
+  size_t wallLengthIndex     = variableIndex(0,0);
+  size_t comIndex            = variableIndex(1,0);
+  size_t youngTIndex         = variableIndex(0,5);	
+  size_t anisoEnergyIndex    = variableIndex(0,6);	
+  size_t youngLIndex         = variableIndex(0,7);	
+  size_t lengthInternalIndex = comIndex + dimension;
 
-  //HJ: removed due to unused variable warning
-  //size_t MTindex           =variableIndex(0,1);
-  //RC: Changed output of iso energy to transverse modulus
-  size_t youngTIndex    =variableIndex(0,5);	
-  size_t anisoEnergyIndex  =variableIndex(0,6);	
-  size_t youngLIndex       =variableIndex(0,7);	
+  double youngMatrix = parameter(0);    
+  double youngFiber  = parameter(1); 
+  double poissonL    = parameter(2);    
+  double poissonT    = parameter(3);
+  double TETA        = parameter(8);  
 
-  double youngMatrix= parameter(0);    
-  double youngFiber = parameter(1); 
-  double poissonL   = parameter(2);    
-  double poissonT   = parameter(3);
-  double TETA       = parameter(8);  
+  // Only used if parameter(3) == 10:
+  size_t looseningIndex;
+  double K;
+  double n;
+  if (numVariableIndex(0) == 12 && parameter(4) == 10) {
+    looseningIndex = variableIndex(0,11);
+    K = parameter(9);
+    n = parameter(10);
+  }
 
-  //Do the update for each cell
-  for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) {
+  // Do the update for each cell
+  for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex) {
     size_t numWalls = T.cell(cellIndex).numWall();
 
-    if(  T.cell(cellIndex).numVertex()!= numWalls ) {
-
+    if (T.cell(cellIndex).numVertex() != numWalls) {
       std::cerr << "VertexFromTRBScenterTriangulationMT::derivs() same number of vertices and walls."
         << " Not for cells with " << T.cell(cellIndex).numWall() << " walls and "
         << T.cell(cellIndex).numVertex() << " vertices!"	
@@ -2949,147 +2966,102 @@ derivs(Tissue &T,
       exit(-1);
     }
 
-    // ad-hoc for regional loosening
-    // if ( std::sqrt(cellData[cellIndex][comIndex  ]*cellData[cellIndex][comIndex  ]
-    //                +cellData[cellIndex][comIndex+1]*cellData[cellIndex][comIndex+1])<30)
-    //   cellData[cellIndex][youngLIndex]=20;
-    // else
-    //   cellData[cellIndex][youngLIndex]=200;
-
-    double youngL=1;
-    double youngT=1;
-
-
-
-    if( parameter(4)==1){  // material anisotropy via FiberModel
+    // TODO rewrite this using correct if-else logic (param(4) == 1 means
+    // param(4) != 2,3,4,5,6,...)
+    double youngL = 1;
+    double youngT = 1;
+    if (parameter(4) == 1){  // material anisotropy via FiberModel
       youngL = cellData[cellIndex][youngLIndex]; 
-      youngT = 2*youngMatrix+youngFiber-youngL; 
+      youngT = 2 * youngMatrix + youngFiber - youngL; 
       cellData[cellIndex][youngTIndex] = youngT;
     }
     else {
-      if( parameter(4)==0 ){ // constant anisotropic material
+      if (parameter(4) == 0){ // constant anisotropic material
 
-        youngL = youngMatrix+youngFiber;
+        youngL = youngMatrix + youngFiber;
         youngT = youngMatrix; 
 
         // RC: adhoc?
-        if(cellData[cellIndex][40]==100){
-          youngL = youngMatrix+youngFiber/2;
-          youngT = youngMatrix+youngFiber/2;
-
+        if (cellData[cellIndex][40] == 100){
+          youngL = youngMatrix + youngFiber / 2;
+          youngT = youngMatrix + youngFiber / 2;
         }
-        // youngL *=0.4+1.1*cellData[cellIndex][11];
-        // youngT *=0.4+1.1*cellData[cellIndex][11];
-
       }
 
-      if( parameter(4)==2){  // for varying material anisotropy with constant overall stiffness for energy landscape
-        youngL =youngFiber; 
-        youngT =youngMatrix-youngL;  // here youngMatrix is total stiffness
+      if (parameter(4) == 2) {  
+        // for varying material anisotropy with constant overall stiffness for energy landscape
+        youngL = youngFiber; 
+        youngT = youngMatrix - youngL;  // here youngMatrix is total stiffness
       }
 
-      if( parameter(4)==3){  // for varrying material anisotropy with constant overall stiffness for energy landscape       
-        double totalElast=youngMatrix;
-        double Maniso=youngFiber;
-        youngT =((1-Maniso)/(2-Maniso))*totalElast; 
-        youngL=totalElast-youngT;
-
-        //youngL =youngMatrix+youngFiber; 
-        // youngT =youngMatrix+std::sqrt(
-        //                               ((youngFiber-totalElast)*4*totalElast)
-        //                               /
-        //                               ((2-3.1415)*3.1415)
-        //                               );  // here youngMatrix is total stiffness
-        //youngT =youngMatrix+totalElast*std::sqrt(
-        //                                         -(std::log((youngFiber/totalElast)-0.55))
-        //                                         /6
-        //                                         );
-        //youngT =youngMatrix+2*(totalElast-youngFiber)/(3.1415-2);
-
-        // youngL=youngMatrix+youngFiber; 
-        // youngT =youngMatrix+(youngFiber-slope*totalElast)/(1-2*slope); 
+      if (parameter(4) == 3) {  
+        // for varying material anisotropy with constant overall stiffness for energy landscape       
+        double totalElast = youngMatrix;
+        double Maniso = youngFiber;
+        youngT = ((1 - Maniso) / (2 - Maniso)) * totalElast; 
+        youngL = totalElast - youngT;
       }
 
-      // if( parameter(4)==5){  // for domain dependent material properties - Hypocotyl bending 3d (internal tissue softer)    
-      //   if (cellData[cellIndex][38]==-1){
-      //     youngL =youngMatrix+youngFiber; 
-      //     youngT =youngMatrix;  
-
-      //   }
-      //   else{
-      //     youngL =0.2*(youngMatrix+youngFiber); 
-      //     youngT =0.2*youngMatrix;  
-      //   }
-
-      //   if (cellData[cellIndex][5]==5){
-      //     youngL =0.01*(youngMatrix+youngFiber); 
-      //     youngT =0.01*youngMatrix;  
-      //   }
-      // }
-
-      if( parameter(4)==5){// for pavement cell resolution addaptive stiffness
-        youngFiber=cellData[cellIndex][anisoEnergyIndex];
-        double fiberL=cellData[cellIndex][youngLIndex];
-        youngL = youngMatrix+fiberL;
-        youngT = youngMatrix+youngFiber-fiberL;
-
-        // if(cellData[cellIndex][30]==1){
-        //   youngL = 20;
-        //   youngT = 20;
-
-        // }
+      if (parameter(4) == 5) {
+        // for pavement cell resolution adaptive stiffness
+        youngFiber = cellData[cellIndex][anisoEnergyIndex];
+        double fiberL = cellData[cellIndex][youngLIndex];
+        youngL = youngMatrix + fiberL;
+        youngT = youngMatrix + youngFiber - fiberL;
       }
 
-      if( parameter(4)==6){  // material anisotropy via FiberModel and loosening adhoc based on auxin
+      if (parameter(4) == 6) {  
+        // material anisotropy via FiberModel and loosening adhoc based on auxin
         // assumes auxinConc held in cell data 13
         youngL = cellData[cellIndex][youngLIndex]; 
-        youngT = 2*youngMatrix+youngFiber-youngL; 
+        youngT = 2 * youngMatrix + youngFiber - youngL; 
 
-        double Kconc=0.005;
-        double Nc1=2;
-        double conc=cellData[cellIndex][13];
-        double frac=(1-std::pow(conc,Nc1)/(std::pow(Kconc,Nc1)+std::pow(conc,Nc1)));
-        youngL*=0.25+0.75*frac;
-        youngT*=0.25+0.75*frac;
-        //if(cellIndex==0) std::cerr<<cellData[cellIndex][13]<<"  "<<youngL<<"  " <<youngT<<std::endl;
+        double Kconc = 0.005;
+        double Nc1   = 2;
+        double conc  = cellData[cellIndex][13];
+        double frac  = (1 - std::pow(conc,Nc1) / (std::pow(Kconc,Nc1) + std::pow(conc,Nc1)));
+        youngL *= 0.25 + 0.75 * frac;
+        youngT *= 0.25 + 0.75 * frac;
       }
 
-      if( parameter(4)==7){  // material anisotropy via FiberModel and destroying fibers based on auxin
+      if (parameter(4) == 7) {  
+        // material anisotropy via FiberModel and destroying fibers based on auxin
         // assumes auxinConc held in cell data 13
-        youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
-        youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;  
+        youngL = cellData[cellIndex][youngLIndex] - youngMatrix;
+        youngT = 2 * youngMatrix + youngFiber - youngL - 2 * youngMatrix; 
 
-        double Kconc=0.005;
-        double Nc1=2;
-        double conc=cellData[cellIndex][13];
-        double frac=(1-std::pow(conc,Nc1)/(std::pow(Kconc,Nc1)+std::pow(conc,Nc1)));
-        youngL*=frac;
-        youngT*=frac;
-        youngL+=youngMatrix;
-        youngT+=youngMatrix;
+        double Kconc = 0.005;
+        double Nc1   = 2;
+        double conc  = cellData[cellIndex][13];
+        double frac  = (1 - std::pow(conc,Nc1) / (std::pow(Kconc,Nc1) + std::pow(conc,Nc1)));
+        youngL *= frac;
+        youngT *= frac;
+        youngL += youngMatrix;
+        youngT += youngMatrix;
         //cellData[cellIndex][youngLIndex]=youngL; 
-
       }
-      if( parameter(4)==8){  // material anisotropy via FiberModel and destroying fibers and a fraction of matrix based on auxin
+
+      if (parameter(4) == 8) {  
+        // material anisotropy via FiberModel and destroying fibers and a fraction of matrix based on auxin
         // assumes auxinConc held in cell data 13
-        youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
-        youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;  
+        youngL = cellData[cellIndex][youngLIndex] - youngMatrix;
+        youngT = 2 * youngMatrix + youngFiber - youngL - 2 * youngMatrix;  
 
-        double Kconc=0.005;
-        double Nc1=2;
-        double conc=cellData[cellIndex][13];
-        double frac=(1-std::pow(conc,Nc1)/(std::pow(Kconc,Nc1)+std::pow(conc,Nc1)));
-        youngL*=frac;
-        youngT*=frac;
-        youngL+=youngMatrix*(0.2+0.8*frac);
-        youngT+=youngMatrix*(0.2+0.8*frac);
+        double Kconc = 0.005;
+        double Nc1   = 2;
+        double conc  = cellData[cellIndex][13];
+        double frac  = (1 - std::pow(conc,Nc1) / (std::pow(Kconc,Nc1) + std::pow(conc,Nc1)));
+        youngL *= frac;
+        youngT *= frac;
+        youngL += youngMatrix * (0.2 + 0.8 * frac);
+        youngT += youngMatrix * (0.2 + 0.8 * frac);
         //cellData[cellIndex][youngLIndex]=youngL; 
-
       }
 
       if (parameter(4) == 9) {
-        youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
-        youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;
+        // TODO document
+        youngL = cellData[cellIndex][youngLIndex] - youngMatrix;
+        youngT = 2 * youngMatrix + youngFiber - youngL - 2 * youngMatrix;
 
         if (cellData[cellIndex][13] == 1.0 || cellData[cellIndex][13] == 0.0) {
           youngL = youngL * 2;
@@ -3100,121 +3072,31 @@ derivs(Tissue &T,
           youngL = youngL * 0.5;
           youngT = youngT * 0.5;
         }
-
       }
+      
+      if (parameter(4) == 10) {
+        // material anisotropy via FiberModel and loosening based on a given
+        // variable (e.g. auxin)
+        // Implemented by HÅ 6 June 2022
+        youngL = cellData[cellIndex][youngLIndex]; 
+        youngT = 2 * youngMatrix + youngFiber - youngL; 
 
-      // If( parameter(4)<0){  // for heterogeneous stiffness(adhoc)
-      //   double hFactor=0;
-      //   double Hthreshold=0.01;
-      //   if (std::fabs(cellData[cellIndex][youngLIndex])>Hthreshold){
-      //     hFactor=Hthreshold;
-      //   }
-      //   else{
-      //     hFactor=std::fabs(cellData[cellIndex][youngLIndex]); // take the heterogeneous info from this index
-      //   }
-      //   hFactor *=std::fabs(parameter(4)); // factor for heterogeneity      
+        double A = cellData[cellIndex][looseningIndex];
+        double frac  = (1 - std::pow(A,n) / (std::pow(K,n) + std::pow(A,n))); // hill repression
 
-      //   youngL = youngMatrix+youngFiber-hFactor*(youngMatrix+youngFiber); 
-      //   youngT = youngMatrix-hFactor*(youngMatrix); 
-      // }
-
-      // if (cellData[cellIndex][31]==10){
-      //   youngL = 150;
-      //   youngT = 10;
-      // }
-
-
-      // if( parameter(4)<0){  // for spatial elasticity (ad-hoc)
-      //   double x0=90;
-      //   double y0=120;
-
-      //   double xx=cellData[cellIndex][comIndex]-x0;
-      //   double yy=cellData[cellIndex][comIndex+1]-y0;
-
-      //   youngL = youngMatrix+youngFiber*(1-std::exp(parameter(4)*(xx*xx+yy*yy)));
-      //   youngT = youngMatrix; 
-      //   cellData[cellIndex][13]=youngL;
-      // }
-
+        youngL *= frac;
+        youngT *= frac;
+      }
     }
-
-    // ad-hoc for 3d marcus
-
-    // if(cellData[cellIndex][25]==-3){  // sidewalls (anticlinals)
-    //   youngL = youngMatrix;
-    //   youngT = youngMatrix; 
-    //   if(cellData[cellIndex][29]==1){
-
-    //   }
-    // }
-
-    //youngL = (1-cellData[cellIndex][30]/0.6)*youngL;
-    //youngT = (1-cellData[cellIndex][30]/0.6)*youngT;
-
-    // double sEpi=10;
-
-    // if(cellData[cellIndex][27]==-2){ //L1 epidermis
-    //   youngL = sEpi*youngL;
-    //   youngT = sEpi*youngT; 
-    // }
-    // if(cellData[cellIndex][30]==10){ // L1 or L2 patch
-    //   youngL = 0.1*youngL;
-    //   youngT = 0.1*youngT; 
-    // }
-
-    // if(cellData[cellIndex][30]==5){ // b cells
-    //   youngL = 0.5*youngL;
-    //   youngT = 0.5*youngT; 
-    // }
-    // if(cellData[cellIndex][30]==2){ // c cells
-    //   youngL = 0.8*youngL;
-    //   youngT = 0.8*youngT; 
-    // }
-
-    // if(cellData[cellIndex][25]==-3 && cellData[cellIndex][29]==1){  // L1 anticlinals
-    //   youngL = sEpi*youngL;
-    //   youngT = sEpi*youngT; 
-    // }
-
-    // if(cellData[cellIndex][30]==400){
-    //   youngL = 0.1*youngL;
-    //   youngT = 0.1*youngT;
-    // }
-
-
-    // ad-hoc for root hair cell files and ....
-    // double polar=180*std::acos(cellData[cellIndex][comIndex]/
-    //                            std::sqrt(cellData[cellIndex][comIndex  ]*cellData[cellIndex][comIndex  ]+
-    //                                      cellData[cellIndex][comIndex+1]*cellData[cellIndex][comIndex+1])
-    //                            );
-    // if (std::fmod(std::floor(polar/12),2)==1){
-    //   youngL =110 ;
-    //   youngT =110 ; 
-
-    // }
-
-    // if (std::sqrt(cellData[cellIndex][comIndex]*cellData[cellIndex][comIndex]+
-    //               (cellData[cellIndex][comIndex+1]-60)*(cellData[cellIndex][comIndex+1]-60))<35){
-    //   youngL =5 ;
-    //   youngT =5 ; 
-
-    // }
-
-    // if (std::sqrt(cellData[cellIndex][comIndex]*cellData[cellIndex][comIndex]+
-    //                         cellData[cellIndex][comIndex+1]*cellData[cellIndex][comIndex+1])<10){
-    //   youngL =100 ;
-    //   youngT =100 ; 
-
-    // }
 
     double lambdaL, mioL, lambdaT, mioT; // ,lambdaTmatrix, mioTmatrix;
 
     if (parameter(7)==0){      
       // Lame coefficients based on plane strain (for 3D 0<poisson<0.5)
-      lambdaL=youngL*poissonL/((1+poissonL)*(1-2*poissonL));
-      mioL=youngL/(2*(1+poissonL));
-      lambdaT=youngT*poissonT/((1+poissonT)*(1-2*poissonT));
-      mioT=youngT/(2*(1+poissonT));
+      lambdaL = youngL * poissonL / ((1 + poissonL) * (1 - 2 * poissonL));
+      mioL = youngL / (2 * (1 + poissonL));
+      lambdaT = youngT * poissonT / ((1 + poissonT) * (1 - 2 * poissonT));
+      mioT = youngT / (2 * (1 + poissonT));
 
 
     } 
@@ -4027,54 +3909,54 @@ update(Tissue &T,
     DataMatrix &vertexData, 
     double h) {
 
-  timeC+=h;
+  timeC += h;
 
-  //Do the update for each cell
+  // Set some parameters
   size_t dimension = 3;
-  assert (dimension==vertexData[0].size());
   size_t numCells = T.numCell();
-  //size_t numVertices = T.numVertex();
+  double strainEpcilon = 0.000001;
+  double stressEpcilon = 0.000001;    
+  assert (dimension == vertexData[0].size());
+
+  // Set indices
   size_t wallLengthIndex = variableIndex(0,0);
   size_t comIndex = variableIndex(1,0);
-  size_t lengthInternalIndex = comIndex+dimension;
+  size_t lengthInternalIndex = comIndex + dimension;
 
-  double neighborweight=parameter(5);
-  double strainEpcilon =0.000001;
-  double stressEpcilon =0.000001;    
-  // double TotalVolume=0;
-  // double deltaVolume=0;
-  // for(size_t vertexIndex=0; vertexIndex<numVertices; ++vertexIndex){ // stimating volume for equilibrium 
-  //   TotalVolume +=std::sqrt(vertexData[vertexIndex][0]*vertexData[vertexIndex][0] +
-  //                           vertexData[vertexIndex][1]*vertexData[vertexIndex][1] +
-  //                           vertexData[vertexIndex][2]*vertexData[vertexIndex][2] );
-  // }
-  // deltaVolume=TotalVolume-cellData[0][25];
-  // cellData[0][25]=TotalVolume;
-  // cellData[0][24]=deltaVolume;
+  size_t MTindex           = variableIndex(0,1);	 
+  size_t strainAnIndex     = variableIndex(0,2);	
+  size_t stressAnIndex     = variableIndex(0,3);	
+  size_t areaRatioIndex    = variableIndex(0,4);	
+  size_t isoEnergyIndex    = variableIndex(0,5);	
+  size_t anisoEnergyIndex  = variableIndex(0,6);	
+  size_t youngLIndex       = variableIndex(0,7);	
+  size_t MisesStressIndex  = variableIndex(0,8);	
+  size_t stressTensorIndex = variableIndex(0,9);	
+  size_t normalVectorIndex = variableIndex(0,10);
 
-  size_t MTindex           =variableIndex(0,1);	 
-  size_t strainAnIndex     =variableIndex(0,2);	
-  size_t stressAnIndex     =variableIndex(0,3);	
-  size_t areaRatioIndex    =variableIndex(0,4);	
-  size_t isoEnergyIndex    =variableIndex(0,5);	
-  size_t anisoEnergyIndex  =variableIndex(0,6);	
-  size_t youngLIndex       =variableIndex(0,7);	
-  size_t MisesStressIndex  =variableIndex(0,8);	
-  size_t stressTensorIndex =variableIndex(0,9);	
-  size_t normalVectorIndex =variableIndex(0,10);
+  double youngMatrix    = parameter(0);    
+  double youngFiber     = parameter(1); 
+  double poissonL       = parameter(2);    
+  double poissonT       = parameter(3);
+  double neighborweight = parameter(5);
+  double TETA           = parameter(8);  
 
-  double youngMatrix= parameter(0);    
-  double youngFiber = parameter(1); 
-  double poissonL   = parameter(2);    
-  double poissonT   = parameter(3);
-  double TETA       = parameter(8);  
+  // Only used if parameter(3) == 10:
+  size_t looseningIndex;
+  double K;
+  double n;
+  if (numVariableIndex(0) == 12 && parameter(4) == 10) {
+    looseningIndex = variableIndex(0,11);
+    K = parameter(9);
+    n = parameter(10);
+  }
 
-  //std::cerr<<" here is update "<<std::endl;
-  //std::cout<<"begin:"<<std::endl;
-  for (size_t cellIndex=0 ; cellIndex<numCells ; ++cellIndex) {
+
+
+  for (size_t cellIndex=0; cellIndex < numCells ; ++cellIndex) {
     size_t numWalls = T.cell(cellIndex).numWall();
 
-    if(  T.cell(cellIndex).numVertex()!= numWalls ) {
+    if (T.cell(cellIndex).numVertex()!= numWalls) {
 
       std::cerr << "VertexFromTRBScenterTriangulationMT::update() same number of vertices and walls."
         << " Not for cells with " << T.cell(cellIndex).numWall() << " walls and "
@@ -4083,148 +3965,38 @@ update(Tissue &T,
       exit(-1);
     }
 
-    double youngL=1;
-    double youngT=1;
-
-    if( parameter(4)==1){  // material anisotropy via FiberModel
+    double youngL = 1;
+    double youngT = 1;
+    if (parameter(4) == 1){  // material anisotropy via FiberModel
       youngL = cellData[cellIndex][youngLIndex]; 
-      youngT = 2*youngMatrix+youngFiber-youngL; 
-    }
-    else {
-      if( parameter(4)==0 ){ // constant anisotropic material
-        youngL = youngMatrix+youngFiber;
+      youngT = 2 * youngMatrix+youngFiber-youngL; 
+    } else if (parameter(4) == 0){ // constant anisotropic material
+        youngL = youngMatrix + youngFiber;
         youngT = youngMatrix;        
-
-        // youngL *=0.4+1.1*cellData[cellIndex][11];
-        // youngT *=0.4+1.1*cellData[cellIndex][11];
-
-        // // hypocotyl Siobhan
-        // if(cellData[cellIndex][37]==-1){ // epidermis
-        //   youngL *=1.3;
-        //   youngT *=1.3;
-
-        // }
-        // if(cellData[cellIndex][37]==-2){ // inner
-        //   youngL *=1;
-        //   youngT *=1;
-        //   // youngL *=1;
-        //   // youngT *=1;
-
-
-        // }
-        // if(cellData[cellIndex][37]==-3){  // anti. axial
-
-        //   youngL *=0.5; //1, 0.5
-        //   youngT *=0.5; //1, 0.5
-
-
-        // }
-        // //if(cellData[cellIndex][37]==-4 && cellData[cellIndex][38]==0){  // anti transverse
-        // if(cellData[cellIndex][37]==-4 ){  // anti transverse
-        //   youngL *=1; //2, 1
-        //   youngT *=1; //2, 1
-
-        // }
-
-
-        // if(timeC>4000){
-        //   // hypocotyl Siobhan
-        //   if(cellData[cellIndex][37]==-1){ // epidermis
-        //     youngL *=3;
-        //     youngT *=3;
-
-        //   }
-        //   if(cellData[cellIndex][37]==-2){ // inner
-        //     youngL *=1;
-        //     youngT *=1;
-
-        //   }
-        //   if(cellData[cellIndex][37]==-3){  // anti. axial
-        //     youngL *=1;
-        //     youngT *=1;
-
-        //   }
-        //   if(cellData[cellIndex][37]==-4){  // anti transverse
-        //     youngL *=1;
-        //     youngT *=1;
-
-        //   }
-        // }
-
-      }
-      if( parameter(4)==2){  // for varrying material anisotropy with constant overall stiffness for energy landscape
-        youngL =youngFiber; 
-        youngT =youngMatrix-youngL;  // here youngMatrix is total stiffness
-      }
-
-      if( parameter(4)==3){  // for varrying material anisotropy with constant overall stiffness for energy landscape
-        double totalElast=youngMatrix;
-        double Maniso=youngFiber;
-        youngT =((1-Maniso)/(2-Maniso))*totalElast; 
-        youngL=totalElast-youngT;
-
-        //youngL =youngMatrix+youngFiber; 
-        // youngT =youngMatrix+std::sqrt(
-        //                               ((youngFiber-totalElast)*4*totalElast)
-        //                               /
-        //                               ((2-3.1415)*3.1415)
-        //                               );  // here youngMatrix is total stiffness
-        //youngT =youngMatrix+totalElast*std::sqrt(
-        //                                         -(std::log((youngFiber/totalElast)-0.55))
-        //                                         /6
-        //                                         );
-        //youngT =youngMatrix+2*(totalElast-youngFiber)/(3.1415-2);
-
-        // youngL=youngMatrix+youngFiber; 
-        // youngT =youngMatrix+(youngFiber-slope*totalElast)/(1-2*slope); 
-
-      }
-
-      // if( parameter(4)==5){  // for domain dependent material properties - Hypocotyl bending 3d (internal tissue softer)    
-      //   if (cellData[cellIndex][38]==-1){
-      //     youngL =youngMatrix+youngFiber; 
-      //     youngT =youngMatrix;  
-
-      //   }
-      //   else{
-      //     youngL =0.2*(youngMatrix+youngFiber); 
-      //     youngT =0.2*youngMatrix;  
-      //   }
-
-      //   if (cellData[cellIndex][5]==5){
-      //     youngL =0.01*(youngMatrix+youngFiber); 
-      //     youngT =0.01*youngMatrix;  
-      //   }
-      // }
-
-      if( parameter(4)==5){// for pavement cell resolution addaptive stiffness
-        youngFiber=cellData[cellIndex][anisoEnergyIndex];
+    } else if (parameter(4) == 2){  // for varrying material anisotropy with constant overall stiffness for energy landscape
+        youngL = youngFiber; 
+        youngT = youngMatrix - youngL;  // here youngMatrix is total stiffness
+    } else if (parameter(4) == 3){  // for varrying material anisotropy with constant overall stiffness for energy landscape
+        double totalElast = youngMatrix;
+        double Maniso = youngFiber;
+        youngT = ((1 - Maniso)/(2 - Maniso)) * totalElast; 
+        youngL = totalElast - youngT;
+    } else if (parameter(4) == 5){ // for pavement cell resolution addaptive stiffness
+        youngFiber = cellData[cellIndex][anisoEnergyIndex];
         double fiberL=cellData[cellIndex][youngLIndex];
-        youngL = youngMatrix+fiberL;
-        youngT = youngMatrix+youngFiber-fiberL;
-
-        // if(cellData[cellIndex][30]==1){
-        //   youngL = 20;
-        //   youngT = 20;
-
-        // }
-      }
-
-
-      if( parameter(4)==6){  // material anisotropy via FiberModel and loosening adhoc based on auxin
+        youngL = youngMatrix + fiberL;
+        youngT = youngMatrix + youngFiber - fiberL;
+    } else if (parameter(4) == 6){ // material anisotropy via FiberModel and loosening adhoc based on auxin
         youngL = cellData[cellIndex][youngLIndex]; 
         youngT = 2*youngMatrix+youngFiber-youngL; 
 
-        double Kconc=0.005;
-        double Nc1=2;
-        double conc=cellData[cellIndex][13];
-        double frac=(1-std::pow(conc,Nc1)/(std::pow(Kconc,Nc1)+std::pow(conc,Nc1)));
+        double Kconc = 0.005;
+        double Nc1 = 2;
+        double conc = cellData[cellIndex][13];
+        double frac = (1-std::pow(conc,Nc1)/(std::pow(Kconc,Nc1)+std::pow(conc,Nc1)));
         youngL*=0.25+0.75*frac;
         youngT*=0.25+0.75*frac;
-        //if(cellIndex==0) std::cerr<<cellData[cellIndex][13]<<"  "<<youngL<<"  " <<youngT<<std::endl;
-      }
-
-      if( parameter(4)==7){  // material anisotropy via FiberModel and destroying fibers based on auxin
+    } else if (parameter(4) == 7){  // material anisotropy via FiberModel and destroying fibers based on auxin
         youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
         youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;  
 
@@ -4237,9 +4009,7 @@ update(Tissue &T,
         youngL+=youngMatrix;
         youngT+=youngMatrix;
         //cellData[cellIndex][youngLIndex]=youngL; 
-
-      }
-      if( parameter(4)==8){  // material anisotropy via FiberModel and destroying fibers and a fraction of matrix based on auxin
+    } else if(parameter(4) == 8){  // material anisotropy via FiberModel and destroying fibers and a fraction of matrix based on auxin
         youngL = cellData[cellIndex][youngLIndex]-youngMatrix;
         youngT = 2*youngMatrix+youngFiber-youngL-2*youngMatrix;  
 
@@ -4252,90 +4022,21 @@ update(Tissue &T,
         youngL+=youngMatrix*(0.2+0.8*frac);
         youngT+=youngMatrix*(0.2+0.8*frac);
         //cellData[cellIndex][youngLIndex]=youngL; 
+    }
+    else if (parameter(4) == 10) {
+      // material anisotropy via FiberModel and loosening based on a given
+      // variable (e.g. auxin)
+      // Implemented by HÅ 6 June 2022
+      youngL = cellData[cellIndex][youngLIndex];
+      youngT = 2 * youngMatrix + youngFiber - youngL;
 
-      }
+      double A = cellData[cellIndex][looseningIndex];
+      double frac  = (1 - std::pow(A,n) / (std::pow(K,n) + std::pow(A,n))); // hill repressio
 
-      // if( parameter(4)<0){  // for heterogeneous stiffness(adhoc)
-      //   double hFactor=0;
-      //   double Hthreshold=0.01;
-      //   if (std::fabs(cellData[cellIndex][youngLIndex])>Hthreshold){
-      //     hFactor=Hthreshold;
-      //   }
-      //   else{
-      //     hFactor=std::fabs(cellData[cellIndex][youngLIndex]); // take the heterogeneous info from this index
-      //   }
-      //   hFactor *=std::fabs(parameter(4)); // factor for heterogeneity      
-
-      //   youngL = youngMatrix+youngFiber-hFactor*(youngMatrix+youngFiber); 
-      //   youngT = youngMatrix-hFactor*(youngMatrix); 
-      // }
-
-      // if (cellData[cellIndex][31]==10){
-      //   youngL = 150;
-      //   youngT = 10;
-      // }
-
-
-      // if( parameter(4)<0){  // for spatial elasticity (ad-hoc)
-      //   double x0=90;
-      //   double y0=120;
-
-      //   double xx=cellData[cellIndex][comIndex]-x0;
-      //   double yy=cellData[cellIndex][comIndex+1]-y0;
-
-      //   youngL = youngMatrix+youngFiber*(1-std::exp(parameter(4)*(xx*xx+yy*yy)));
-      //   youngT = youngMatrix; 
-      //   cellData[cellIndex][13]=youngL;
-      // }
-
-
-      }
-
-      // ad-hoc for 3d marcus
-
-      // if(cellData[cellIndex][25]==-3){  // sidewalls (anticlinals)
-      //   youngL = youngMatrix;
-      //   youngT = youngMatrix; 
-      //   if(cellData[cellIndex][29]==1){
-
-      //   }
-      // }
-
-      //youngL = (1-cellData[cellIndex][30]/0.6)*youngL;
-      //youngT = (1-cellData[cellIndex][30]/0.6)*youngT;
-
-
-      // double sEpi=10;
-
-      // if(cellData[cellIndex][27]==-2){ //L1 epidermis
-      //   youngL = sEpi*youngL;
-      //   youngT = sEpi*youngT; 
-      // }
-
-      // if(cellData[cellIndex][30]==10){ // L1 or L2 patch
-      //   youngL = 0.1*youngL;
-      //   youngT = 0.1*youngT; 
-      // }
-
-      // if(cellData[cellIndex][30]==5){ // b cells
-      //   youngL = 0.5*youngL;
-      //   youngT = 0.5*youngT; 
-      // }
-      // if(cellData[cellIndex][30]==2){ // c cells
-      //   youngL = 0.8*youngL;
-      //   youngT = 0.8*youngT; 
-      // }
-
-      // if(cellData[cellIndex][25]==-3 && cellData[cellIndex][29]==1){  // L1 anticlinals
-      //   youngL = sEpi*youngL;
-      //   youngT = sEpi*youngT; 
-      // }
-
-      // if(cellData[cellIndex][30]==400){
-      //   youngL = 0.1*youngL;
-      //   youngT = 0.1*youngT;
-      // }
-
+      youngL *= frac;
+      youngT *= frac;
+    }
+    
 
       double lambdaL, mioL, lambdaT, mioT; // ,lambdaTmatrix, mioTmatrix;
 
