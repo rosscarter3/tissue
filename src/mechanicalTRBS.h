@@ -432,20 +432,21 @@ class VertexFromTRBSMT : public BaseReaction {
 /// In a model file the reaction is defined as
 ///
 /// @verbatim
-/// VertexFromTRBScenterTriangulationMT 11 2 11 1 
+/// VertexFromTRBScenterTriangulationMT 11/13 2 11/12 1 
 /// 
 /// Y_matrix 
 /// Y_fiber 
 /// Poisson_Long
 /// Poisson_Trans
-/// MF_flag(0/1/2 or <0: if heterogeneity is considered, the value for this 
-///                     flag is the scale factor for heterogeneity) 
+/// MF_flag(0/1/2/10) or < 0: if heterogeneity is considered, the value for this 
+///                           flag is the scale factor for heterogeneity) 
 /// neighborWeight 
 /// max_stress(if 0 absolute stress anisotropy is calculated)
 /// plane-strain/stress-flag 
 /// MT-angle 
 /// MT-feedback-flag 
 /// unused parameter 
+/// (loosening_index)
 ///
 /// L_ij-index 
 /// MT_cellIndex 
@@ -458,12 +459,13 @@ class VertexFromTRBSMT : public BaseReaction {
 /// MTstressIndex 
 /// stressTensorIndex 
 /// normalVectorIndex
+/// (loosening_K) (loosening_n)
 ///
 /// InternalVarStartIndex
 /// 
 /// or
 /// 
-/// VertexFromTRBScenterTriangulationMT 11 4 11 1 0/1/2/3 0/1/2
+/// VertexFromTRBScenterTriangulationMT 11/13 4 11/12 1 0/1/2/3 0/1/2
 ///
 /// Y_matrix 
 /// Y_fiber 
@@ -476,6 +478,7 @@ class VertexFromTRBSMT : public BaseReaction {
 /// MT-angle 
 /// MT-feedback-flag
 /// unused parameter
+/// (loosening_index)
 /// 
 /// L_ij-index 
 /// MT_cellIndex 
@@ -488,6 +491,7 @@ class VertexFromTRBSMT : public BaseReaction {
 /// MTstressIndex 
 /// stressTensorIndex 
 /// normalVectorIndex
+/// (loosening_K) (loosening_n)
 ///
 /// InternalVarStartIndex
 ///
