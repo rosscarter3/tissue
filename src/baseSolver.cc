@@ -2340,6 +2340,20 @@ void BaseSolver::print(std::ostream &os) {
            << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "         // Y_f, Y_l
            << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;                 // Y_t ??
 
+    } else if (printFlag_ == 170) {
+        if (tCount == 0) {
+            if (T_->numReaction() < 10 || cellData_[0].size() <= 32) {  // will try to print out of scope
+                std::cerr << "BaseSolver::print() printFlag=170 requires specific numbers of reactions and cell variables."
+                          << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        os << T_->reaction(2)->parameter(0) << " " << T_->reaction(3)->parameter(1)   // stress x, stress y
+           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "               // stress aniso, cos MT Stress
+           << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]  // cos stress strain, strain aniso, 1st strain
+           << " " << cellData_[0][28] << " " << cellData_[0][7] << " "                // 2nd stress, stress
+           << cellData_[0][15] << " " << T_->reaction(1)->parameter(0) << " "         // 2nd Strain, Y_m
+           << T_->reaction(1)->parameter(1) << " " << T_->reaction(8)->parameter(3) << std::endl; // Y_f, K_hill
     }
 
     else if (printFlag_ == 999) {  // Print plane from reaction
