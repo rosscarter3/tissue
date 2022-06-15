@@ -2356,8 +2356,6 @@ void BaseSolver::print(std::ostream &os) {
            << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "                                 // Y_f, Y_l
            << cellData_[0][16] * (1 - cellData_[0][18]) << x_elongation << " " << y_elongation << std::endl;  // xstrain, ystrain
 
->>>>>>> 7c16d243b24405d33d8427685fbebdd166428cce
-    }
     } else if (printFlag_ == 171) {
        if (tCount == 0) {
 	 if (T_->numReaction() < 10 || cellData_[0].size() <= 32) {  // will try to print out of scope
