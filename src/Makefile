@@ -49,7 +49,7 @@ ifeq ($(shell uname),Darwin)
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/
 endif
 
-# Adding anaconda to library paths
+# Adding anaconda to library paths (using conda boost library)
 CXXFLAGS += -I${CONDA_PREFIX}/include
 LDFLAGS  += -L${CONDA_PREFIX}/lib/
 
