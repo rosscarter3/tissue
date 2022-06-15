@@ -2340,6 +2340,22 @@ void BaseSolver::print(std::ostream &os) {
            << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "         // Y_f, Y_l
            << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;                 // Y_t ??
 
+    } else if (printFlag_ == 170) {  // for patch optimization (RC)
+
+        float x_elongation, y_elongation;
+        float x_initial = 1.41421356;
+        float y_initial = 1.41421356;
+        x_elongation = (vertexData_[0][1] - vertexData_[3][1]) / x_initial;
+        y_elongation = (vertexData_[0][2] - vertexData_[1][2]) / y_initial;
+
+        os << T_->reaction(2)->parameter(0) << " " << T_->reaction(2)->parameter(1)                           // stress x, stress y
+           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "                                       // stress aniso, cos MT Stress
+           << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]                          // cos stress strain, strain aniso, 1st strain
+           << " " << cellData_[0][28] << " " << cellData_[0][7] << " "                                        // 2nd stress, stress
+           << cellData_[0][15] << " " << T_->reaction(1)->parameter(0) << " "                                 // 2nd Strain, Y_m
+           << T_->reaction(1)->parameter(1) << " " << cellData_[0][16] << " "                                 // Y_f, Y_l
+           << cellData_[0][16] * (1 - cellData_[0][18]) << x_elongation << " " << y_elongation << std::endl;  // xstrain, ystrain
+
     }
 
     else if (printFlag_ == 999) {  // Print plane from reaction
