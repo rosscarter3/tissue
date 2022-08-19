@@ -2322,10 +2322,10 @@ void BaseSolver::print(std::ostream &os) {
     }
     os << T_->reaction(r1)->parameter(p1) << " " << T_->reaction(r2)->parameter(p2)
        << " " << cellData_[0][18] << " " << cellData_[0][23] << " "
-       << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]
-       << " " << cellData_[0][28] << " " << cellData_[0][7] << " "
-       << cellData_[0][32] << std::endl;
-    //        young-Fiber     forceY    stress-anisotropy    cos(tet(MT,stress))
+       << cellData_[0][24] << " " << cellData_[0][17] << " "
+       << cellData_[0][11] << " " << cellData_[0][28] << " "
+       << cellData_[0][7] << " " << cellData_[0][32] << std::endl;
+    //        Sx     Sy    stress-anisotropy    cos(tet(MT,stress))
     //        cos(tet(stress,strain)),
     // strain aniso, strain1, strain2, stress1, stress2.
     // os << T_->reaction(0)->parameter(0);
