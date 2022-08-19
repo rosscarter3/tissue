@@ -32,7 +32,7 @@ $(info "Default Flags Set")
 ifeq ($(shell uname),Linux)
     $(info "Linux Flags Set")
     CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++2a
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++2a
 endif
 
 # Cygwin 10.0
