@@ -31,7 +31,7 @@ $(info "Default Flags Set")
 # Linux (assume default)
 ifeq ($(shell uname),Linux)
     $(info "Linux Flags Set")
-    CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+    CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++2a
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
@@ -46,7 +46,7 @@ endif
 ifeq ($(shell uname),Darwin)
     $(info "Mac Flags Set")
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11 -L/sw/lib/ -L/opt/local/lib/
 endif
 
 # Adding anaconda to library paths
