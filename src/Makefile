@@ -20,14 +20,13 @@ SHELL = /bin/sh
 # Compilers and flags
 CXX = g++
 
-# Make flags OS independent (note, not yet for Windows or debug or gprof options)
-UNAME_S := $(shell uname -s)    # os
-UNAME_A := $(shell uname -p)    # architecture
 
 # Default (should not be used in most cases)
 CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
 LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 $(info "Default Flags Set")
+
+# Make flags OS independent (note, not yet for Windows or debug or gprof options)
 
 # Linux (assume default)
 ifeq ($(shell uname),Linux)
@@ -47,10 +46,10 @@ endif
 ifeq ($(shell uname),Darwin)
     $(info "Mac Flags Set")
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/ -L/opt/local/lib/
+	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -L/sw/lib/
 endif
 
-# Adding anaconda to library paths
+# Adding anaconda to library paths (using conda boost library)
 CXXFLAGS += -I${CONDA_PREFIX}/include
 LDFLAGS  += -L${CONDA_PREFIX}/lib/
 

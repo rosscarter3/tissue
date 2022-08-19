@@ -833,8 +833,9 @@ namespace Force {
     for (size_t k = 0; k < numVariableIndex(0); ++k) {
       size_t i = variableIndex(0, k);
       assert(i < vertexData.size());
-      for (size_t d = 0; d < vertexData[i].size(); ++d)
+      for (size_t d = 0; d < vertexData[i].size(); ++d) {
 	if (numParameter() > d) vertexDerivs[i][d] += parameter(d);
+      }
     }
   }
 

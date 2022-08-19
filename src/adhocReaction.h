@@ -8,11 +8,65 @@
 #ifndef ADHOCREACTION_H
 #define ADHOCREACTION_H
 
+#include <cmath>
+
 #include "baseReaction.h"
 #include "myRandom.h"
 #include "tissue.h"
 
-#include <cmath>
+/// @brief Simulate stresses in an inflation deflation experiment
+///
+///
+/// @details description reaction is designed for the patchtest style simulations. it
+/// applies a constant stress (s0 for t0) in x/y then a linear increse (to s1 over t1-t0)
+/// for a time
+/// then another constant stress (at s1 for t2 - t1) and then a linear decrease
+/// (to s2 over t3 - t2)
+/// s_y = (1 - s_aniso) * s_x
+///
+/// assumes vertices are labelled as:
+///
+///            sy
+///            ^
+///            |
+///        tl-----tr
+///        |       |
+/// sx <-- |       | --> sx
+///        |       |
+///        bl-----br
+///            |
+///            v
+///            sy
+///
+/// @verbatim
+/// InflationDeflationStresses 8 1 4
+/// s0 s1 s2
+/// t0 t1 t2 t3
+/// s_aniso
+/// bl br tl tr
+/// @endverbatim
+
+class InflationDeflationStresses : public BaseReaction {
+   public:
+    InflationDeflationStresses(
+        std::vector<double> &paravalue,
+        std::vector<std::vector<size_t>> &indvalue);
+
+    void derivs(Tissue &T, DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
+
+    void update(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &walldata,
+                DataMatrix &vertexData,
+                double h);
+
+    double _time = 0.0;
+};
 
 ///
 /// @brief Sets positional derivatives to zero for vertices in specified region
@@ -34,13 +88,13 @@
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromPosition : public BaseReaction {
-  public:
-  VertexNoUpdateFromPosition(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromPosition(std::vector<double> &paraValue,
+                               std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -58,13 +112,13 @@ class VertexNoUpdateFromPosition : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromIndex : public BaseReaction {
-  public:
-  VertexNoUpdateFromIndex(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromIndex(std::vector<double> &paraValue,
+                            std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -82,13 +136,13 @@ class VertexNoUpdateFromIndex : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromIndexHoldX : public BaseReaction {
-  public:
-  VertexNoUpdateFromIndexHoldX(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromIndexHoldX(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -106,13 +160,13 @@ class VertexNoUpdateFromIndexHoldX : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromIndexHoldY : public BaseReaction {
-  public:
-  VertexNoUpdateFromIndexHoldY(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromIndexHoldY(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -130,15 +184,14 @@ class VertexNoUpdateFromIndexHoldY : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
-  public:
-  VertexNoUpdateFromIndexHoldZ(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromIndexHoldZ(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
-
 
 ///
 /// @brief Sets positional derivatives to zero for vertices with listed indices
@@ -154,18 +207,18 @@ class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexNoUpdateFromList : public BaseReaction {
-  public:
-  VertexNoUpdateFromList(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateFromList(std::vector<double> &paraValue,
+                           std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 
-  std::vector<size_t> updateVertices;
+    std::vector<size_t> updateVertices;
 };
 
 ///
@@ -185,16 +238,16 @@ class VertexNoUpdateFromList : public BaseReaction {
 /// provided after reactions that update the vertex derivatives.
 ///
 class VertexRandTip : public BaseReaction {
-  public:
-  VertexRandTip(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexRandTip(std::vector<double> &paraValue,
+                  std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -214,13 +267,13 @@ class VertexRandTip : public BaseReaction {
 /// @endverbatim
 ///
 class VertexNoUpdateBoundary : public BaseReaction {
-  public:
-  VertexNoUpdateBoundary(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateBoundary(std::vector<double> &paraValue,
+                           std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -239,13 +292,13 @@ class VertexNoUpdateBoundary : public BaseReaction {
 ///
 class VertexNoUpdateBoundaryPtemplate : public BaseReaction {  // BB
 
-  public:
-  VertexNoUpdateBoundaryPtemplate(std::vector<double> &paraValue,
-                                  std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexNoUpdateBoundaryPtemplate(std::vector<double> &paraValue,
+                                    std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -263,22 +316,22 @@ class VertexNoUpdateBoundaryPtemplate : public BaseReaction {  // BB
 ///
 class VertexNoUpdateBoundaryPtemplateStatic : public BaseReaction {  // BB
 
-  public:
-  VertexNoUpdateBoundaryPtemplateStatic(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    VertexNoUpdateBoundaryPtemplateStatic(
+        std::vector<double> &paraValue,
+        std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  private:
-  std::vector<size_t> boundaryVertices;
-  std::vector<std::vector<double>> boundaryNormal;
-  size_t numBoundaryVertices;
+   private:
+    std::vector<size_t> boundaryVertices;
+    std::vector<std::vector<double>> boundaryNormal;
+    size_t numBoundaryVertices;
 };
 
 ///
@@ -296,26 +349,26 @@ class VertexNoUpdateBoundaryPtemplateStatic : public BaseReaction {  // BB
 ///
 class VertexNoUpdateBoundaryPtemplateStatic3D : public BaseReaction {  // BB
 
-  public:
-  VertexNoUpdateBoundaryPtemplateStatic3D(
-      std::vector<double> &paraValue,
-      std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    VertexNoUpdateBoundaryPtemplateStatic3D(
+        std::vector<double> &paraValue,
+        std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+   private:
+    //  std::vector<size_t> bottomVertices;
+    //  std::vector<size_t> sideVertices;
 
-  private:
-  //  std::vector<size_t> bottomVertices;
-  //  std::vector<size_t> sideVertices;
-
-  std::vector<std::vector<double>> bottomNormals;
-  std::vector<std::vector<double>> sideNormals;
-  size_t numBottomCells;
-  size_t numSideCells;
+    std::vector<std::vector<double>> bottomNormals;
+    std::vector<std::vector<double>> sideNormals;
+    size_t numBottomCells;
+    size_t numSideCells;
 };
 
 ///
@@ -334,19 +387,19 @@ class VertexNoUpdateBoundaryPtemplateStatic3D : public BaseReaction {  // BB
 ///
 class VertexNoUpdateBoundary3D : public BaseReaction {  // BB
 
-  public:
-  VertexNoUpdateBoundary3D(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    VertexNoUpdateBoundary3D(std::vector<double> &paraValue,
+                             std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  private:
-  std::vector<double> bottomVertices, sideVertices;
+   private:
+    std::vector<double> bottomVertices, sideVertices;
 };
 
 ///
@@ -371,24 +424,24 @@ class VertexNoUpdateBoundary3D : public BaseReaction {  // BB
 ///
 class VertexFromConstStressBoundary : public BaseReaction {  // BB
 
-  public:
-  VertexFromConstStressBoundary(std::vector<double> &paraValue,
-                                std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    VertexFromConstStressBoundary(std::vector<double> &paraValue,
+                                  std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-
-  private:
-  std::vector<std::vector<double>> rightVertices, leftVertices, topVertices,
-      bottomVertices;
-  size_t numOldVertices;
-  double totaltime;
+   private:
+    std::vector<std::vector<double>> rightVertices, leftVertices, topVertices,
+        bottomVertices;
+    size_t numOldVertices;
+    double totaltime;
 };
 
 ///
@@ -404,19 +457,19 @@ class VertexFromConstStressBoundary : public BaseReaction {  // BB
 ///
 class manipulate : public BaseReaction {  // BB
 
-  public:
-  manipulate(std::vector<double> &paraValue,
-             std::vector<std::vector<size_t>> &indValue);
+   public:
+    manipulate(std::vector<double> &paraValue,
+               std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -439,24 +492,24 @@ class manipulate : public BaseReaction {  // BB
 ///
 class cellPolarity3D : public BaseReaction {  // BB
 
-  public:
-  cellPolarity3D(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    cellPolarity3D(std::vector<double> &paraValue,
+                   std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
+    void printState(Tissue *T, DataMatrix &cellData, DataMatrix &wallData,
+                    DataMatrix &vertexData, std::ostream &os);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-  void printState(Tissue *T, DataMatrix &cellData, DataMatrix &wallData,
-                  DataMatrix &vertexData, std::ostream &os);
-
-  private:
-  std::vector<std::vector<double>> cellFaces;
-  std::vector<std::vector<double>> cellCentPol;
+   private:
+    std::vector<std::vector<double>> cellFaces;
+    std::vector<std::vector<double>> cellCentPol;
 };
 
 ///
@@ -477,21 +530,21 @@ class cellPolarity3D : public BaseReaction {  // BB
 ///
 class diffusion3D : public BaseReaction {  // BB
 
-  public:
-  diffusion3D(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+   public:
+    diffusion3D(std::vector<double> &paraValue,
+                std::vector<std::vector<size_t>> &indValue);
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  private:
-  std::vector<std::vector<double>>
-      Cells3d;  // holds the wall_indices and neighbohrhood info
-  std::vector<std::vector<double>> faceArea;  // holds the area of the faces
+   private:
+    std::vector<std::vector<double>>
+        Cells3d;                                // holds the wall_indices and neighbohrhood info
+    std::vector<std::vector<double>> faceArea;  // holds the area of the faces
 };
 
 ///
@@ -505,20 +558,20 @@ class diffusion3D : public BaseReaction {  // BB
 /// vI_00 positional index
 ///
 class VertexTranslateToMax : public BaseReaction {
-  public:
-  VertexTranslateToMax(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
+   public:
+    VertexTranslateToMax(std::vector<double> &paraValue,
+                         std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -533,26 +586,26 @@ class VertexTranslateToMax : public BaseReaction {
 /// @endverbatim
 ///
 class CenterCOM : public BaseReaction {
-  public:
-  CenterCOM(std::vector<double> &paraValue,
-            std::vector<std::vector<size_t>> &indValue);
+   public:
+    CenterCOM(std::vector<double> &paraValue,
+              std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -572,20 +625,20 @@ class CenterCOM : public BaseReaction {
 /// reaction.
 ///
 class CenterCOMcenterTriangulation : public BaseReaction {
-  public:
-  CenterCOMcenterTriangulation(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue);
+   public:
+    CenterCOMcenterTriangulation(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -599,20 +652,20 @@ class CenterCOMcenterTriangulation : public BaseReaction {
 /// plane.
 ///
 class CalculatePCAPlane : public BaseReaction {
-  public:
-  CalculatePCAPlane(std::vector<double> &paraValue,
-                    std::vector<std::vector<size_t>> &indValue);
+   public:
+    CalculatePCAPlane(std::vector<double> &paraValue,
+                      std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -627,17 +680,17 @@ class CalculatePCAPlane : public BaseReaction {
 /// @endverbatim
 ///
 class InitiateWallLength : public BaseReaction {
-  public:
-  InitiateWallLength(std::vector<double> &paraValue,
-                     std::vector<std::vector<size_t>> &indValue);
+   public:
+    InitiateWallLength(std::vector<double> &paraValue,
+                       std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -654,17 +707,17 @@ class InitiateWallLength : public BaseReaction {
 /// @endverbatim
 ///
 class InitiateTargetArea : public BaseReaction {
-  public:
-  InitiateTargetArea(std::vector<double> &paraValue,
-                     std::vector<std::vector<size_t>> &indValue);
+   public:
+    InitiateTargetArea(std::vector<double> &paraValue,
+                       std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -679,17 +732,17 @@ class InitiateTargetArea : public BaseReaction {
 /// @endverbatim
 ///
 class InitiateWallVariableConstant : public BaseReaction {
-  public:
-  InitiateWallVariableConstant(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue);
+   public:
+    InitiateWallVariableConstant(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -709,17 +762,17 @@ class InitiateWallVariableConstant : public BaseReaction {
 /// @endverbatim
 ///
 class InitiateWallMesh : public BaseReaction {
-  public:
-  InitiateWallMesh(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+   public:
+    InitiateWallMesh(std::vector<double> &paraValue,
+                     std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -727,54 +780,54 @@ class InitiateWallMesh : public BaseReaction {
 /// update
 ///
 class StrainTest : public BaseReaction {
-  public:
-  StrainTest(std::vector<double> &paraValue,
-             std::vector<std::vector<size_t>> &indValue);
+   public:
+    StrainTest(std::vector<double> &paraValue,
+               std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 class CalculateVertexStressDirection : public BaseReaction {
-  public:
-  CalculateVertexStressDirection(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+   public:
+    CalculateVertexStressDirection(std::vector<double> &paraValue,
+                                   std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
-
-  private:
-  std::vector<size_t> wallForceIndexes_;
+   private:
+    std::vector<size_t> wallForceIndexes_;
 };
 
 class MoveVerticesRandomlyCapCylinder : public BaseReaction {
-  public:
-  MoveVerticesRandomlyCapCylinder(std::vector<double> &paraValue,
-                                  std::vector<std::vector<size_t>> &indValue);
+   public:
+    MoveVerticesRandomlyCapCylinder(std::vector<double> &paraValue,
+                                    std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -788,20 +841,20 @@ class MoveVerticesRandomlyCapCylinder : public BaseReaction {
 /// @endverbatim
 ///
 class scaleTemplate : public BaseReaction {
-  public:
-  scaleTemplate(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+   public:
+    scaleTemplate(std::vector<double> &paraValue,
+                  std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -820,20 +873,20 @@ class scaleTemplate : public BaseReaction {
 /// @endverbatim
 ///
 class copyCellVector : public BaseReaction {
-  public:
-  copyCellVector(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+   public:
+    copyCellVector(std::vector<double> &paraValue,
+                   std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -847,33 +900,33 @@ class copyCellVector : public BaseReaction {
 /// @endverbatim
 ///
 class randomizeMT : public BaseReaction {
-  public:
-  randomizeMT(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
+   public:
+    randomizeMT(std::vector<double> &paraValue,
+                std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 class restrictVertexRadially : public BaseReaction {
-  public:
-  restrictVertexRadially(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+   public:
+    restrictVertexRadially(std::vector<double> &paraValue,
+                           std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -901,40 +954,40 @@ class restrictVertexRadially : public BaseReaction {
 /// @endverbatim
 ///
 class CreationPrimordiaTime : public BaseReaction {
-  private:
-  std::vector<size_t> proCells;
+   private:
+    std::vector<size_t> proCells;
 
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  CreationPrimordiaTime(std::vector<double> &paraValue,
-                        std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    CreationPrimordiaTime(std::vector<double> &paraValue,
+                          std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -951,46 +1004,46 @@ class CreationPrimordiaTime : public BaseReaction {
 /// @endverbatim
 ///
 class VertexFromRotationalForceLinear : public BaseReaction {
-  private:
-  double timeFactor_;
-  std::vector<std::vector<double>> boundVerticesUp, boundVerticesDn;
+   private:
+    double timeFactor_;
+    std::vector<std::vector<double>> boundVerticesUp, boundVerticesDn;
 
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  VertexFromRotationalForceLinear(std::vector<double> &paraValue,
-                                  std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    VertexFromRotationalForceLinear(std::vector<double> &paraValue,
+                                    std::vector<std::vector<size_t>> &indValue);
 
-  void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(Tissue &T,...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(Tissue &T,...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 ///
@@ -1014,42 +1067,42 @@ class VertexFromRotationalForceLinear : public BaseReaction {
 /// variable.
 ///
 class ThresholdSwitch : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// @details This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  ThresholdSwitch(std::vector<double> &paraValue,
-                  std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// @details This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ThresholdSwitch(std::vector<double> &paraValue,
+                    std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 /// @brief This function makes a downstream species reversibly or irreversibly
@@ -1065,146 +1118,146 @@ class ThresholdSwitch : public BaseReaction {
 /// index_var_out  	   # index of updated variable @endverbatim
 ///
 class ThresholdReset : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  ThresholdReset(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ThresholdReset(std::vector<double> &paraValue,
+                   std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
-/// @brief This function makes a downstream species irreversibly switch from 1 to 0 (reset) 
+/// @brief This function makes a downstream species irreversibly switch from 1 to 0 (reset)
 /// with a bit of noise, upon being above a certain threshold of an upstream variable.
 ///
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
 /// ThresholdNoisyReset 2 2 1 1 # number of parameters is set to two
-/// threshold		 	# threshold above which a variable is reset to zero. 
-/// noise_amplitude             # noise amplitude for the resetting 
+/// threshold		 	# threshold above which a variable is reset to zero.
+/// noise_amplitude             # noise amplitude for the resetting
 /// index_var   	 	# index of the index variable upstream the switch.
 /// index_var_out  	        # index of updated variable @endverbatim
 ///
 class ThresholdNoisyReset : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  ThresholdNoisyReset(std::vector<double> &paraValue,
-                      std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ThresholdNoisyReset(std::vector<double> &paraValue,
+                        std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
-/// @brief This function makes a downstream species reversibly or irreversibly switch from 1 
+/// @brief This function makes a downstream species reversibly or irreversibly switch from 1
 /// to 0, upon being above a certain threshold of an upstream variable.
 ///
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
 /// ThresholdResetAndCount 2 2 1 1 # number of parameters is set to two
-/// threshold		           # threshold above which a variable is reset to zero. 
-/// switch_type                    # the switchtype parameter takes the values 0 and 1 for 
+/// threshold		           # threshold above which a variable is reset to zero.
+/// switch_type                    # the switchtype parameter takes the values 0 and 1 for
 ///                                # defining the reversible and irreversible switch, respectively.
-/// index_var                      # index of the index variable upstream the switch. 
+/// index_var                      # index of the index variable upstream the switch.
 /// index_var_out                  # index of updated variable @endverbatim
 ///
 class ThresholdResetAndCount : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  ThresholdResetAndCount(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ThresholdResetAndCount(std::vector<double> &paraValue,
+                           std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 /// @brief This function makes a downstream species reversibly or irreversibly
@@ -1213,105 +1266,105 @@ class ThresholdResetAndCount : public BaseReaction {
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
 /// FlagNoisyReset 2 2 1 1 # number of parameters is set to two
-/// flag_value		   # value of the flag that will make the output variable resetting 
-///                        # to zero with noise. 
+/// flag_value		   # value of the flag that will make the output variable resetting
+///                        # to zero with noise.
 /// switch_type            # the switchtype parameter takes the values 0 and 1 for defining the
-///                        # reversible and irreversible switch, respectively. 
-/// index_var              # index of the index variable upstream the switch. 
+///                        # reversible and irreversible switch, respectively.
+/// index_var              # index of the index variable upstream the switch.
 /// index_var_out          # index of updated variable @endverbatim
 ///
 class FlagNoisyReset : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  FlagNoisyReset(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    FlagNoisyReset(std::vector<double> &paraValue,
+                   std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
-/// @brief This function makes a downstream species be reset to 0 with noise, when being above 
+/// @brief This function makes a downstream species be reset to 0 with noise, when being above
 /// a certain threshold of an upstream variable and another flag variable has a certain flag_value
 ///
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
 /// ThresholdAndFlagNoisyReset 3 2 1 1 # number of parameters is set to three
-/// threshold		 	       # threshold above which a variable is reset to zero. 
-/// flag_value                         # value of the flag that will make the output variable 
-///                                    # is resetting to zero with noise. 
+/// threshold		 	       # threshold above which a variable is reset to zero.
+/// flag_value                         # value of the flag that will make the output variable
+///                                    # is resetting to zero with noise.
 /// noise_amplitude		       # noise amplitude for the resetting
 /// index_var_in1   	 	       # index threshold variable upstream the switch.
 /// index_var_in2   	 	       # index flag variable upstream the switch.
 /// index_var_out  		       # index of updated variable @endverbatim
 ///
 class ThresholdAndFlagNoisyReset : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  ThresholdAndFlagNoisyReset(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    ThresholdAndFlagNoisyReset(std::vector<double> &paraValue,
+                               std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 /// @brief This function makes a downstream species add an add_value if a
@@ -1325,43 +1378,43 @@ class ThresholdAndFlagNoisyReset : public BaseReaction {
 /// index_var_out  	 # index where the output of the gate is written. @endverbatim
 ///
 class FlagAddValue : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  FlagAddValue(std::vector<double> &paraValue,
-               std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    FlagAddValue(std::vector<double> &paraValue,
+                 std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 /// @brief This function  copies one input variable into the output variable
@@ -1374,56 +1427,56 @@ class FlagAddValue : public BaseReaction {
 /// @endverbatim
 ///
 class CopyVariable : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which checks and sets the parameters and
-  /// variable indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  CopyVariable(std::vector<double> &paraValue,
-               std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which checks and sets the parameters and
+    /// variable indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    CopyVariable(std::vector<double> &paraValue,
+                 std::vector<std::vector<size_t>> &indValue);
 
-  ///
-  /// @brief This class does not use derivatives for updates.
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief This class does not use derivatives for updates.
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
-  void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-                     DataMatrix &vertexData, DataMatrix &cellDerivs,
-                     DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
-                     DataMatrix &sdydtCell, DataMatrix &sdydtWall,
-                     DataMatrix &sdydtVertex);
-  ///
-  /// @brief Update function for this reaction class
-  ///
-  /// @see BaseReaction::update(double h, double t, ...)
-  ///
-  void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, double h);
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+    ///
+    /// @brief Update function for this reaction class
+    ///
+    /// @see BaseReaction::update(double h, double t, ...)
+    ///
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
 };
 
 //
 // Typically, this reaction should not be used (restricted use) unless you are a developer.
 //
 class DebugReaction : public BaseReaction {
-  public:
-  DebugReaction(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+   public:
+    DebugReaction(std::vector<double> &paraValue,
+                  std::vector<std::vector<size_t>> &indValue);
 
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 #endif  // ADHOCREACTION_H
