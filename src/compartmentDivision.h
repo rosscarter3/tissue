@@ -730,7 +730,7 @@ namespace Division {
   };
 
   ///
-  /// @brief Divides a cell given a Sizer/Timer/Adder rule to decide whrn to divide and a shortest path for
+  /// @brief Divides a cell given a Sizer/Timer/Adder rule to decide when to divide and a shortest path for
   /// deciding which plane of division.
   ///  
   /// Divides according to the STA rule and at division selects the shortest path through the cell for 
@@ -738,7 +738,7 @@ namespace Division {
   ///
   /// @verbatim
   ///
-  /// Division::STAViaShortestPath 4 2 0/1 1 
+  /// Division::STAViaShortestPath 4 2 0/1 0/1 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
   /// L^{wall}_{threshold} (disallowed closeness)
@@ -746,7 +746,7 @@ namespace Division {
   ///
   /// I1 (optional volume related index to be updated)
   ///
-  /// cell time index(optional)
+  /// cell time index (optional)
   ///
   /// @endverbatim
   ///
@@ -754,7 +754,7 @@ namespace Division {
   ///
   /// @verbatim
   ///
-  /// Division::STAViaShortestPath 6 3 0/1 1 2 
+  /// Division::STAViaShortestPath 6 3 0/1 0/1 2 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
   /// L^{wall}_{threshold} (disallowed closeness)
@@ -764,7 +764,7 @@ namespace Division {
   ///
   /// I1 (optional volume related index to be updated)
   ///
-  /// cell time index(optional)
+  /// cell time index (optional)
   ///
   /// com index 
   /// restinglengthIndex

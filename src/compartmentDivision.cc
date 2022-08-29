@@ -1252,7 +1252,7 @@ VolumeViaLongestWall3DSpatial::VolumeViaLongestWall3DSpatial(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
   if (paraValue.size() != 4) {
     std::cerr << "DivisionVolumeViaLongestWall3DSpatial::"
               << "DivisionVolumeViaLongestWall3DSpatial() "
@@ -1269,14 +1269,14 @@ VolumeViaLongestWall3DSpatial::VolumeViaLongestWall3DSpatial(
     exit(0);
   }
   // Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
   setId("DivisionVolumeViaLongestWall3DSpatial");
   setNumChange(1);
   setParameter(paraValue);
   setVariableIndex(indValue);
 
   // Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<std::string> tmp(numParameter());
   tmp.resize(numParameter());
   tmp[0] = "V_threshold";
@@ -1320,7 +1320,7 @@ void VolumeViaLongestWall3DSpatial::update(
   assert(dimension == 3);
 
   // Find longest wall
-  //////////////////////////////////////////////////////////////////////
+  //
   size_t wI = 0;
   double maxLength = divCell->wall(0)->setLengthFromVertexPosition(vertexData);
   for (size_t k = 1; k < divCell->numWall(); ++k) {
@@ -1343,7 +1343,7 @@ void VolumeViaLongestWall3DSpatial::update(
   }
 
   // Find intersection with another wall by looking at perpendicular plane
-  //////////////////////////////////////////////////////////////////////
+  //
   size_t w3I = divCell->numWall();
   // double minDist,w3s;
   std::vector<size_t> w3Tmp;
@@ -1443,7 +1443,7 @@ void VolumeViaLongestWall3DSpatial::update(
   // v2Pos[d] = 0.5*(vertexData[v1w3I][d]+vertexData[v2w3I][d]);
 
   // Add one cell, three walls, and two vertices
-  //////////////////////////////////////////////////////////////////////
+  //
   // Save number of walls
   size_t numWallTmp = wallData.size();
   assert(numWallTmp == T->numWall());
@@ -1464,7 +1464,7 @@ void VolumeViaLongestWall3DSpatial::update(
 VolumeViaStrain::VolumeViaStrain(std::vector<double> &paraValue,
                                  std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
   if (paraValue.size() != 4) {
     std::cerr << "DivisionVolumeViaStrain::"
               << "DivisionVolumeViaStrain() "
@@ -1480,14 +1480,14 @@ VolumeViaStrain::VolumeViaStrain(std::vector<double> &paraValue,
     exit(0);
   }
   // Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
   setId("DivisionVolumeViaStrain");
   setNumChange(1);
   setParameter(paraValue);
   setVariableIndex(indValue);
 
   // Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<std::string> tmp(numParameter());
   tmp.resize(numParameter());
   tmp[0] = "V_threshold";
@@ -1497,9 +1497,6 @@ VolumeViaStrain::VolumeViaStrain(std::vector<double> &paraValue,
   setParameterId(tmp);
 }
 
-//! Flags a cell for division if the volume above threshold
-/*!
- */
 int VolumeViaStrain::flag(Tissue *T, size_t i, DataMatrix &cellData,
                           DataMatrix &wallData, DataMatrix &vertexData,
                           DataMatrix &cellDerivs, DataMatrix &wallDerivs,
@@ -1512,9 +1509,6 @@ int VolumeViaStrain::flag(Tissue *T, size_t i, DataMatrix &cellData,
   return 0;
 }
 
-//! Updates the dividing cell by adding a prependicular wall from the longest
-/*!
- */
 void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
                              DataMatrix &wallData, DataMatrix &vertexData,
                              DataMatrix &cellDeriv, DataMatrix &wallDeriv,
@@ -1524,10 +1518,10 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
   assert(divCell->numWall() > 2);
   assert(dimension == 2);
 
-  //////////////////////////////////////////////////////////////////////
+  //
   // Calculate strain directions and print walls and strain vectors
   // by using x,x+dt*dx/dt as two points
-  //////////////////////////////////////////////////////////////////////
+  //
 
   T->derivs(cellData, wallData, vertexData, cellDeriv, wallDeriv, vertexDeriv);
 
@@ -1602,8 +1596,9 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
   A[1][0] = xTxM[1][0] * xTy[0][0] + xTxM[1][1] * xTy[1][0];
   A[1][1] = xTxM[1][0] * xTy[0][1] + xTxM[1][1] * xTy[1][1];
 
+  //
   // Apply SVD to A
-  //////////////////////////////////////////////////////////////////////
+  //
 
   // Make sure determinant is non-zero
   double detA = A[0][0] * A[1][1] - A[0][1] * A[1][0];
@@ -1631,8 +1626,9 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
   // std::cout << divCell->index() << " " << p << " " << q << " " << theta
   //					<< " " << phi << "\n";
 
+  //
   // Find walls and vertex positions needed for the division
-  //////////////////////////////////////////////////////////////////////
+  //
 
   // Create direction for new wall (xMean+t*n)
   std::vector<double> n(dimension);
@@ -1642,8 +1638,9 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
   n[0] = std::cos(v);
   n[1] = std::sin(v);
 
+  //
   // Find two (and two only) intersecting walls
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<size_t> wI(2);
   std::vector<double> s(2);
   wI[0] = 0;
@@ -1749,8 +1746,9 @@ void VolumeViaStrain::update(Tissue *T, size_t cellI, DataMatrix &cellData,
     v2Pos[d] =
         vertexData[v1I][d] + s[1] * (vertexData[v2I][d] - vertexData[v1I][d]);
 
+  //
   // Add one cell, three walls, and two vertices
-  //////////////////////////////////////////////////////////////////////
+  //
   // Save number of walls
   size_t numWallTmp = wallData.size();
   assert(numWallTmp == T->numWall());
@@ -4257,7 +4255,7 @@ STAViaShortestPath::STAViaShortestPath(
   tmp[0] = "V_threshold";
   tmp[1] = "Lwall_fraction";
   tmp[2] = "Lwall_threshold";
-  tmp[3] = "COM";
+  tmp[3] = "COM_flag";
   if (numParameter() == 6) {
     tmp[4] = "centerTriangulationFlag";
     tmp[5] = "doubleLengthFlag";
@@ -4385,7 +4383,7 @@ void STAViaShortestPath::update(Tissue *T, size_t i, DataMatrix &cellData,
       }
     }
 
-    // rotating the center is cell is centertriangulated
+    // rotating the center if cell is centertriangulated
     if (numParameter() == 6 && parameter(4) == 1) {  // centerTriangulation
       cellData[i][variableIndex(2, 0)] =
           rot[0][0] * COMTmp[0] + rot[0][1] * COMTmp[1] + rot[0][2] * COMTmp[2];
@@ -5904,7 +5902,7 @@ VolumeRandomDirectionGiantCells::VolumeRandomDirectionGiantCells(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t>> &indValue) {
   // Do some checks on the parameters and variable indeces
-  //////////////////////////////////////////////////////////////////////
+  //
   if (paraValue.size() != 5) {
     std::cerr << "DivisionVolumeRandomDirectionGiantCells::"
                  "DivisionVolumeRandomDirectionGiantCells() "
@@ -5925,14 +5923,14 @@ VolumeRandomDirectionGiantCells::VolumeRandomDirectionGiantCells(
   }
 
   // Set the variable values
-  //////////////////////////////////////////////////////////////////////
+  //
   setId("DivisionVolumeRandomDirectionGiantCells");
   setNumChange(1);
   setParameter(paraValue);
   setVariableIndex(indValue);
 
   // Set the parameter identities
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<std::string> tmp(numParameter());
   tmp.resize(numParameter());
   tmp[0] = "V_threshold";
@@ -5991,7 +5989,7 @@ void VolumeRandomDirectionGiantCells::update(
   n[1] = std::cos(phi);
 
   // Find two (and two only) intersecting walls
-  //////////////////////////////////////////////////////////////////////
+  //
   std::vector<size_t> wI(2);
   std::vector<double> s(2);
   wI[0] = 0;
@@ -6113,7 +6111,8 @@ void VolumeRandomDirectionGiantCells::update(
         vertexData[v1I][d] + s[1] * (vertexData[v2I][d] - vertexData[v1I][d]);
 
   // Add one cell, three walls, and two vertices
-  //////////////////////////////////////////////////////////////////////
+  //
+  
   // Save number of walls
   size_t numWallTmp = wallData.size();
   assert(numWallTmp == T->numWall());
