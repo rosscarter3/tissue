@@ -175,6 +175,19 @@ namespace Initiation {
           double h);
   };
 
+  ///
+  /// @brief Reaction that initiates a cell variable to the cell size
+  ///
+  /// @details Sets a cell variable to the size of the cell (area in 2D is assumed). If a flag parameter
+  /// is given the variable is updated using the update function. The cell size is calculated using the function
+  /// cell.calculateVolume().
+  /// In a model file the reaction is defined as:
+  /// @verbatim
+  /// Initiate::FaceArea2D 0/1 1 1
+  /// [flag] # 0 for no update and 1 for updating
+  /// varIndex
+  /// @endverbatim
+  ///
   class FaceArea2D : public BaseReaction {
 
     public:
@@ -227,6 +240,49 @@ namespace Initiation {
           DataMatrix &walldata,
           DataMatrix &vertexData,
           double h);
+  };
+
+  ///
+  /// @brief Set individual cell labels for cells by adding integer values to a cell variable
+  ///
+  /// @details Defines a cell label by initiating each cell with an integer label. Since it is not
+  /// updated, the label can be used to follow lineages.
+  /// In a model file the reaction is defined as:
+  /// @verbatim
+  /// Initiate::CellLabel 0 1 1
+  /// varIndex
+  /// @endverbatim
+  ///
+  class CellLabel : public BaseReaction {
+
+    public:
+
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      CellLabel(std::vector<double> &paraValue, 
+          std::vector< std::vector<size_t> > &indValue );
+
+      /// @brief Initiation made before simulation
+      ///
+      /// @see BaseReaction::initiate()
+      ///
+      void initiate(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          DataMatrix &cellderivs,
+          DataMatrix &wallderivs,
+          DataMatrix &vertexDerivs );        
   };
 
 } // end of namespace Initiation

@@ -744,6 +744,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
         return new Initiation::RandomBooleanBiased(paraValue, indValue);
     else if (idValue == "Initiation::FaceArea2D")
         return new Initiation::FaceArea2D(paraValue, indValue);
+    else if (idValue == "Initiation::CellLabel")
+        return new Initiation::CellLabel(paraValue, indValue);
 
     // Namespace Hypocotyl3D, hypocotyl3D.h
     else if (idValue == "Hypocotyl3D::limitZdis")

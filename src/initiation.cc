@@ -340,5 +340,50 @@ namespace Initiation {
         }
       }
     }
+
+  CellLabel::
+    CellLabel(std::vector<double> &paraValue,
+        std::vector< std::vector<size_t> >
+        &indValue )
+    {
+      // Do some checks on the parameters and variable indeces
+      if (paraValue.size() != 0) {
+        std::cerr << "Initiation::CellLabel::"
+          << "CellLabel() "
+          << "uses no parameters." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if (indValue.size() != 1) {
+        std::cerr << "Initiation::CellLabel::"
+          << "CellLabel() "
+          << "Index for cell variable set to integer index "
+          << "to be initiated given." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
+      // Set the variable values
+      setId("Initiation::CellIndex");
+      setParameter(paraValue);
+      setVariableIndex(indValue);
+    }
+
+  void CellLabel::
+    initiate(Tissue &T,
+        DataMatrix &cellData,
+        DataMatrix &wallData,
+        DataMatrix &vertexData,
+        DataMatrix &cellDerivs,
+        DataMatrix &wallDerivs,
+        DataMatrix &vertexDerivs)
+    {
+      size_t numCells = T.numCell();
+      size_t cellLabelIndex = variableIndex(0, 0);
+
+      for (size_t ii = 0; ii < numCells; ii++) {
+        cellData[ii][cellLabelIndex] = ii;
+      }
+    }
+  
 } // end namespace Initiation
 
