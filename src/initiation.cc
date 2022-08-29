@@ -384,6 +384,18 @@ namespace Initiation {
         cellData[ii][cellLabelIndex] = ii;
       }
     }
-  
+
+    void CellLabel::
+    derivs(Tissue &T,
+        DataMatrix &cellData,
+        DataMatrix &wallData,
+        DataMatrix &vertexData,
+        DataMatrix &cellDerivs,
+        DataMatrix &wallDerivs,
+        DataMatrix &vertexDerivs )
+    {
+      // Do nothing
+    }
+
 } // end namespace Initiation
 

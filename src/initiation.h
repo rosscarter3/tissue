@@ -249,7 +249,7 @@ namespace Initiation {
   /// updated, the label can be used to follow lineages.
   /// In a model file the reaction is defined as:
   /// @verbatim
-  /// Initiate::CellLabel 0 1 1
+  /// Initiation::CellLabel 0 1 1
   /// varIndex
   /// @endverbatim
   ///
@@ -283,6 +283,20 @@ namespace Initiation {
           DataMatrix &cellderivs,
           DataMatrix &wallderivs,
           DataMatrix &vertexDerivs );        
+
+      ///
+      /// @brief Derivative function for this reaction class (does nothing for this class).
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &wallData,
+          DataMatrix &vertexData,
+          DataMatrix &cellDerivs,
+          DataMatrix &wallDerivs,
+          DataMatrix &vertexDerivs );
+
   };
 
 } // end of namespace Initiation
