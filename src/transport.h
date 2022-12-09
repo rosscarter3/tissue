@@ -8,10 +8,10 @@
 #ifndef TRANSPORT_H
 #define TRANSPORT_H
 
-#include<cmath>
+#include <cmath>
 
-#include"tissue.h"
-#include"baseReaction.h"
+#include "baseReaction.h"
+#include "tissue.h"
 
 ///
 /// @brief A membrane diffusion reaction
@@ -39,20 +39,18 @@
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class MembraneDiffusionSimple : public BaseReaction {
+   public:
+    MembraneDiffusionSimple(std::vector<double> &paraValue,
+                            std::vector<std::vector<size_t> >
+                                &indValue);
 
- public:
-
-  MembraneDiffusionSimple(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
 
 ///
@@ -81,31 +79,29 @@ class MembraneDiffusionSimple : public BaseReaction {
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class DiffusionSimple : public BaseReaction {
+   public:
+    DiffusionSimple(std::vector<double> &paraValue,
+                    std::vector<std::vector<size_t> >
+                        &indValue);
 
- public:
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 
-  DiffusionSimple(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-
-void derivsWithAbs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs,
-       DataMatrix &sdydtCell,
-       DataMatrix &sdydtWall,
-       DataMatrix &sdydtVertex);
+    void derivsWithAbs(Tissue &T,
+                       DataMatrix &cellData,
+                       DataMatrix &wallData,
+                       DataMatrix &vertexData,
+                       DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs,
+                       DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell,
+                       DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
 };
 
 ///
@@ -138,31 +134,29 @@ void derivsWithAbs(Tissue &T,
 /// @note The One in the name reflects the dependance on a second 'transporter' molecule.
 ///
 class DiffusionSimpleOne : public BaseReaction {
+   public:
+    DiffusionSimpleOne(std::vector<double> &paraValue,
+                       std::vector<std::vector<size_t> >
+                           &indValue);
 
- public:
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 
-  DiffusionSimpleOne(std::vector<double> &paraValue,
-		     std::vector< std::vector<size_t> >
-		     &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-
-void derivsWithAbs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs,
-       DataMatrix &sdydtCell,
-       DataMatrix &sdydtWall,
-       DataMatrix &sdydtVertex);
+    void derivsWithAbs(Tissue &T,
+                       DataMatrix &cellData,
+                       DataMatrix &wallData,
+                       DataMatrix &vertexData,
+                       DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs,
+                       DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell,
+                       DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
 };
 
 ///
@@ -199,24 +193,22 @@ void derivsWithAbs(Tissue &T,
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class DiffusionConductiveSimple : public BaseReaction {
-
- public:
-
-  DiffusionConductiveSimple(std::vector<double> &paraValue,
-			    std::vector< std::vector<size_t> >
-			    &indValue );
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+   public:
+    DiffusionConductiveSimple(std::vector<double> &paraValue,
+                              std::vector<std::vector<size_t> >
+                                  &indValue);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
 
 ///
@@ -245,30 +237,28 @@ class DiffusionConductiveSimple : public BaseReaction {
 /// @note The Simple in the name reflects the fact that no geometric factors are included.
 ///
 class Diffusion2d : public BaseReaction {
+   public:
+    Diffusion2d(std::vector<double> &paraValue,
+                std::vector<std::vector<size_t> >
+                    &indValue);
 
-public:
-
-  Diffusion2d(std::vector<double> &paraValue,
-              std::vector< std::vector<size_t> >
-              &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
-   void derivsWithAbs(Tissue &T,
-       DataMatrix &cellData,
-       DataMatrix &wallData,
-       DataMatrix &vertexData,
-       DataMatrix &cellDerivs,
-       DataMatrix &wallDerivs,
-       DataMatrix &vertexDerivs,
-       DataMatrix &sdydtCell,
-       DataMatrix &sdydtWall,
-       DataMatrix &sdydtVertex);
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
+    void derivsWithAbs(Tissue &T,
+                       DataMatrix &cellData,
+                       DataMatrix &wallData,
+                       DataMatrix &vertexData,
+                       DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs,
+                       DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell,
+                       DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
 };
 
 ///
@@ -296,26 +286,24 @@ public:
 ///
 ///
 ///
-class ActiveTransportCellEfflux  : public BaseReaction {
+class ActiveTransportCellEfflux : public BaseReaction {
+   public:
+    ActiveTransportCellEfflux(std::vector<double> &paraValue,
+                              std::vector<std::vector<size_t> >
+                                  &indValue);
 
- public:
-
-  ActiveTransportCellEfflux(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
 
 ///
@@ -347,30 +335,24 @@ class ActiveTransportCellEfflux  : public BaseReaction {
 /// @see ActiveTransportCellEfflux
 ///
 class DiffusionActiveTransportCell : public BaseReaction {
+   public:
+    DiffusionActiveTransportCell(std::vector<double> &paraValue,
+                                 std::vector<std::vector<size_t> >
+                                     &indValue);
 
- public:
-
-  DiffusionActiveTransportCell(std::vector<double> &paraValue,
-			       std::vector< std::vector<size_t> >
-			       &indValue );
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
-
-
-
-
 
 ///
 /// @brief A cell to cell transport reaction
@@ -398,25 +380,20 @@ class DiffusionActiveTransportCell : public BaseReaction {
 ///
 ///
 
+class ActiveTransportCellEffluxMM : public BaseReaction {
+   public:
+    ActiveTransportCellEffluxMM(std::vector<double> &paraValue,
+                                std::vector<std::vector<size_t> >
+                                    &indValue);
 
-class ActiveTransportCellEffluxMM  : public BaseReaction {
-
- public:
-
-  ActiveTransportCellEffluxMM(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
-
-
 
 ///
 /// @brief A cell-wall  transport reaction
@@ -448,24 +425,20 @@ class ActiveTransportCellEffluxMM  : public BaseReaction {
 ///
 ///
 
+class ActiveTransportWall : public BaseReaction {
+   public:
+    ActiveTransportWall(std::vector<double> &paraValue,
+                        std::vector<std::vector<size_t> >
+                            &indValue);
 
-class ActiveTransportWall  : public BaseReaction {
-
- public:
-
-  ActiveTransportWall(std::vector<double> &paraValue,
-			  std::vector< std::vector<size_t> >
-			  &indValue );
-
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
-
 
 ///
 /// @brief A cell to cell influx transport reaction
@@ -487,34 +460,30 @@ class ActiveTransportWall  : public BaseReaction {
 /// A_{cellIndex}
 /// P_{wallindex}
 /// @endverbatim
-/// 
+///
 /// where the reaction assumes that each wall keeps two variables of influx carrier (and flux) per membrane molecule.
 ///
 ///
 ///
 
-
 class InfluxActiveTransportCell : public BaseReaction {
+   public:
+    InfluxActiveTransportCell(std::vector<double> &paraValue,
+                              std::vector<std::vector<size_t> >
+                                  &indValue);
 
- public:
-
-  InfluxActiveTransportCell(std::vector<double> &paraValue,
-			       std::vector< std::vector<size_t> >
-			       &indValue );
-
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T,
-	      DataMatrix &cellData,
-	      DataMatrix &wallData,
-	      DataMatrix &vertexData,
-	      DataMatrix &cellDerivs,
-	      DataMatrix &wallDerivs,
-	      DataMatrix &vertexDerivs );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+                DataMatrix &cellData,
+                DataMatrix &wallData,
+                DataMatrix &vertexData,
+                DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs,
+                DataMatrix &vertexDerivs);
 };
-
 
 #endif
