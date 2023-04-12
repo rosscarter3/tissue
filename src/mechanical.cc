@@ -2232,10 +2232,12 @@ namespace Pressure3D {
     Linear(
 	   std::vector<double> &paraValue,
 	   std::vector<std::vector<size_t>> &indValue) {
-      if (paraValue.size() != 3) {
+      int n = paraValue.size();
+      if ((n < 3) || (n > 4)) {
 	std::cerr << "Pressure3D::CenterTriangulation::Linear::"
 		  << "Linear() "
-		  << "Uses three parameters: k_force and areaFlag and time span"
+		  << "Uses three parameters: k_force and areaFlag and time span "
+	          << "or four parameters: k_force, areaFlag, time span and starting pressure value"
 		  << std::endl;
 	exit(EXIT_FAILURE);
       }
@@ -2293,7 +2295,6 @@ namespace Pressure3D {
       // size_t lengthInternalIndex = comIndex+dimension;
       
       for (size_t cellIndex = 0; cellIndex < numCells; ++cellIndex)
-	
 	// if(cellData[cellIndex][27]!=-10)  // everywhere except l3 bottom	
 	// if(cellData[cellIndex][27]==-2) // only epidermis (L1 top)	
 	// if(cellData[cellIndex][28]==1 && cellData[cellIndex][29]==2) // only L2
@@ -2354,7 +2355,7 @@ namespace Pressure3D {
 				  (position[0][2] - position[2][2]) *
                                   (position[0][2] - position[2][2]));
 	    
-	    // current Area of the element (using Heron's formula)
+ 	    // current Area of the element (using Heron's formula)
 	    double Area = std::sqrt((length[0] + length[1] + length[2]) *
 				    (-length[0] + length[1] + length[2]) *
 				    (length[0] - length[1] + length[2]) *
@@ -2402,11 +2403,19 @@ namespace Pressure3D {
 	    
 	    // Get the cell size
 	    double A = 1.0 / 3;
+	    double coeff = 0.0;
 	    if (parameter(1) == 1.0 || parameter(1) == 2.0) A = Area / 2;
 	    
 	    // update the vertex derivatives
 	    if (parameter(1) == 0.0 || parameter(1) == 1.0) {
-	      double coeff = timeFactor1 * parameter(0) * A;
+	      if (numParameter() == 3) {
+		coeff = timeFactor1 * parameter(0) * A;
+	      }
+	      else if (numParameter() == 4) {
+		coeff = parameter(3) + (timeFactor1 * (parameter(0) - parameter(3)) * A);
+	      }
+	      std::cerr << coeff << std::endl;
+	      cellData[cellIndex][13] = timeFactor1 * parameter(0);
 	      cellDerivs[cellIndex][comIndex  ] +=  coeff * normal[0];
 	      cellDerivs[cellIndex][comIndex+1] +=  coeff * normal[1];
 	      cellDerivs[cellIndex][comIndex+2] +=  coeff * normal[2];
