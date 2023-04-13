@@ -2414,7 +2414,7 @@ namespace Pressure3D {
 	      else if (numParameter() == 4) {
 		size_t pIndex = variableIndex(0, 1);
 		coeff = (parameter(3) + (timeFactor1 * (parameter(0) - parameter(3)))) * A;
-		cellData[cellIndex][pIndex] = parameter(3) + (timeFactor1 * (parameter(0) - parameter(3)))
+		cellData[cellIndex][pIndex] = parameter(3) + (timeFactor1 * (parameter(0) - parameter(3)));
 	      }
 	      cellDerivs[cellIndex][comIndex  ] +=  coeff * normal[0];
 	      cellDerivs[cellIndex][comIndex+1] +=  coeff * normal[1];
