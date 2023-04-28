@@ -141,6 +141,21 @@ namespace Creation {
 		       DataMatrix &sdydtVertex );
   };
   
+  ///
+  /// @brief In each cell a molecule is produced/created with a rate dependent on two other molecules.
+  ///
+  /// @details The variable update is for each cell given by 
+  /// @f[ \frac{dc}{dt} = - k_c X Y @f]
+  /// where @f$ k_c @f$ is a constant parameter, @f$ c @f$ is the variable to be updated,
+  /// and @f$ X Y @f$ are the concentrations of the production-dependent molecules.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Creation::Two 1 2 1 2
+  /// k_c
+  /// c_index
+  /// X_index
+  /// Y_index
+  /// @endverbatim
   class Two : public BaseReaction {
   public:
     ///
@@ -156,6 +171,52 @@ namespace Creation {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     Two(std::vector<double> &paraValue, 
+	std::vector< std::vector<size_t> > &indValue );
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T,
+		DataMatrix &cellData,
+		DataMatrix &wallData,
+		DataMatrix &vertexData,
+		DataMatrix &cellDerivs,
+		DataMatrix &wallDerivs,
+		DataMatrix &vertexDerivs );
+  };
+
+    ///
+  /// @brief In each cell a molecule is produced/created with a rate dependent on three other molecules.
+  ///
+  /// @details The variable update is for each cell given by 
+  /// @f[ \frac{dc}{dt} = - k_c X Y @f]
+  /// where @f$ k_c @f$ is a constant parameter, @f$ c @f$ is the variable to be updated,
+  /// and @f$ X Y Z @f$ are the concentrations of the production-dependent molecules.
+  /// In a model file the reaction is defined as
+  /// @verbatim
+  /// Creation::Three 1 2 1 3
+  /// k_c
+  /// c_index
+  /// X_index
+  /// Y_index
+  /// Z_index
+  /// @endverbatim
+  class Three : public BaseReaction {
+  public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    Three(std::vector<double> &paraValue, 
 	std::vector< std::vector<size_t> > &indValue );
     ///
     /// @brief Derivative function for this reaction class

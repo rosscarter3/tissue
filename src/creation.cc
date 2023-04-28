@@ -221,7 +221,64 @@ namespace Creation {
       cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex] * cellData[cellI][yIndex];
     }
   }
-  
+
+  Three::
+  Three(std::vector<double> &paraValue, 
+      std::vector< std::vector<size_t> > 
+      &indValue ) 
+  {  
+    // Do some checks on the parameters and variable indeces
+    //
+    if( paraValue.size()!=1 ) {
+      std::cerr << "Creation::Three::"
+		<< "Three() "
+		<< "Uses one parameter k_c (linear production rate)." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    if( indValue.size() != 2 || indValue[0].size() != 1 || indValue[1].size() != 3 ) {
+      std::cerr << "Creation::Three::"
+		<< "Three() "
+		<< "One index for variable to be updated given in first row and "
+		<< "three indices for production-dependent variables in 2nd." << std::endl;
+      exit(EXIT_FAILURE);
+    }
+    //Set the variable values
+    //
+    setId("Creation::Three");
+    setParameter(paraValue);  
+    setVariableIndex(indValue);
+    
+    //Set the parameter identities
+    //
+    std::vector<std::string> tmp( numParameter() );
+    tmp[0] = "k_c";
+    setParameterId( tmp );
+  }
+
+  void Three::
+  derivs(Tissue &T,
+	 DataMatrix &cellData,
+	 DataMatrix &wallData,
+	 DataMatrix &vertexData,
+	 DataMatrix &cellDerivs,
+	 DataMatrix &wallDerivs,
+	 DataMatrix &vertexDerivs ) {
+    
+    //Do the update for each cell
+    size_t numCells = T.numCell();
+    
+    size_t cIndex = variableIndex(0,0);
+    size_t xIndex = variableIndex(1,0);
+    size_t yIndex = variableIndex(1,1);
+    size_t zIndex = variableIndex(1,2);
+    double k_c = parameter(0);
+    //For each cell
+    for (size_t cellI = 0; cellI < numCells; ++cellI) {      
+      cellDerivs[cellI][cIndex] += k_c * cellData[cellI][xIndex] * cellData[cellI][yIndex] *
+	cellData[cellI][zIndex];
+    }
+  }
+
   SpatialSphere::
   SpatialSphere(std::vector<double> &paraValue, 
 		std::vector< std::vector<size_t> > 
