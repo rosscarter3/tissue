@@ -47,6 +47,9 @@ ifeq ($(shell uname),Darwin)
     $(info "Mac Flags Set")
 	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11 -stdlib=libc++ -I/sw/include/ -I/opt/local/include
 	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11 -L/sw/lib/ -L/opt/local/lib/
+
+	CXXFLAGS += /usr/local/Cellar/boost/1.81.0_1/include
+	LDFLAGS += /usr/local/Cellar/boost/1.81.0_1/lib
 endif
 
 # Adding anaconda to library paths
