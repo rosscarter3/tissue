@@ -931,7 +931,7 @@ void InfluxActiveTransportCell::
     size_t awI = variableIndex(1, 0);  // aux/lax (membrane/wall)
 
     assert(aI < cellData[0].size() &&
-           pwI < wallData[0].size());
+           awI < wallData[0].size());
 
     for (size_t i = 0; i < numCells; ++i) {
         // Auxin transport and protein cycling
