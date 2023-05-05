@@ -1623,8 +1623,8 @@ namespace WallGrowth {
           equil=false;
       }
       //std::cerr << equil << std::endl; //to check if it is ever updating
-      //if(equil && deltat>0.0) {// If close to mechanical equilibrum        
-      if(true) {  // If no check to be done
+      if(equil && deltat>0.0) {// If close to mechanical equilibrum        
+	//if(true) {  // If no check to be done
         growthtime+=h;  
         //std::cerr<<scaletmp<<std::endl;
         std::vector<std::vector<double> > mainWalls(numWalls);

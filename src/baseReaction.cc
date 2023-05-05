@@ -334,6 +334,9 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
     else if (idValue == "Creation::Two" ||
              idValue == "CreationTwo")
         return new Creation::Two(paraValue, indValue);
+    else if (idValue == "Creation::Three" ||
+             idValue == "CreationThree")
+        return new Creation::Three(paraValue, indValue);
     else if (idValue == "Creation::SpatialSphere" ||
              idValue == "CreationSpatialSphere")
         return new Creation::SpatialSphere(paraValue, indValue);
