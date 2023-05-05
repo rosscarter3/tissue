@@ -26,22 +26,25 @@ CXX = g++
 UNAME_S := $(shell uname -s)	# os
 UNAME_A := $(shell uname -p)	# architecture
 
+CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+
 # Linux (assume default)
 ifeq ($(UNAME_S),Linux)
-	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	# CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+	# LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Cygwin 10.0
 ifeq ($(UNAME_S),CYGWIN_NT-10.0)
-	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	# CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+	# LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 endif
 
 # Mac OS X
 ifeq ($(UNAME_S),Darwin)
-	CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
-	LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
+	# CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
+	# LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
 	
 	CXXFLAGS += -stdlib=libc++ -I/sw/include/ -I/opt/local/include
 	LDFLAGS += -L/sw/lib/ -L/opt/local/lib/
@@ -52,11 +55,11 @@ ifeq ($(UNAME_A), arm)
 	CXX = clang
 endif
 
-# Adding anaconda to library paths
+# Adding anaconda to library paths (for conda installed boost)
 CXXFLAGS += -I${CONDA_PREFIX}/include
 LDFLAGS  += -L${CONDA_PREFIX}/lib
 
-# add HomeBrew to library paths
+# add HomeBrew to library paths (for homebrew installed boost (may need to change))
 CXXFLAGS += -I/opt/homebrew/include
 LDFLAGS  += -L/opt/homebrew/lib
 
