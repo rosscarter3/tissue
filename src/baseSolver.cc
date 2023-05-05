@@ -414,15 +414,15 @@ void BaseSolver::print(std::ostream &os) {
     // ply output
     //
     else if (printFlag_ == 6) {
-      int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
-      
-      static size_t numCellVar = T_->cell(0).numVariable();
-      setTissueVariables(numCellVar);
-      std::ostringstream ssCount;
-      ssCount << tCount;
-      std::string fname = vtkOutputFolder + "/output_" + ssCount.str() + ".ply";
-      PLY_file plyFile(fname);
-      plyFile << *T_;
+        int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
+
+        static size_t numCellVar = T_->cell(0).numVariable();
+        setTissueVariables(numCellVar);
+        std::ostringstream ssCount;
+        ssCount << tCount;
+        std::string fname = vtkOutputFolder + "/output_" + ssCount.str() + ".ply";
+        PLY_file plyFile(fname);
+        plyFile << *T_;
     }
     // ply output with center triangulation
     else if (printFlag_ == 7) {
@@ -1410,7 +1410,7 @@ void BaseSolver::print(std::ostream &os) {
         size_t Nc = cellData_.size();
         static size_t initialCellNum = Nc;
         size_t cellCol = 4;  // very ad hoc for now
-        std::vector<std::vector<size_t>> colonies;
+        std::vector<std::vector<size_t> > colonies;
         std::vector<size_t> cellVisited(Nc, 0);
         for (size_t i = 0; i < Nc; ++i) {
             if (!cellVisited[i]) {
@@ -2325,28 +2325,28 @@ void BaseSolver::print(std::ostream &os) {
     }
 
     else if (printFlag_ == 169) {  // For scanning Sx and Sy in parascan_stressXY.auto in patchtest repository
-      size_t r1 = 2; // 
-      size_t p11 = 0; // Sx
-      size_t p12 = 1; // Sy
-      size_t r2 = 1; //
-      size_t p21 = 0; // Ym  
-      size_t p22 = 1; // Yf
-      if (tCount == 0) {
-	if (T_->numReaction() <= r1 || T_->numReaction() <= r2 ||
-	    cellData_[0].size() <= 32) {  // will try to print out of scope
-	  std::cerr << "BaseSolver::print() printFlag=169 requires specific numbers of reactions and cell variables."
-		    << std::endl;
-	  exit(EXIT_FAILURE);
-	}
-      }
-      os << T_->reaction(r1)->parameter(p11) << " " << T_->reaction(r1)->parameter(p12) // stress x, stress y
-	 << " " << cellData_[0][18] << " " << cellData_[0][23] << " " // stress aniso, cos MT Stress
-	 << cellData_[0][24] << " " << cellData_[0][17] << " " // cos (stress strain), strain aniso
-	 << cellData_[0][11] << " " << cellData_[0][28] << " " // 1st strain, 2nd stress
-	 << cellData_[0][7] << " " << cellData_[0][15] << " "  // stress, 2nd strain           
-	 << T_->reaction(r2)->parameter(p21) << " " << T_->reaction(r2)->parameter(p22) << " " // Y_m, Y_f
-            << cellData_[0][16] << " " // Y_l
-           << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;                 // Y_t ??
+        size_t r1 = 2;             //
+        size_t p11 = 0;            // Sx
+        size_t p12 = 1;            // Sy
+        size_t r2 = 1;             //
+        size_t p21 = 0;            // Ym
+        size_t p22 = 1;            // Yf
+        if (tCount == 0) {
+            if (T_->numReaction() <= r1 || T_->numReaction() <= r2 ||
+                cellData_[0].size() <= 32) {  // will try to print out of scope
+                std::cerr << "BaseSolver::print() printFlag=169 requires specific numbers of reactions and cell variables."
+                          << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        os << T_->reaction(r1)->parameter(p11) << " " << T_->reaction(r1)->parameter(p12)         // stress x, stress y
+           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "                           // stress aniso, cos MT Stress
+           << cellData_[0][24] << " " << cellData_[0][17] << " "                                  // cos (stress strain), strain aniso
+           << cellData_[0][11] << " " << cellData_[0][28] << " "                                  // 1st strain, 2nd stress
+           << cellData_[0][7] << " " << cellData_[0][15] << " "                                   // stress, 2nd strain
+           << T_->reaction(r2)->parameter(p21) << " " << T_->reaction(r2)->parameter(p22) << " "  // Y_m, Y_f
+           << cellData_[0][16] << " "                                                             // Y_l
+           << cellData_[0][16] * (1 - cellData_[0][18]) << std::endl;                             // Y_t ??
     }
 
     else if (printFlag_ == 170) {  // for patch optimization (RC)
@@ -2368,20 +2368,20 @@ void BaseSolver::print(std::ostream &os) {
     }
 
     else if (printFlag_ == 171) {
-       if (tCount == 0) {
-	 if (T_->numReaction() < 10 || cellData_[0].size() <= 32) {  // will try to print out of scope
-	   std::cerr << "BaseSolver::print() printFlag=170 requires specific numbers of reactions and cell variables."
-		     << std::endl;
-	   exit(EXIT_FAILURE);
-	 }
-       }
-       os << T_->reaction(2)->parameter(0) << " " << T_->reaction(3)->parameter(1)   // stress x, stress y
-	  << " " << cellData_[0][18] << " " << cellData_[0][23] << " "               // stress aniso, cos MT Stress
-	  << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]  // cos stress strain, strain aniso, 1st strain
-	  << " " << cellData_[0][28] << " " << cellData_[0][7] << " "                // 2nd stress, stress
-	  << cellData_[0][15] << " " << T_->reaction(1)->parameter(0) << " "         // 2nd Strain, Y_m
-	  << T_->reaction(1)->parameter(1) << " " << T_->reaction(8)->parameter(3) << std::endl; // Y_f, K_hill
-   }
+        if (tCount == 0) {
+            if (T_->numReaction() < 10 || cellData_[0].size() <= 32) {  // will try to print out of scope
+                std::cerr << "BaseSolver::print() printFlag=170 requires specific numbers of reactions and cell variables."
+                          << std::endl;
+                exit(EXIT_FAILURE);
+            }
+        }
+        os << T_->reaction(2)->parameter(0) << " " << T_->reaction(3)->parameter(1)                // stress x, stress y
+           << " " << cellData_[0][18] << " " << cellData_[0][23] << " "                            // stress aniso, cos MT Stress
+           << cellData_[0][24] << " " << cellData_[0][17] << " " << cellData_[0][11]               // cos stress strain, strain aniso, 1st strain
+           << " " << cellData_[0][28] << " " << cellData_[0][7] << " "                             // 2nd stress, stress
+           << cellData_[0][15] << " " << T_->reaction(1)->parameter(0) << " "                      // 2nd Strain, Y_m
+           << T_->reaction(1)->parameter(1) << " " << T_->reaction(8)->parameter(3) << std::endl;  // Y_f, K_hill
+    }
 
     else if (printFlag_ == 999) {  // Print plane from reaction
         int status = system((std::string("mkdir -p ") + vtkOutputFolder).c_str());
@@ -2638,9 +2638,9 @@ void BaseSolver::printInitTri(std::ostream &os) const {
     for (size_t i = 0; i < T_->numVertex(); ++i) {
         v[i] = vertexData_[i];
     }
-    std::vector<std::pair<size_t, size_t>> cellNeigh(
+    std::vector<std::pair<size_t, size_t> > cellNeigh(
         numW);  // Wall connections to cells
-    std::vector<std::pair<size_t, size_t>> vertexNeigh(
+    std::vector<std::pair<size_t, size_t> > vertexNeigh(
         numW);  // Wall connections to vertices
 
     std::vector<double> wallTmpData(wallData_[0].size(), 0.0);

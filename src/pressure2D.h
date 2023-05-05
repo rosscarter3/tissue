@@ -10,6 +10,7 @@
 #define PRESSURE2D_H
 
 #include <cmath>
+
 #include "baseReaction.h"
 #include "tissue.h"
 
@@ -61,30 +62,30 @@ namespace Pressure2D {
 /// @note Requires two dimensions with vertices sorted.
 ///
 class AreaPotential : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  AreaPotential(std::vector<double> &paraValue,
-		std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    AreaPotential(std::vector<double> &paraValue,
+                  std::vector<std::vector<size_t> > &indValue);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -126,30 +127,30 @@ class AreaPotential : public BaseReaction {
 /// @note Requires two dimensions.
 ///
 class AreaPotentialTri : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  AreaPotentialTri(std::vector<double> &paraValue,
-		   std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    AreaPotentialTri(std::vector<double> &paraValue,
+                     std::vector<std::vector<size_t> > &indValue);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -181,30 +182,30 @@ class AreaPotentialTri : public BaseReaction {
 /// @note Requires two dimensions.
 ///
 class AreaPotentialTriSpatialThreshold : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  AreaPotentialTriSpatialThreshold(std::vector<double> &paraValue,
-				   std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    AreaPotentialTriSpatialThreshold(std::vector<double> &paraValue,
+                                     std::vector<std::vector<size_t> > &indValue);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
 ///
@@ -241,40 +242,40 @@ class AreaPotentialTriSpatialThreshold : public BaseReaction {
 ///
 /// @see Pressure2D::AreaPotential
 /// @see TargetAreaFromPressure
-/// @note Requires two dimensions. 
+/// @note Requires two dimensions.
 ///
 class AreaPotentialTargetArea : public BaseReaction {
-  public:
-  ///
-  /// @brief Main constructor
-  ///
-  /// This is the main constructor which sets the parameters and variable
-  /// indices that defines the reaction.
-  ///
-  /// @param paraValue vector with parameters
-  ///
-  /// @param indValue vector of vectors with variable indices
-  ///
-  /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
-  ///
-  AreaPotentialTargetArea(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+   public:
+    ///
+    /// @brief Main constructor
+    ///
+    /// This is the main constructor which sets the parameters and variable
+    /// indices that defines the reaction.
+    ///
+    /// @param paraValue vector with parameters
+    ///
+    /// @param indValue vector of vectors with variable indices
+    ///
+    /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+    ///
+    AreaPotentialTargetArea(std::vector<double> &paraValue,
+                            std::vector<std::vector<size_t> > &indValue);
 
-  ///
-  /// @brief Derivative function for this reaction class
-  ///
-  /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
-  ///
-  void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
-              DataMatrix &vertexData, DataMatrix &cellDerivs,
-              DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
-  ///
-  /// @brief Calculates the area [should this be replaced with the
-  /// Cell.calculateVolume(vertexData) ]?
-  ///
-  double polygonArea(std::vector<std::pair<double, double>> vertices);
+    ///
+    /// @brief Derivative function for this reaction class
+    ///
+    /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+    ///
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+    ///
+    /// @brief Calculates the area [should this be replaced with the
+    /// Cell.calculateVolume(vertexData) ]?
+    ///
+    double polygonArea(std::vector<std::pair<double, double> > vertices);
 };
 
 }  // end namespace Pressure2D
 
-#endif //PRESSURE2D_H
+#endif  // PRESSURE2D_H

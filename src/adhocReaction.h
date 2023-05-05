@@ -50,7 +50,7 @@ class InflationDeflationStresses : public BaseReaction {
    public:
     InflationDeflationStresses(
         std::vector<double> &paravalue,
-        std::vector<std::vector<size_t>> &indvalue);
+        std::vector<std::vector<size_t> > &indvalue);
 
     void derivs(Tissue &T, DataMatrix &cellData,
                 DataMatrix &wallData,
@@ -90,7 +90,7 @@ class InflationDeflationStresses : public BaseReaction {
 class VertexNoUpdateFromPosition : public BaseReaction {
    public:
     VertexNoUpdateFromPosition(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue);
+                               std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -114,7 +114,7 @@ class VertexNoUpdateFromPosition : public BaseReaction {
 class VertexNoUpdateFromIndex : public BaseReaction {
    public:
     VertexNoUpdateFromIndex(std::vector<double> &paraValue,
-                            std::vector<std::vector<size_t>> &indValue);
+                            std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -138,7 +138,7 @@ class VertexNoUpdateFromIndex : public BaseReaction {
 class VertexNoUpdateFromIndexHoldX : public BaseReaction {
    public:
     VertexNoUpdateFromIndexHoldX(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+                                 std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -162,7 +162,7 @@ class VertexNoUpdateFromIndexHoldX : public BaseReaction {
 class VertexNoUpdateFromIndexHoldY : public BaseReaction {
    public:
     VertexNoUpdateFromIndexHoldY(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+                                 std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -186,7 +186,7 @@ class VertexNoUpdateFromIndexHoldY : public BaseReaction {
 class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
    public:
     VertexNoUpdateFromIndexHoldZ(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+                                 std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -209,7 +209,7 @@ class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
 class VertexNoUpdateFromList : public BaseReaction {
    public:
     VertexNoUpdateFromList(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue);
+                           std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -240,7 +240,7 @@ class VertexNoUpdateFromList : public BaseReaction {
 class VertexRandTip : public BaseReaction {
    public:
     VertexRandTip(std::vector<double> &paraValue,
-                  std::vector<std::vector<size_t>> &indValue);
+                  std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -269,7 +269,7 @@ class VertexRandTip : public BaseReaction {
 class VertexNoUpdateBoundary : public BaseReaction {
    public:
     VertexNoUpdateBoundary(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue);
+                           std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -294,7 +294,7 @@ class VertexNoUpdateBoundaryPtemplate : public BaseReaction {  // BB
 
    public:
     VertexNoUpdateBoundaryPtemplate(std::vector<double> &paraValue,
-                                    std::vector<std::vector<size_t>> &indValue);
+                                    std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -319,7 +319,7 @@ class VertexNoUpdateBoundaryPtemplateStatic : public BaseReaction {  // BB
    public:
     VertexNoUpdateBoundaryPtemplateStatic(
         std::vector<double> &paraValue,
-        std::vector<std::vector<size_t>> &indValue);
+        std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -330,7 +330,7 @@ class VertexNoUpdateBoundaryPtemplateStatic : public BaseReaction {  // BB
 
    private:
     std::vector<size_t> boundaryVertices;
-    std::vector<std::vector<double>> boundaryNormal;
+    std::vector<std::vector<double> > boundaryNormal;
     size_t numBoundaryVertices;
 };
 
@@ -352,7 +352,7 @@ class VertexNoUpdateBoundaryPtemplateStatic3D : public BaseReaction {  // BB
    public:
     VertexNoUpdateBoundaryPtemplateStatic3D(
         std::vector<double> &paraValue,
-        std::vector<std::vector<size_t>> &indValue);
+        std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -365,8 +365,8 @@ class VertexNoUpdateBoundaryPtemplateStatic3D : public BaseReaction {  // BB
     //  std::vector<size_t> bottomVertices;
     //  std::vector<size_t> sideVertices;
 
-    std::vector<std::vector<double>> bottomNormals;
-    std::vector<std::vector<double>> sideNormals;
+    std::vector<std::vector<double> > bottomNormals;
+    std::vector<std::vector<double> > sideNormals;
     size_t numBottomCells;
     size_t numSideCells;
 };
@@ -389,7 +389,7 @@ class VertexNoUpdateBoundary3D : public BaseReaction {  // BB
 
    public:
     VertexNoUpdateBoundary3D(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue);
+                             std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -426,7 +426,7 @@ class VertexFromConstStressBoundary : public BaseReaction {  // BB
 
    public:
     VertexFromConstStressBoundary(std::vector<double> &paraValue,
-                                  std::vector<std::vector<size_t>> &indValue);
+                                  std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -438,7 +438,7 @@ class VertexFromConstStressBoundary : public BaseReaction {  // BB
                 DataMatrix &vertexData, double h);
 
    private:
-    std::vector<std::vector<double>> rightVertices, leftVertices, topVertices,
+    std::vector<std::vector<double> > rightVertices, leftVertices, topVertices,
         bottomVertices;
     size_t numOldVertices;
     double totaltime;
@@ -459,7 +459,7 @@ class manipulate : public BaseReaction {  // BB
 
    public:
     manipulate(std::vector<double> &paraValue,
-               std::vector<std::vector<size_t>> &indValue);
+               std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -494,7 +494,7 @@ class cellPolarity3D : public BaseReaction {  // BB
 
    public:
     cellPolarity3D(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -508,8 +508,8 @@ class cellPolarity3D : public BaseReaction {  // BB
                     DataMatrix &vertexData, std::ostream &os);
 
    private:
-    std::vector<std::vector<double>> cellFaces;
-    std::vector<std::vector<double>> cellCentPol;
+    std::vector<std::vector<double> > cellFaces;
+    std::vector<std::vector<double> > cellCentPol;
 };
 
 ///
@@ -532,7 +532,7 @@ class diffusion3D : public BaseReaction {  // BB
 
    public:
     diffusion3D(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+                std::vector<std::vector<size_t> > &indValue);
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
                   DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
@@ -542,9 +542,9 @@ class diffusion3D : public BaseReaction {  // BB
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 
    private:
-    std::vector<std::vector<double>>
-        Cells3d;                                // holds the wall_indices and neighbohrhood info
-    std::vector<std::vector<double>> faceArea;  // holds the area of the faces
+    std::vector<std::vector<double> >
+        Cells3d;                                 // holds the wall_indices and neighbohrhood info
+    std::vector<std::vector<double> > faceArea;  // holds the area of the faces
 };
 
 ///
@@ -560,7 +560,7 @@ class diffusion3D : public BaseReaction {  // BB
 class VertexTranslateToMax : public BaseReaction {
    public:
     VertexTranslateToMax(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+                         std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -588,7 +588,7 @@ class VertexTranslateToMax : public BaseReaction {
 class CenterCOM : public BaseReaction {
    public:
     CenterCOM(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
+              std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -627,7 +627,7 @@ class CenterCOM : public BaseReaction {
 class CenterCOMcenterTriangulation : public BaseReaction {
    public:
     CenterCOMcenterTriangulation(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+                                 std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -654,7 +654,7 @@ class CenterCOMcenterTriangulation : public BaseReaction {
 class CalculatePCAPlane : public BaseReaction {
    public:
     CalculatePCAPlane(std::vector<double> &paraValue,
-                      std::vector<std::vector<size_t>> &indValue);
+                      std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -682,7 +682,7 @@ class CalculatePCAPlane : public BaseReaction {
 class InitiateWallLength : public BaseReaction {
    public:
     InitiateWallLength(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
+                       std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -709,7 +709,7 @@ class InitiateWallLength : public BaseReaction {
 class InitiateTargetArea : public BaseReaction {
    public:
     InitiateTargetArea(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue);
+                       std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -734,7 +734,7 @@ class InitiateTargetArea : public BaseReaction {
 class InitiateWallVariableConstant : public BaseReaction {
    public:
     InitiateWallVariableConstant(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue);
+                                 std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -764,7 +764,7 @@ class InitiateWallVariableConstant : public BaseReaction {
 class InitiateWallMesh : public BaseReaction {
    public:
     InitiateWallMesh(std::vector<double> &paraValue,
-                     std::vector<std::vector<size_t>> &indValue);
+                     std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -782,7 +782,7 @@ class InitiateWallMesh : public BaseReaction {
 class StrainTest : public BaseReaction {
    public:
     StrainTest(std::vector<double> &paraValue,
-               std::vector<std::vector<size_t>> &indValue);
+               std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -796,7 +796,7 @@ class StrainTest : public BaseReaction {
 class CalculateVertexStressDirection : public BaseReaction {
    public:
     CalculateVertexStressDirection(std::vector<double> &paraValue,
-                                   std::vector<std::vector<size_t>> &indValue);
+                                   std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -816,7 +816,7 @@ class CalculateVertexStressDirection : public BaseReaction {
 class MoveVerticesRandomlyCapCylinder : public BaseReaction {
    public:
     MoveVerticesRandomlyCapCylinder(std::vector<double> &paraValue,
-                                    std::vector<std::vector<size_t>> &indValue);
+                                    std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -843,7 +843,7 @@ class MoveVerticesRandomlyCapCylinder : public BaseReaction {
 class scaleTemplate : public BaseReaction {
    public:
     scaleTemplate(std::vector<double> &paraValue,
-                  std::vector<std::vector<size_t>> &indValue);
+                  std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -875,7 +875,7 @@ class scaleTemplate : public BaseReaction {
 class copyCellVector : public BaseReaction {
    public:
     copyCellVector(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -902,7 +902,7 @@ class copyCellVector : public BaseReaction {
 class randomizeMT : public BaseReaction {
    public:
     randomizeMT(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+                std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -919,7 +919,7 @@ class randomizeMT : public BaseReaction {
 class restrictVertexRadially : public BaseReaction {
    public:
     restrictVertexRadially(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue);
+                           std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -971,7 +971,7 @@ class CreationPrimordiaTime : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     CreationPrimordiaTime(std::vector<double> &paraValue,
-                          std::vector<std::vector<size_t>> &indValue);
+                          std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief Derivative function for this reaction class
@@ -1006,7 +1006,7 @@ class CreationPrimordiaTime : public BaseReaction {
 class VertexFromRotationalForceLinear : public BaseReaction {
    private:
     double timeFactor_;
-    std::vector<std::vector<double>> boundVerticesUp, boundVerticesDn;
+    std::vector<std::vector<double> > boundVerticesUp, boundVerticesDn;
 
    public:
     ///
@@ -1022,7 +1022,7 @@ class VertexFromRotationalForceLinear : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     VertexFromRotationalForceLinear(std::vector<double> &paraValue,
-                                    std::vector<std::vector<size_t>> &indValue);
+                                    std::vector<std::vector<size_t> > &indValue);
 
     void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                   DataMatrix &vertexData, DataMatrix &cellDerivs,
@@ -1080,7 +1080,7 @@ class ThresholdSwitch : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ThresholdSwitch(std::vector<double> &paraValue,
-                    std::vector<std::vector<size_t>> &indValue);
+                    std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1132,7 +1132,7 @@ class ThresholdReset : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ThresholdReset(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1183,7 +1183,7 @@ class ThresholdNoisyReset : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ThresholdNoisyReset(std::vector<double> &paraValue,
-                        std::vector<std::vector<size_t>> &indValue);
+                        std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1235,7 +1235,7 @@ class ThresholdResetAndCount : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ThresholdResetAndCount(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue);
+                           std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1288,7 +1288,7 @@ class FlagNoisyReset : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     FlagNoisyReset(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1342,7 +1342,7 @@ class ThresholdAndFlagNoisyReset : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ThresholdAndFlagNoisyReset(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue);
+                               std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1392,7 +1392,7 @@ class FlagAddValue : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     FlagAddValue(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+                 std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1441,7 +1441,7 @@ class CopyVariable : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     CopyVariable(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+                 std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief This class does not use derivatives for updates.
@@ -1472,7 +1472,7 @@ class CopyVariable : public BaseReaction {
 class DebugReaction : public BaseReaction {
    public:
     DebugReaction(std::vector<double> &paraValue,
-                  std::vector<std::vector<size_t>> &indValue);
+                  std::vector<std::vector<size_t> > &indValue);
 
     void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
                 DataMatrix &vertexData, DataMatrix &cellDerivs,

@@ -46,7 +46,7 @@ namespace Force {
 class ForceFromPlane : public BaseReaction {
    public:
     ForceFromPlane(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -78,7 +78,7 @@ class ForceFromPlane : public BaseReaction {
 class Cylinder : public BaseReaction {
    public:
     Cylinder(std::vector<double> &paraValue,
-             std::vector<std::vector<size_t>> &indValue);
+             std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -116,7 +116,7 @@ class Cylinder : public BaseReaction {
 class SphereCylinder : public BaseReaction {
    public:
     SphereCylinder(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue);
+                   std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -156,7 +156,7 @@ class SphereCylinder : public BaseReaction {
 class SphereCylinderRadius : public BaseReaction {
    public:
     SphereCylinderRadius(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue);
+                         std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -201,7 +201,7 @@ class InfiniteWall : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     InfiniteWall(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+                 std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -242,7 +242,7 @@ class EpidermalCoordinate : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     EpidermalCoordinate(std::vector<double> &paraValue,
-                        std::vector<std::vector<size_t>> &indValue);
+                        std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -285,7 +285,7 @@ class EpidermalRadial : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     EpidermalRadial(std::vector<double> &paraValue,
-                    std::vector<std::vector<size_t>> &indValue);
+                    std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -332,7 +332,7 @@ class IndexRadial : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     IndexRadial(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue);
+                std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -380,7 +380,7 @@ class CellIndexRadial : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     CellIndexRadial(std::vector<double> &paraValue,
-                    std::vector<std::vector<size_t>> &indValue);
+                    std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -423,7 +423,7 @@ class Axial : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     Axial(std::vector<double> &paraValue,
-          std::vector<std::vector<size_t>> &indValue);
+          std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -466,7 +466,7 @@ class Vector : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     Vector(std::vector<double> &paraValue,
-           std::vector<std::vector<size_t>> &indValue);
+           std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief Derivative function for this reaction class
@@ -516,7 +516,7 @@ class VectorLinear : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     VectorLinear(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+                 std::vector<std::vector<size_t> > &indValue);
 
     ///
     /// @brief Derivative function for this reaction class
@@ -574,7 +574,7 @@ class Ball : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     Ball(std::vector<double> &paraValue,
-         std::vector<std::vector<size_t>> &indValue);
+         std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -629,7 +629,7 @@ class Parabolid : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     Parabolid(std::vector<double> &paraValue,
-              std::vector<std::vector<size_t>> &indValue);
+              std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///
@@ -692,7 +692,7 @@ class ExternalWall : public BaseReaction {
     /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
     ///
     ExternalWall(std::vector<double> &paraValue,
-                 std::vector<std::vector<size_t>> &indValue);
+                 std::vector<std::vector<size_t> > &indValue);
     ///
     /// @brief Derivative function for this reaction class
     ///

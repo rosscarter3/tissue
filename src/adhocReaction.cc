@@ -21,7 +21,7 @@
 
 InflationDeflationStresses::InflationDeflationStresses(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 8) {
         std::cerr << "InflationDeflationStresses::InflationDeflationStresses()\n"
                   << "Uses 8 parameters; \n"
@@ -104,7 +104,7 @@ void InflationDeflationStresses::update(Tissue &T,
 
 VertexNoUpdateFromPosition::VertexNoUpdateFromPosition(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //////////////////////////////////////////////////////////////////////
     if (paraValue.size() != 2) {
@@ -161,7 +161,7 @@ void VertexNoUpdateFromPosition::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexNoUpdateFromIndex::VertexNoUpdateFromIndex(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -203,7 +203,7 @@ void VertexNoUpdateFromIndex::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexNoUpdateFromIndexHoldX::VertexNoUpdateFromIndexHoldX(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -244,7 +244,7 @@ void VertexNoUpdateFromIndexHoldX::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexNoUpdateFromIndexHoldY::VertexNoUpdateFromIndexHoldY(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -285,7 +285,7 @@ void VertexNoUpdateFromIndexHoldY::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexNoUpdateFromIndexHoldZ::VertexNoUpdateFromIndexHoldZ(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -326,7 +326,7 @@ void VertexNoUpdateFromIndexHoldZ::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexNoUpdateFromList::VertexNoUpdateFromList(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -387,7 +387,7 @@ void VertexNoUpdateFromList::update(Tissue &T, DataMatrix &cellData,
 }
 
 VertexRandTip::VertexRandTip(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue) {
+                             std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 1) {
@@ -450,7 +450,7 @@ void VertexRandTip::update(Tissue &T, DataMatrix &cellData,
             double teta = (parameter(0) * 3.1415 / 180) *
                           (1 - 2 * ((double)rand() / (RAND_MAX)));
 
-            std::vector<std::vector<double>> rot(2);
+            std::vector<std::vector<double> > rot(2);
             rot[0].resize(2);
             rot[1].resize(2);
             rot[0][0] = std::cos(teta);
@@ -492,7 +492,7 @@ void VertexRandTip::update(Tissue &T, DataMatrix &cellData,
 ////////////////////////////////
 VertexNoUpdateBoundary::VertexNoUpdateBoundary(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -547,7 +547,7 @@ void VertexNoUpdateBoundary::derivs(Tissue &T, DataMatrix &cellData,
 VertexNoUpdateBoundaryPtemplate::  // BB
     VertexNoUpdateBoundaryPtemplate(
         std::vector<double> &paraValue,
-        std::vector<std::vector<size_t>> &indValue) {
+        std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -682,7 +682,7 @@ void VertexNoUpdateBoundaryPtemplate::derivs(Tissue &T, DataMatrix &cellData,
 VertexNoUpdateBoundaryPtemplateStatic::  // BB
     VertexNoUpdateBoundaryPtemplateStatic(
         std::vector<double> &paraValue,
-        std::vector<std::vector<size_t>> &indValue) {
+        std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -869,7 +869,7 @@ void VertexNoUpdateBoundaryPtemplateStatic::derivs(
 VertexNoUpdateBoundaryPtemplateStatic3D::  // BB
     VertexNoUpdateBoundaryPtemplateStatic3D(
         std::vector<double> &paraValue,
-        std::vector<std::vector<size_t>> &indValue) {
+        std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -907,7 +907,7 @@ void VertexNoUpdateBoundaryPtemplateStatic3D::initiate(
     size_t neighborIndex = 27;
     numBottomCells = 0;
     numSideCells = 0;
-    std::vector<std::vector<double>> cellNormalsBottom, cellNormalsSide;
+    std::vector<std::vector<double> > cellNormalsBottom, cellNormalsSide;
     for (size_t cellIndex = 0; cellIndex < numCells;
          ++cellIndex) {  // check all the cells for the boundary
 
@@ -1033,7 +1033,7 @@ void VertexNoUpdateBoundaryPtemplateStatic3D::derivs(
 
 VertexNoUpdateBoundary3D::  // BB
     VertexNoUpdateBoundary3D(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue) {
+                             std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -1136,8 +1136,8 @@ void VertexNoUpdateBoundary3D::initiate(Tissue &T, DataMatrix &cellData,
 
     size_t N = T.numSisterVertex();
 
-    std::vector<std::vector<double>> tmpsisters;
-    std::vector<std::vector<double>> sisters;
+    std::vector<std::vector<double> > tmpsisters;
+    std::vector<std::vector<double> > sisters;
     tmpsisters.resize(N);
     for (size_t i = 0; i < N; ++i) {
         tmpsisters[i].resize(3);
@@ -1206,7 +1206,7 @@ void VertexNoUpdateBoundary3D::derivs(Tissue &T, DataMatrix &cellData,
 
 VertexFromConstStressBoundary::  // BB
     VertexFromConstStressBoundary(std::vector<double> &paraValue,
-                                  std::vector<std::vector<size_t>> &indValue) {
+                                  std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size() != 7) {
@@ -1267,7 +1267,7 @@ void VertexFromConstStressBoundary::initiate(Tissue &T, DataMatrix &cellData,
     topVertices.resize(3);
     bottomVertices.resize(3);
 
-    std::vector<std::vector<double>> tmprightVertices, tmpleftVertices,
+    std::vector<std::vector<double> > tmprightVertices, tmpleftVertices,
         tmptopVertices, tmpbottomVertices;
     tmprightVertices.resize(2);
     tmpleftVertices.resize(2);
@@ -1575,7 +1575,7 @@ void VertexFromConstStressBoundary::update(Tissue &T, DataMatrix &cellData,
 
 manipulate::  // BB
     manipulate(std::vector<double> &paraValue,
-               std::vector<std::vector<size_t>> &indValue) {
+               std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size() != 0) {
@@ -1709,7 +1709,7 @@ void manipulate::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 
 cellPolarity3D::  // BB
     cellPolarity3D(std::vector<double> &paraValue,
-                   std::vector<std::vector<size_t>> &indValue) {
+                   std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size()) {
@@ -2039,7 +2039,7 @@ void cellPolarity3D::printState(Tissue *T, DataMatrix &cellData,
 
 diffusion3D::  // BB
     diffusion3D(std::vector<double> &paraValue,
-                std::vector<std::vector<size_t>> &indValue) {
+                std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indices
     //
     if (paraValue.size() != 1) {
@@ -2180,7 +2180,7 @@ void diffusion3D::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 
 VertexTranslateToMax::VertexTranslateToMax(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //////////////////////////////////////////////////////////////////////
     if (paraValue.size() != 1) {
@@ -2245,7 +2245,7 @@ void VertexTranslateToMax::update(Tissue &T, DataMatrix &cellData,
 }
 
 CenterCOM::CenterCOM(std::vector<double> &paraValue,
-                     std::vector<std::vector<size_t>> &indValue) {
+                     std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -2311,7 +2311,7 @@ void CenterCOM::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 
 CenterCOMcenterTriangulation::CenterCOMcenterTriangulation(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() != 0) {
@@ -2390,7 +2390,7 @@ void CenterCOMcenterTriangulation::update(Tissue &T, DataMatrix &cellData,
 
 CalculatePCAPlane::CalculatePCAPlane(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2453,7 +2453,7 @@ void CalculatePCAPlane::update(Tissue &T, DataMatrix &cellData,
 
 InitiateWallLength::InitiateWallLength(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2511,7 +2511,7 @@ void InitiateWallLength::derivs(Tissue &T, DataMatrix &cellData,
 
 InitiateTargetArea::InitiateTargetArea(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2566,7 +2566,7 @@ void InitiateTargetArea::derivs(Tissue &T, DataMatrix &cellData,
 //////////////////////////////////
 InitiateWallVariableConstant::InitiateWallVariableConstant(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2621,7 +2621,7 @@ void InitiateWallVariableConstant::derivs(Tissue &T, DataMatrix &cellData,
                                           DataMatrix &vertexDerivs) {}
 
 InitiateWallMesh::InitiateWallMesh(std::vector<double> &paraValue,
-                                   std::vector<std::vector<size_t>> &indValue) {
+                                   std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2740,7 +2740,7 @@ void InitiateWallMesh::derivs(Tissue &T, DataMatrix &cellData,
                               DataMatrix &vertexDerivs) {}
 
 StrainTest::StrainTest(std::vector<double> &paraValue,
-                       std::vector<std::vector<size_t>> &indValue) {
+                       std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -2812,7 +2812,7 @@ void StrainTest::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 
 CalculateVertexStressDirection::CalculateVertexStressDirection(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 1) {
         std::cerr
             << "CalculateVertexStressDirection::CalculateVertexStressDirection() "
@@ -2885,7 +2885,7 @@ void CalculateVertexStressDirection::update(Tissue &T, DataMatrix &cellData,
 
 MoveVerticesRandomlyCapCylinder::MoveVerticesRandomlyCapCylinder(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 1) {
         std::cerr
             << "MoveVerticesRandomlyCapCylinder::MoveVerticesRandomlyCapCylinder() "
@@ -2997,7 +2997,7 @@ void MoveVerticesRandomlyCapCylinder::update(Tissue &T, DataMatrix &cellData,
 }
 
 scaleTemplate::scaleTemplate(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue) {
+                             std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 1) {
         std::cerr << "scaleTemplate::scaleTemplate() "
                   << "Uses one parameter: scaling factor\n";
@@ -3066,7 +3066,7 @@ void scaleTemplate::update(Tissue &T, DataMatrix &cellData,
                            double h) {}
 
 copyCellVector::copyCellVector(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue) {
+                               std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 0) {
         std::cerr << "copyCellVector::copyCellVector() "
                   << "Uses no parameter\n";
@@ -3116,7 +3116,7 @@ void copyCellVector::update(Tissue &T, DataMatrix &cellData,
                             double h) {}
 
 randomizeMT::randomizeMT(std::vector<double> &paraValue,
-                         std::vector<std::vector<size_t>> &indValue) {
+                         std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 4) {
         std::cerr
             << "randomizeMT::randomizeMT"
@@ -3160,7 +3160,7 @@ void randomizeMT::initiate(Tissue &T, DataMatrix &cellData,
         if (parameter(1) == 1) cellData[cellInd][conInd] = ttmp;
         // calculate the average normal vector to the cell plane
         size_t numVer = T.cell(cellInd).numVertex();
-        std::vector<std::vector<double>> verticesPosition;
+        std::vector<std::vector<double> > verticesPosition;
         verticesPosition.resize(numVer);
 
         // storing the vertex positions
@@ -3247,7 +3247,7 @@ void randomizeMT::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 
 restrictVertexRadially::restrictVertexRadially(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     if (paraValue.size() != 0) {
         std::cerr << "restrictVertexRadially::restrictVertexRadially() "
                   << "Uses no parameter\n";
@@ -3292,7 +3292,7 @@ void restrictVertexRadially::update(Tissue &T, DataMatrix &cellData,
 
 CreationPrimordiaTime::CreationPrimordiaTime(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     if (paraValue.size() != 5) {
         std::cerr
@@ -3404,7 +3404,7 @@ void CreationPrimordiaTime::update(Tissue &T, DataMatrix &cellData,
 
 VertexFromRotationalForceLinear::VertexFromRotationalForceLinear(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
     //
     if (paraValue.size() < 2 || paraValue.size() > 4) {
@@ -3540,7 +3540,7 @@ void VertexFromRotationalForceLinear::update(Tissue &T, DataMatrix &cellData,
 }
 
 ThresholdSwitch::ThresholdSwitch(std::vector<double> &paraValue,
-                                 std::vector<std::vector<size_t>> &indValue) {
+                                 std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -3607,7 +3607,7 @@ void ThresholdSwitch::update(Tissue &T, DataMatrix &cellData,
 }
 
 ThresholdReset::ThresholdReset(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue) {
+                               std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -3677,7 +3677,7 @@ void ThresholdReset::update(Tissue &T, DataMatrix &cellData,
 
 ThresholdNoisyReset::ThresholdNoisyReset(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -3747,7 +3747,7 @@ void ThresholdNoisyReset::update(Tissue &T, DataMatrix &cellData,
 
 ThresholdResetAndCount::ThresholdResetAndCount(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indexes
     //
@@ -3818,7 +3818,7 @@ void ThresholdResetAndCount::update(Tissue &T, DataMatrix &cellData,
 }
 
 FlagNoisyReset::FlagNoisyReset(std::vector<double> &paraValue,
-                               std::vector<std::vector<size_t>> &indValue) {
+                               std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -3888,7 +3888,7 @@ void FlagNoisyReset::update(Tissue &T, DataMatrix &cellData,
 
 ThresholdAndFlagNoisyReset::ThresholdAndFlagNoisyReset(
     std::vector<double> &paraValue,
-    std::vector<std::vector<size_t>> &indValue) {
+    std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -3963,7 +3963,7 @@ void ThresholdAndFlagNoisyReset::update(Tissue &T, DataMatrix &cellData,
 }
 
 FlagAddValue::FlagAddValue(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue) {
+                           std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -4019,7 +4019,7 @@ void FlagAddValue::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 }
 
 CopyVariable::CopyVariable(std::vector<double> &paraValue,
-                           std::vector<std::vector<size_t>> &indValue) {
+                           std::vector<std::vector<size_t> > &indValue) {
     //
     // Do some checks on the parameters and variable indeces
     //
@@ -4073,7 +4073,7 @@ void CopyVariable::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
 }
 
 DebugReaction::DebugReaction(std::vector<double> &paraValue,
-                             std::vector<std::vector<size_t>> &indValue) {}
+                             std::vector<std::vector<size_t> > &indValue) {}
 
 void DebugReaction::derivs(Tissue &T, DataMatrix &cellData,
                            DataMatrix &wallData, DataMatrix &vertexData,
