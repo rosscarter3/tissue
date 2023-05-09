@@ -208,7 +208,7 @@ DiffusionSimpleOne::
     }
     // Set the variable values
     //
-    setId("DiffusionSimple");
+    setId("Diffusion::SimpleOne");
     setParameter(paraValue);
     setVariableIndex(indValue);
 

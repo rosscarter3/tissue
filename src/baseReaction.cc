@@ -410,16 +410,18 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
         return new Gsrn2(paraValue, indValue);
 
     // transport.h,transport.cc
-    else if (idValue == "MembraneDiffusionSimple")
+    // Namespace Diffusion
+    else if (idValue == "Diffusion::MembraneSimple" || idValue == "MembraneDiffusionSimple")
         return new MembraneDiffusionSimple(paraValue, indValue);
-    else if (idValue == "DiffusionSimple")
+    else if (idValue == "Diffusion::Simple" || idValue == "DiffusionSimple")
         return new DiffusionSimple(paraValue, indValue);
-    else if (idValue == "DiffusionSimpleOne")
+    else if (idValue == "Diffusion::SimpleOne" || idValue == "DiffusionSimpleOne")
         return new DiffusionSimpleOne(paraValue, indValue);
-    else if (idValue == "DiffusionConductiveSimple")
+    else if (idValue == "Diffusion::ConductiveSimple" || idValue == "DiffusionConductiveSimple")
         return new DiffusionConductiveSimple(paraValue, indValue);
-    else if (idValue == "Diffusion2D")
+    else if (idValue == "Diffusion::2D" || idValue == "Diffusion2D")
         return new Diffusion2d(paraValue, indValue);
+    // Namespace Transport
     else if (idValue == "ActiveTransportCellEfflux")
         return new ActiveTransportCellEfflux(paraValue, indValue);
     else if (idValue == "DiffusionActiveTransportCell")
