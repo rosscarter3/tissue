@@ -419,7 +419,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
         return new DiffusionSimpleOne(paraValue, indValue);
     else if (idValue == "Diffusion::ConductiveSimple" || idValue == "DiffusionConductiveSimple")
         return new DiffusionConductiveSimple(paraValue, indValue);
-    else if (idValue == "Diffusion::2D" || idValue == "Diffusion2D")
+    else if (idValue == "Diffusion::2D" || idValue == "Diffusion2D"
+	     || idValue == "Diffusion::2d" || idValue == "Diffusion2d" )
         return new Diffusion2d(paraValue, indValue);
     // Namespace Transport
     else if (idValue == "ActiveTransportCellEfflux")
