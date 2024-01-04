@@ -413,23 +413,32 @@ void CombineDerivatives::
             sisters.resize(counter);
             sisters[counter - 1].push_back(tmpsisters[i][0]);
             sisters[counter - 1].push_back(tmpsisters[i][1]);
-            for (size_t j = i + 1; j < N; j++)
-                if (tmpsisters[j][2] == 0) {
-                    size_t M = sisters[counter - 1].size();
-                    size_t ww = 0;
-                    for (size_t k = 0; k < M; ++k) {
-                        if (tmpsisters[j][0] == sisters[counter - 1][k])
-                            ww += 1;
-                        if (tmpsisters[j][1] == sisters[counter - 1][k])
-                            ww += 2;
+            size_t j=i+1;
+            size_t M=sisters[counter-1].size();
+            while(j<N){ //going through other tmpsisters to see if other pairs need to be in this row 
+                if(tmpsisters[j][2]==0){
+                    if (M<sisters[counter-1].size()){ //need to reset while loop where sisters has increased as maybe inlcude a vertex index which didn't get picked up as a sister before, see logged issue 36 for details
+                        M=sisters[counter-1].size();
+                        j=i+1;
                     }
-                    if (ww == 1)
-                        sisters[counter - 1].push_back(tmpsisters[j][1]);
-                    if (ww == 2)
-                        sisters[counter - 1].push_back(tmpsisters[j][0]);
-                    if (ww != 0)
-                        tmpsisters[j][2] = counter;
+                    size_t ww=0;
+                    for(size_t k=0; k<M; ++k){
+                        if(tmpsisters[j][0]==sisters[counter-1][k])
+                            ww+=1;
+                        if(tmpsisters[j][1]==sisters[counter-1][k])
+                            ww+=2;
+                    }
+                    if(ww==1){
+                        sisters[counter-1].push_back(tmpsisters[j][1]);
+                    }
+                    if(ww==2){
+                        sisters[counter-1].push_back(tmpsisters[j][0]);
+                    }
+                    if(ww!=0)
+                        tmpsisters[j][2]=counter;
                 }
+                j++;
+            }
             counter++;
         }
 }
