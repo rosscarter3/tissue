@@ -14,7 +14,6 @@
 #include "tissue.h"
 #include "baseCompartmentChange.h"
 
-///
 /// @brief Namespace for classes describing cell division rules.
 ///
 /// All divisions are described by a flag and an update function where the first one flags when it is time to
@@ -23,8 +22,10 @@
 ///
 /// @ see BaseCompartmentChange
 namespace Division {
+
+  /// @brief Divides a cell when volume above a threshold,
+  /// with new wall perpendicular to the longest wall segment.
   ///
-  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular to the longest wall segment.
   /// Divides a cell when volume above a threshold. New wall is created
   /// prependicular to the longest cell wall. In a model file it is defined as
   /// 
@@ -65,8 +66,8 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
 
-  ///
-  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular to the longest wall segment.
+  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular
+  /// to the longest wall segment.
   ///
   /// Divides a cell when volume above a threshold. New wall is created
   /// prependicular to the longest cell wall. In a model file it is defined as
@@ -108,8 +109,8 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
-  ///
-  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular to the longest wall segment.
+  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular
+  /// to the longest wall segment.
   ///
   /// Divides a cell when volume above a threshold in 3D with centerTriangulation. New wall is created
   /// prependicular to the longest cell wall. In a model file it is defined as
@@ -151,8 +152,8 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
-  ///
-  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular to the longest wall segment.
+  /// @brief Divides a cell when volume above a threshold, with new wall perpendicular
+  /// to the longest wall segment.
   ///
   /// Creates a branch as
   /// @verbatim
@@ -193,7 +194,6 @@ namespace Division {
   };
   
   
-  ///
   /// @brief Divides a cell when volume above a threshold and cell close enough to 'apex'
   ///
   /// Divides a cell when volume above a threshold and cell within a distance
@@ -229,8 +229,7 @@ namespace Division {
   
   /// @brief Divides a cell when volume above a threshold in 3D
   /// Divides a cell when volume above a threshold. Same as
-  /// Division::VolumeViaLongestWall but used for surfaces in 3D.
-  
+  /// Division::VolumeViaLongestWall but used for surfaces in 3D.  
   class VolumeViaLongestWall3D : public BaseCompartmentChange {
     
   public:
@@ -258,7 +257,6 @@ namespace Division {
   /// @brief Divides a cell when volume above a threshold in 3D
   /// Divides a cell when volume above a threshold. Same as
   /// Division::VolumeViaLongestWall but used for surfaces in 3D.
-  
   class VolumeViaShortestWall3D : public BaseCompartmentChange {
     
   public:
@@ -284,7 +282,6 @@ namespace Division {
   };
 
 
-  ///
   /// @brief Divides a cell when volume above a threshold in 3D and distance to apex smaller than th
   ///
   /// Divides a cell when volume above a threshold. Same as
@@ -320,8 +317,7 @@ namespace Division {
   
   /// @brief Divides a cell when volume above a threshold
   /// Divides a cell when volume above a threshold. New wall is created
-  ///  prependicular to maximal strain rate.
-  
+  ///  prependicular to maximal strain rate.  
   class VolumeViaStrain : public BaseCompartmentChange {
     
   public:
@@ -349,7 +345,6 @@ namespace Division {
   /// @brief Divides a cell when volume above a threshold
   /// Divides a cell when volume above a threshold. New wall is created
   /// prependicular to direction given as cell variable.
-  
   class VolumeViaDirection : public BaseCompartmentChange {
     
   public:
@@ -377,10 +372,10 @@ namespace Division {
   /// @brief Divides a cell when volume above a threshold where the threshold
   /// is determined as an increasing Hill function of a concentration inside the
   /// cell.
+  ///
   /// Divides a cell when volume above a concentration-determined threshold.
   /// New wall is created
   /// in a random direction through center of mass.
-  
   class VolumeRandomDirectionConcentration : public BaseCompartmentChange {
     
   public:
@@ -405,10 +400,10 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
 
-    /// @brief Divides a cell when volume above a threshold
+  /// @brief Divides a cell when volume above a threshold
+  ///
   /// Divides a cell when volume above a threshold. New wall is created
   ///  in a random direction through center of mass.
-  
   class VolumeRandomDirection : public BaseCompartmentChange {
     
   public:
@@ -433,7 +428,6 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
   
-  ///
   /// @brief  Divides a cell when volume above a threshold in a random direction
   ///
   /// Divides a cell when volume above a threshold. New wall is created
@@ -490,6 +484,7 @@ namespace Division {
   };
   
   /// @brief Divides a cell when volume above a threshold
+  ///
   /// Divides a cell when volume above a threshold. New wall is created at shortest
   /// path that divides the volume in equal parts. 
   class VolumeViaShortestPath : public BaseCompartmentChange {
@@ -516,7 +511,6 @@ namespace Division {
 		DataMatrix &vertexDerivs );  
   };
 
-  ///
   /// @brief Divides a cell (in 2D) along the shortest path through center of mass (or random point).
   ///
   /// @details Divides a cell in 2D when volume above a threshold, @f$V_{threshold}@f$
@@ -580,7 +574,6 @@ namespace Division {
     double f(double a, double sigma, double A, double B);
   };
 
-  ///
   /// @brief Divides a cell (in 2D) along the shortest path through center of mass (or random point).
   ///
   /// @details Divides a cell in 2D when volume above a threshold, @f$V_{threshold}@f$
@@ -647,7 +640,6 @@ namespace Division {
     double f(double a, double sigma, double A, double B);
   };
 
-  ///
   /// @brief Divides a cell along the shortest path through center of mass (or random point).
   ///
   /// @details Divides a cell when volume above a threshold, with New wall created at shortest
@@ -729,7 +721,6 @@ namespace Division {
     double f(double a, double sigma, double A, double B);
   };
 
-  ///
   /// @brief Divides a cell given a Sizer/Timer/Adder rule to decide when to divide and a shortest path for
   /// deciding which plane of division.
   ///  
@@ -769,8 +760,7 @@ namespace Division {
   /// com index 
   /// restinglengthIndex
   ///
-  /// @endverbatim
-  
+  /// @endverbatim  
   class STAViaShortestPath : public BaseCompartmentChange
   {
   public:
@@ -951,14 +941,11 @@ namespace Division {
 
   /// @brief Division rule that is being used for the ATML1 model, so it is not meant to be used for generic models.
   /// Adapted from Division::ShortestPath
-
   ///  Divides a cell when a certain flag has value 1, with New wall created at shortest
   ///  path that divides the volume (not!) in equal parts. Using centerTriangulation and doubleLength 
   ///  formats are optional and can be done by setting the corresponding flags. 
   ///  
   ///  Other variables are reset, according to what needs to be done for the ATML1 model.
-
-
   ///
   /// @verbatim
   /// Division::FlagResetShortestPath 6 4 0 0 2 1 # 6 pars, 4 types of indices
@@ -995,7 +982,6 @@ namespace Division {
   ///
   ///
   /// @endverbatim
-
   class FlagResetShortestPath : public BaseCompartmentChange {
     
   public:

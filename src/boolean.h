@@ -14,7 +14,6 @@
 #include "myRandom.h"
 #include "tissue.h"
 
-///
 /// @brief Reactions implementing boolean rules via the update function
 ///
 /// @details This collection of reactions updates cell variables according to boolean
@@ -25,7 +24,6 @@
 ///
 namespace Boolean {
 
-///
 /// @brief This logical gate function makes a downstream species reversibly or
 /// irreversibly switch from 0 to 1 if the two input variables are 1.
 ///
@@ -37,7 +35,7 @@ namespace Boolean {
 /// index_var1       # index of the fist variable upstream the gate.
 /// index_var2       # index of the second variable upstream the gate.
 /// index_var_out    # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndGate : public BaseReaction {
    public:
     ///
@@ -87,7 +85,7 @@ class AndGate : public BaseReaction {
 /// index_var1         # index of the fist variable upstream the gate.
 /// index_var2         # index of the second variable upstream the gate.
 /// index_var_out      # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndNotGate : public BaseReaction {
    public:
     ///
@@ -139,7 +137,7 @@ class AndNotGate : public BaseReaction {
 /// index_var2   	   # index of the second variable upstream the gate.
 /// index_var3   	   # index of the third variable upstream the gate.
 /// index_var_out  	   # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndSpecialGate : public BaseReaction {
    public:
     ///
@@ -191,7 +189,7 @@ class AndSpecialGate : public BaseReaction {
 /// index_var2   	    # index of the second variable upstream the gate.
 /// index_var3   	    # index of the third variable upstream the gate.
 /// index_var_out  	    # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndSpecialGate2 : public BaseReaction {
    public:
     ///
@@ -248,7 +246,7 @@ class AndSpecialGate2 : public BaseReaction {
 /// index_var2   	    # index of the second variable upstream the gate.
 /// index_var3   	    # index of the third variable upstream the gate.
 /// index_var_out  	    # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndSpecialGate3 : public BaseReaction {
    public:
     ///
@@ -300,7 +298,7 @@ class AndSpecialGate3 : public BaseReaction {
 /// index_var1   	 # index of the first variable upstream the gate.
 /// index_var2   	 # index of the second variable upstream the gate.
 /// index_var_out  	 # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndGateCount : public BaseReaction {
    public:
     ///
@@ -350,7 +348,7 @@ class AndGateCount : public BaseReaction {
 /// index_var1   	 # index of the fist variable upstream the gate.
 /// index_var2   	 # index of the second variable upstream the gate.
 /// index_var_out  	 # updated index where the output of the gate is written. @endverbatim
-///
+/// 
 class OrGateCount : public BaseReaction {
    public:
     ///
@@ -400,7 +398,7 @@ class OrGateCount : public BaseReaction {
 /// index_var1   	       # index of the fist variable upstream the gate.
 /// index_var2   	       # index of the second variable upstream the gate.
 /// index_var_out  	       # index where the output of the gate is written. @endverbatim
-///
+/// 
 class OrSpecialGateCount : public BaseReaction {
    public:
     ///
@@ -452,7 +450,7 @@ class OrSpecialGateCount : public BaseReaction {
 /// index_var1   	      # index of the first variable upstream the gate.
 /// index_var2   	      # index of the second variable upstream the gate.
 /// index_var_out  	      # index where the output of the gate is written. @endverbatim
-///
+/// 
 class AndThresholdsGate : public BaseReaction {
    public:
     ///

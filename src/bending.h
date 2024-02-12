@@ -11,12 +11,10 @@
 #include"tissue.h"
 #include"baseReaction.h"
 
-///
 /// @brief Bending describes reactions that generates mechanical updates of bending moments.
 ///
 namespace Bending {
   
-  /// 
   /// @brief Creates a bending resistance by a force towards the line connecting the neighboring 
   /// vertices 
   ///
@@ -79,7 +77,6 @@ namespace Bending {
 		DataMatrix &vertexDerivs );
   };
 
-  /// 
   /// @brief Creates a bending resistance by forces to keep an angle at a specific value
   ///
   /// @details Each vertex has a prefered angle, and a bendng moment is introduced to
@@ -154,7 +151,6 @@ namespace Bending {
 		DataMatrix &vertexDerivs );
   };
 
-  /// 
   /// @brief Initiates an angle variable to the current value of the angle at vertices
   ///
   /// @details Sets the prefered angle for a vertex to the initial calculated value.
@@ -225,7 +221,6 @@ namespace Bending {
 		  DataMatrix &vertexDerivs );
   };
   
-  /// 
   /// @brief Initiates an angle variable to the current value of the angle at vertices
   ///
   /// @details Sets the prefered angle for a vertex to the initial calculated value.

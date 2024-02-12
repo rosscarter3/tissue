@@ -1,10 +1,9 @@
-/**
- * Filename     : baseCompartmentChange.h
- * Description  : The common base for classes describing compartmentChange updates
- * Author(s)    : Henrik Jonsson (henrik@thep.lu.se)
- * Created      : April 2006
- * Revision     : $Id:$
- */
+// Filename     : baseCompartmentChange.h
+// Description  : The common base for classes describing compartmentChange updates
+// Author(s)    : Henrik Jonsson (henrik@thep.lu.se)
+// Created      : April 2006
+// Revision     : $Id:$
+//
 #ifndef BASECOMPARTMENTCHANGE_H
 #define BASECOMPARTMENTCHANGE_H
 
@@ -17,10 +16,9 @@
 class Tissue;
 class Cell;
 
-///
 /// @brief A base class for classes defining updates relating to changes in tissue size, e.g. cell division
 ///
-/// The BaseCompartmentChange class is a base class used when defining
+/// @details The BaseCompartmentChange class is a base class used when defining
 /// different types of "compartmentChange" classes. Each compartmentChange class uses a
 /// vector of parameters and variable indeces to calculate a derivative
 /// of model variables. The variable indeces are divided into multiple

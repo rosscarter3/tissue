@@ -16,7 +16,6 @@
 
 /// @brief Simulate stresses in an inflation deflation experiment
 ///
-///
 /// @details description reaction is designed for the patchtest style simulations. it
 /// applies a constant stress (s0 for t0) in x/y then a linear increse (to s1 over t1-t0)
 /// for a time
@@ -25,7 +24,7 @@
 /// s_y = (1 - s_aniso) * s_x
 ///
 /// assumes vertices are labelled as:
-///
+/// @verbatim
 ///            sy
 ///            ^
 ///            |
@@ -37,7 +36,8 @@
 ///            |
 ///            v
 ///            sy
-///
+/// @endverbatim
+/// In a model file the reaction is added as
 /// @verbatim
 /// InflationDeflationStresses 8 1 4
 /// s0 s1 s2
@@ -45,7 +45,6 @@
 /// s_aniso
 /// bl br tl tr
 /// @endverbatim
-
 class InflationDeflationStresses : public BaseReaction {
    public:
     InflationDeflationStresses(
@@ -68,7 +67,6 @@ class InflationDeflationStresses : public BaseReaction {
     double _time = 0.0;
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices in specified region
 ///
 /// @details A threshold is specified in a specific dimension and vertices on
@@ -86,7 +84,6 @@ class InflationDeflationStresses : public BaseReaction {
 ///
 /// @note This function sets the derivatives to zero, which means it has to be
 /// provided after reactions that update the vertex derivatives.
-///
 class VertexNoUpdateFromPosition : public BaseReaction {
    public:
     VertexNoUpdateFromPosition(std::vector<double> &paraValue,
@@ -97,11 +94,10 @@ class VertexNoUpdateFromPosition : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices with listed indices
 ///
 /// @details A list of vertex indices are specified for which vertex positions
-/// are not In the model file, the reaction is specified as:
+/// are not. In the model file, the reaction is specified as:
 /// @verbatim
 /// VertexNoUpdateFromIndex 0 1 N
 /// vertexIndex1 [vertexIndex2...vertexIndexN]
@@ -110,7 +106,6 @@ class VertexNoUpdateFromPosition : public BaseReaction {
 ///
 /// @note This function sets the derivatives to zero, which means it has to be
 /// provided after reactions that update the vertex derivatives.
-///
 class VertexNoUpdateFromIndex : public BaseReaction {
    public:
     VertexNoUpdateFromIndex(std::vector<double> &paraValue,
@@ -121,7 +116,6 @@ class VertexNoUpdateFromIndex : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives in the X direction to zero for vertices with listed indices
 ///
 /// @details A list of vertex indices are specified for which vertex positions
@@ -134,7 +128,6 @@ class VertexNoUpdateFromIndex : public BaseReaction {
 ///
 /// @note This function sets the derivatives in X to zero, which means it has to be
 /// provided after reactions that update the vertex derivatives.
-///
 class VertexNoUpdateFromIndexHoldX : public BaseReaction {
    public:
     VertexNoUpdateFromIndexHoldX(std::vector<double> &paraValue,
@@ -145,7 +138,6 @@ class VertexNoUpdateFromIndexHoldX : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives in the Y direction to zero for vertices with listed indices
 ///
 /// @details A list of vertex indices are specified for which vertex positions
@@ -169,7 +161,6 @@ class VertexNoUpdateFromIndexHoldY : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives in the Z direction to zero for vertices with listed indices
 ///
 /// @details A list of vertex indices are specified for which vertex positions
@@ -193,7 +184,6 @@ class VertexNoUpdateFromIndexHoldZ : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices with listed indices
 ///
 /// @details Freezes all of the vertices but the leading ones(at the tip).
@@ -221,7 +211,6 @@ class VertexNoUpdateFromList : public BaseReaction {
     std::vector<size_t> updateVertices;
 };
 
-///
 /// @brief randomizes the growth direction of tip cells(for two dim only)
 ///
 /// @details Freezes all of the vertices but the leading ones(at the tip).
@@ -250,7 +239,6 @@ class VertexRandTip : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving in x and/or y ...
 /// direction(s)
@@ -276,7 +264,6 @@ class VertexNoUpdateBoundary : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving parallel to the template
 /// edges. The boundary condition gets updated in each step.(not completely
@@ -301,7 +288,6 @@ class VertexNoUpdateBoundaryPtemplate : public BaseReaction {  // BB
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving parallel to the initial
 /// template edges the boundary is static.
@@ -334,7 +320,6 @@ class VertexNoUpdateBoundaryPtemplateStatic : public BaseReaction {  // BB
     size_t numBoundaryVertices;
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving parallel to the initial
 /// template edges the boundary is static.
@@ -371,7 +356,6 @@ class VertexNoUpdateBoundaryPtemplateStatic3D : public BaseReaction {  // BB
     size_t numSideCells;
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving parallel to the initial
 /// template edges the boundary is static.
@@ -402,14 +386,13 @@ class VertexNoUpdateBoundary3D : public BaseReaction {  // BB
     std::vector<double> bottomVertices, sideVertices;
 };
 
-///
 /// @brief Sets positional derivatives to zero for vertices at boundary so that
 /// boundary vertices would be restricted from moving parallel to the initial
 /// template edges the boundary is static.
 ///
-/// @details In the model file, the reaction is specified as:
+/// @details In the model file, the reaction is specified as
+/// (for holding the boundary vertices in all directions):
 /// @verbatim
-/// for holding the boundary vertices in all directions:
 /// VertexFromConstStressBoundary 8 0
 /// stress x
 /// stress y
@@ -419,7 +402,6 @@ class VertexNoUpdateBoundary3D : public BaseReaction {  // BB
 /// boundary left   x
 /// boundary top    y
 /// boundary bottom y
-///
 /// @endverbatim
 ///
 class VertexFromConstStressBoundary : public BaseReaction {  // BB
@@ -444,17 +426,14 @@ class VertexFromConstStressBoundary : public BaseReaction {  // BB
     double totaltime;
 };
 
+/// @brief For ad-hoc manipulation of the templates
 ///
-/// @brief for ad-hoc manipulation of the templates
-///
-/// @details In the model file, the reaction is specified as:
+/// @details In the model file, the reaction is specified as
+/// (for holding the boundary vertices in all directions):
 /// @verbatim
-/// for holding the boundary vertices in all directions:
-///
 /// manipulate 0 0
-///
 /// @endverbatim
-///
+/// @note Do not use unless you check the adHoc code.
 class manipulate : public BaseReaction {  // BB
 
    public:
@@ -472,7 +451,6 @@ class manipulate : public BaseReaction {  // BB
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Calculates cell polarity vector based on a vector and a measure for
 /// each cell wall and places it in the cell center. The vector field could be
 /// printed via a seperate vtk file using its own printState function.
@@ -512,20 +490,17 @@ class cellPolarity3D : public BaseReaction {  // BB
     std::vector<std::vector<double> > cellCentPol;
 };
 
-///
 /// @brief Diffusion in 3 dimensional templates assuming the same volume of the
 /// cells (for now ad-hoc)
 ///
 /// @details In the model file, the reaction is specified as:
 /// @verbatim
-///
 /// diffusion3D 1 1 3
 /// diff-constant
 ///
 /// conc_index
 /// neighborWall_index
 /// 3Dcell_index
-///
 /// @endverbatim
 ///
 class diffusion3D : public BaseReaction {  // BB
@@ -547,16 +522,16 @@ class diffusion3D : public BaseReaction {  // BB
     std::vector<std::vector<double> > faceArea;  // holds the area of the faces
 };
 
-///
 /// @brief Moves the complete tissue such that the maximal value in specified
-/// direction is constant
+/// direction (x/y/z) is constant (defined by maxPos).
 ///
-/// The translation is done at each update (i.e. after each ODE integration
-/// step)
-///
+/// @details The translation is done at each update (i.e. after each ODE integration
+/// step). In a model file the reaction is defined as: 
+/// @verbatim
+/// VertexTranslateToMax 1 1 1
 /// p_0 maxPos
 /// vI_00 positional index
-///
+/// @endverbatim
 class VertexTranslateToMax : public BaseReaction {
    public:
     VertexTranslateToMax(std::vector<double> &paraValue,
@@ -574,7 +549,6 @@ class VertexTranslateToMax : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Centers the tissue such that the center of mass is in origo
 ///
 /// @details The translation is done at each update (i.e. after each ODE
@@ -608,7 +582,6 @@ class CenterCOM : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Centers the tissue such that the center of mass is in origo including
 /// for central mesh points.
 ///
@@ -641,7 +614,6 @@ class CenterCOMcenterTriangulation : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Helper reaction that only calculates the PCA plane for every cell.
 ///
 /// Since calculating the PCA plane is computationally expensive, this
@@ -668,7 +640,6 @@ class CalculatePCAPlane : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Initiate the wall length variables to a factor times the distance
 /// between the two vertices
 ///
@@ -693,7 +664,6 @@ class InitiateWallLength : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Initiate the target area variable to a factor times the current cell
 /// volumes.
 ///
@@ -720,7 +690,6 @@ class InitiateTargetArea : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Initiate a wall variable to a constant value for all walls
 ///
 /// @details Initiate a wall variable to a constant value for all walls
@@ -745,7 +714,6 @@ class InitiateWallVariableConstant : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Adds additional vertices to all walls
 ///
 /// @details Wall 'meshing' is applied by inserting additional vertices for all
@@ -775,7 +743,6 @@ class InitiateWallMesh : public BaseReaction {
                 DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
 };
 
-///
 /// @brief Different well-defined derivatives used to check the strain direction
 /// update
 ///
@@ -830,7 +797,6 @@ class MoveVerticesRandomlyCapCylinder : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief scales the template by a factor via Initiate
 /// position of vertices and wall length variables will be scaled.
 ///
@@ -857,7 +823,6 @@ class scaleTemplate : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Copies vectors from one index to another in the cell vector
 /// at initiation (4 component after the indices will be copied).
 ///
@@ -889,7 +854,6 @@ class copyCellVector : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief scales the template by a factor via Initiate
 /// randomizes the MT direction of the cells within the cell plane
 ///
@@ -929,18 +893,14 @@ class restrictVertexRadially : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief A molecule is produced/created with constant rate in the cells
 /// located around CZ to creat phyllotactic pattern.
-///
-///
 ///
 /// @f[ \frac{dc}{dt} = k_c/Area @f] if cell index is in the given list
 /// Area will be  one if constant concentration(instead of amount) is needed to
 /// be produced
 ///
 /// In a model file the reaction is defined as
-///
 /// @verbatim
 /// creationPrimordiaTime 5 1 2
 /// k_c # creation rate
@@ -990,7 +950,6 @@ class CreationPrimordiaTime : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Updates list of vertices with a given force applied where the force
 /// is linearly increased from zero across a given time span (deltaT).
 ///
@@ -1046,7 +1005,6 @@ class VertexFromRotationalForceLinear : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
-///
 /// @brief Switches an output variable from 0 to 1 if an input variable is
 /// above a threshold.
 ///
@@ -1467,7 +1425,7 @@ class CopyVariable : public BaseReaction {
 };
 
 //
-// Typically, this reaction should not be used (restricted use) unless you are a developer.
+// @brief This reaction should not be used (restricted use) unless you are a developer.
 //
 class DebugReaction : public BaseReaction {
    public:
