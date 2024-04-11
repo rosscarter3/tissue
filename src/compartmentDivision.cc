@@ -2931,7 +2931,8 @@ ShortestPath2D::ShortestPath2D(std::vector<double> &paraValue,
         std::cerr
             << "Division::ShortestPath2D::ShortestPath2D() "
             << "Four parameters are used V_threshold, Lwall_fraction, "
-            << "Lwall_threshold, and CoM (1 = CoM, 0 = Random, [0:1] weighted com-random position)."
+            << "Lwall_threshold, and CoM (1 = CoM, 0 = Random, "
+	    << "[0:1] weighted com-random position)."
             << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -2945,12 +2946,13 @@ ShortestPath2D::ShortestPath2D(std::vector<double> &paraValue,
       std::exit(EXIT_FAILURE);
     }
 	
-    if ((indValue.size() == 2 && indValue[1].size() != 1) ||
+    if ((indValue.size() == 2 && (indValue[1].size() != 1 && indValue[1].size() != 3)) ||
         (indValue.size() != 1 && indValue.size() != 2)) {
         std::cerr << "Division::ShortestPath2D::ShortestPath2D() "
                   << "First level: Variable indices for volume dependent cell "
                   << "variables are used." << std::endl
-                  << "Second level (optional): Cell time (age) index."
+                  << "Second level (optional): Cell time (age) index and (optional)"
+		  << "two sister cells' size at division."
                   << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -3046,6 +3048,19 @@ void ShortestPath2D::
     size_t numWallTmp = wallData.size();
     assert(numWallTmp + 3 == T->numWall());
 
+    //(optional) Save sister cell sizes at division
+    if (numVariableIndexLevel() == 2 && numVariableIndex(1) == 3) {
+      size_t i = cell.index();
+      size_t iSister = cellData.size()-1;
+      double iSize = T->cell(i).calculateVolume(vertexData);
+      double iSisterSize = T->cell(iSister).calculateVolume(vertexData);
+      cellData[i][variableIndex(1, 1)] = iSize; 
+      cellData[i][variableIndex(1, 2)] = iSisterSize; 
+      cellData[iSister][variableIndex(1, 1)] = iSisterSize; 
+      cellData[iSister][variableIndex(1, 2)] = iSize; 
+    }
+
+    
     //  std::cerr<<"  after::  "<<std::endl;
     //  for(size_t k=0; k< cellData[cell.index()].size(); ++k)
     //    std::cerr<<cellData[cell.index()][k]<<"  ";

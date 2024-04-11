@@ -515,20 +515,23 @@ namespace Division {
   ///
   /// @details Divides a cell in 2D when volume above a threshold, @f$V_{threshold}@f$
   /// with new wall created at shortest path that divides the cell through COM
-  /// (almost Volume in equal parts), or through a random internal point.
+  /// (almost Volume in equal parts), or through a random internal point where p3 can set a weight
+  /// for combining both (@f$ p_{3} x_{c} + (1-p_{3}) x_{r} @f$.
   /// Parameters and variable indices are standard and in addition a time
   /// variable can be set and 'read' at division to measure time since previous division.
+  /// It is also optional to provide two indices to store the size of the two sisters after division.
   /// In a model file, the reaction is given by 
   /// @verbatim
-  /// Division::ShortestPath2D 4 2 K 1 
+  /// Division::ShortestPath2D 4 1[2] K [1/3] 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
   /// L^{wall}_{threshold} (disallowed closeness)
-  /// centerCom flag(0:random, 1:COM)
+  /// centerCom flag(0:random, 1:COM, [0:1] weighted in between)
   ///
   /// I_k (optional volume (and other variables that should be divided with size) related index to be updated)
   ///
-  /// cell time index (optional)
+  /// cell_time_index (optional)
+  /// sizeSister1Index sizeSister2Index (optional)
   /// @endverbatim
   /// @see Division::ShortestPath for 3D version also applicable for CenterTriangulation
   ///
@@ -642,16 +645,17 @@ namespace Division {
 
   /// @brief Divides a cell along the shortest path through center of mass (or random point).
   ///
-  /// @details Divides a cell when volume above a threshold, with New wall created at shortest
+  /// @details Divides a cell when volume above a threshold, with new wall created at shortest
   ///  path that divides the cell through COM (almost Volume in equal parts), or through a
-  /// random internal point. Using centerTriangulation and doubleLength 
+  /// random internal point where p3 can set the weight in between (@f$ p_{3} x_{c} + (1-p_{3}) x_{r} @f$).
+  /// Using centerTriangulation and doubleLength 
   /// formats are optional and can be done by setting the corresponding flags. 
   /// @verbatim
-  /// Division::ShortestPath 4 2 0/1 1 
+  /// Division::ShortestPath 4 1[2] 0/1 1/3 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
   /// L^{wall}_{threshold} (disallowed closeness)
-  /// centerCom flag(0:random, 1:COM)
+  /// centerCom flag(0:random, 1:COM, [0:1] weighted in between)
   ///
   /// I1 (optional volume related index to be updated)
   ///
@@ -659,18 +663,18 @@ namespace Division {
   /// @endverbatim
   /// or
   /// @verbatim
-  /// Division::ShortestPath 6 3 0/1 1 2 
+  /// Division::ShortestPath 6 3 0/1 1/3 2 
   /// V_{threshold} 
   /// L^{wall}_{frac} (relative of new wall)
   /// L^{wall}_{threshold} (disallowed closeness)
-  /// centerCom flag(0:random, 1:COM)
+  /// centerCom flag(0:random, 1:COM, [0:1] weighted inbetween)
   /// centerTriangulation flag (0/1)
   /// double length flag (0/1)
   ///
   /// I1 (optional volume related index to be updated)
   ///
-  /// cell time index(optional)
-  ///
+  /// cell_time_index(optional)
+  /// sister1SizeIndex sister2SizeIndex (optional)
   /// com index 
   /// restinglengthIndex
   ///
