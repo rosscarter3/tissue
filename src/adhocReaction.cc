@@ -31,13 +31,13 @@ InflationDeflationStresses::InflationDeflationStresses(
         exit(0);
     }
     // Set the variable values
-    //////////////////////////////////////////////////////////////////////
+    //
     setId("Inflation Deflation Stresses");
     setParameter(paraValue);
     setVariableIndex(indValue);
 
     // Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    //
     std::vector<std::string> tmp(numParameter());
     tmp[0] = "s0";
     tmp[1] = "s1";
@@ -106,7 +106,7 @@ VertexNoUpdateFromPosition::VertexNoUpdateFromPosition(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
-    //////////////////////////////////////////////////////////////////////
+    //
     if (paraValue.size() != 2) {
         std::cerr << "VertexNoUpdateFromPosition::"
                   << "VertexNoUpdateFromPosition() "
@@ -128,13 +128,13 @@ VertexNoUpdateFromPosition::VertexNoUpdateFromPosition(
         exit(0);
     }
     // Set the variable values
-    //////////////////////////////////////////////////////////////////////
+    //
     setId("VertexNoUpdateFromPosition");
     setParameter(paraValue);
     setVariableIndex(indValue);
 
     // Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    //
     std::vector<std::string> tmp(numParameter());
     tmp[0] = "threshold";
     tmp[1] = "direction";
@@ -489,7 +489,7 @@ void VertexRandTip::update(Tissue &T, DataMatrix &cellData,
     }
 }
 
-////////////////////////////////
+
 VertexNoUpdateBoundary::VertexNoUpdateBoundary(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t> > &indValue) {
@@ -2182,7 +2182,7 @@ VertexTranslateToMax::VertexTranslateToMax(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t> > &indValue) {
     // Do some checks on the parameters and variable indeces
-    //////////////////////////////////////////////////////////////////////
+    //
     if (paraValue.size() != 1) {
         std::cerr << "VertexTranslateToMax::VertexTranslateToMax() "
                   << "Uses one parameter, maxPos " << std::endl;
@@ -2195,13 +2195,13 @@ VertexTranslateToMax::VertexTranslateToMax(
         exit(0);
     }
     // Set the variable values
-    //////////////////////////////////////////////////////////////////////
+    //
     setId("VertexTranslateToMax");
     setParameter(paraValue);
     setVariableIndex(indValue);
 
     // Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    //
     std::vector<std::string> tmp(numParameter());
     tmp[0] = "maxPos";
     setParameterId(tmp);
@@ -2388,6 +2388,70 @@ void CenterCOMcenterTriangulation::update(Tissue &T, DataMatrix &cellData,
     }
 }
 
+CenterCellCOM::CenterCellCOM(std::vector<double> &paraValue,
+			     std::vector<std::vector<size_t> > &indValue) {
+  // Do some checks on the parameters and variable indeces
+  //
+  if (paraValue.size() != 0 && paraValue.size() != 1) {
+    std::cerr << "CenterCellCOM::CenterCellCOM() Only one optional parameter can be given "
+	      << "to specify cell (index) used as centre point for the tissue."
+	      << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  if (indValue.size() != 0) {
+    std::cerr << "CenterCOM::CenterCOM() No variable indices used.\n";
+    std::exit(EXIT_FAILURE);
+  }
+
+  // Set the variable values
+  //
+  setId("CenterCellCOM");
+  setParameter(paraValue);
+  setVariableIndex(indValue);
+
+  // Set the parameter identities
+  //
+  std::vector<std::string> tmp(numParameter());
+  setParameterId(tmp);
+}
+
+void CenterCellCOM::initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                         DataMatrix &vertexData, DataMatrix &cellDerivs,
+                         DataMatrix &wallDerivs, DataMatrix &vertexDerivs) {
+    update(T, cellData, wallData, vertexData, 0.0);
+}
+
+void CenterCellCOM::derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs) {}
+
+void CenterCellCOM::derivsWithAbs(Tissue &T, DataMatrix &cellData,
+                              DataMatrix &wallData, DataMatrix &vertexData,
+                              DataMatrix &cellDerivs, DataMatrix &wallDerivs,
+                              DataMatrix &vertexDerivs, DataMatrix &sdydtCell,
+                              DataMatrix &sdydtWall, DataMatrix &sdydtVertex) {}
+
+void CenterCellCOM::update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+			   DataMatrix &vertexData, double h) {
+
+  //Default 0 but can be overridden
+  size_t cellIndex = 0;
+  if (numParameter()) {
+    cellIndex = parameter(0);
+  }
+  size_t numVertices = vertexData.size();
+  size_t dimension = vertexData[0].size();
+
+  
+  std::vector<double> com = T.cell(cellIndex).positionFromVertex(vertexData);  
+  for (size_t i = 0; i < numVertices; ++i) {
+    for (size_t d = 0; d < dimension; ++d) {
+      vertexData[i][d] -= com[d];
+    }
+  }
+}
+
 CalculatePCAPlane::CalculatePCAPlane(
     std::vector<double> &paraValue,
     std::vector<std::vector<size_t> > &indValue) {
@@ -2407,13 +2471,13 @@ CalculatePCAPlane::CalculatePCAPlane(
         exit(0);
     }
     // Set the variable values
-    //////////////////////////////////////////////////////////////////////
+    //
     setId("CalculatePCAPlane");
     setParameter(paraValue);
     setVariableIndex(indValue);
 
     // Set the parameter identities
-    //////////////////////////////////////////////////////////////////////
+    //
     std::vector<std::string> tmp(numParameter());
     tmp[0] = "onlyInUpdateFlag";
     setParameterId(tmp);

@@ -582,6 +582,46 @@ class CenterCOM : public BaseReaction {
                 DataMatrix &vertexData, double h);
 };
 
+/// @brief Centers the tissue such that the center of mass of specific cell is in origo
+///
+/// @details The translation is done at each update (i.e. after each ODE
+/// integration step), mainly for plotting by keeping the tissue centered around a specific cell.
+/// Handy for following e.g. an apical cell.
+///
+/// In a model file the reaction is given by:
+/// @verbatim
+/// CenterCellCOM 0 0
+/// @endverbatim
+/// where it assumed to center around cell 0, or
+/// @verbatim
+/// CenterCellCOM 1 0
+/// cellIndex
+/// @endverbatim
+/// where the centering will be around cell given as parameter.
+///
+class CenterCellCOM : public BaseReaction {
+   public:
+    CenterCellCOM(std::vector<double> &paraValue,
+              std::vector<std::vector<size_t> > &indValue);
+
+    void initiate(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                  DataMatrix &vertexData, DataMatrix &cellDerivs,
+                  DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, DataMatrix &cellDerivs,
+                DataMatrix &wallDerivs, DataMatrix &vertexDerivs);
+
+    void derivsWithAbs(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                       DataMatrix &vertexData, DataMatrix &cellDerivs,
+                       DataMatrix &wallDerivs, DataMatrix &vertexDerivs,
+                       DataMatrix &sdydtCell, DataMatrix &sdydtWall,
+                       DataMatrix &sdydtVertex);
+
+    void update(Tissue &T, DataMatrix &cellData, DataMatrix &wallData,
+                DataMatrix &vertexData, double h);
+};
+
 /// @brief Centers the tissue such that the center of mass is in origo including
 /// for central mesh points.
 ///
