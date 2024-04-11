@@ -2931,17 +2931,26 @@ ShortestPath2D::ShortestPath2D(std::vector<double> &paraValue,
         std::cerr
             << "Division::ShortestPath2D::ShortestPath2D() "
             << "Four parameters are used V_threshold, Lwall_fraction, "
-            << "Lwall_threshold, and COM (1 = COM, 0 = Random)."
+            << "Lwall_threshold, and CoM (1 = CoM, 0 = Random, [0:1] weighted com-random position)."
             << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
+    if (paraValue[3]<0.0 || paraValue[3]>1.0) {
+      std::cerr
+	<< "Division::ShortestPath2D::ShortestPath2D() "
+	<< "COM flag (fourth parameter) needs to be in [0:1] "
+	<< "(1 = CoM, 0 = Random, [1:0] weighted CoM-random position)."
+	<< std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+	
     if ((indValue.size() == 2 && indValue[1].size() != 1) ||
         (indValue.size() != 1 && indValue.size() != 2)) {
         std::cerr << "Division::ShortestPath2D::ShortestPath2D() "
                   << "First level: Variable indices for volume dependent cell "
                   << "variables are used." << std::endl
-                  << "Second level (optional): Cell time index."
+                  << "Second level (optional): Cell time (age) index."
                   << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -2956,7 +2965,7 @@ ShortestPath2D::ShortestPath2D(std::vector<double> &paraValue,
     tmp[0] = "V_threshold";
     tmp[1] = "Lwall_fraction";
     tmp[2] = "Lwall_threshold";
-    tmp[3] = "COM";
+    tmp[3] = "CoM";
     setParameterId(tmp);
 }
 
@@ -3059,21 +3068,22 @@ std::vector<ShortestPath2D::Candidate> ShortestPath2D::
 
     assert(cell.numWall() > 1);
 
-    std::vector<double> o;
-
-    if (parameter(3) == 1) {
-        o = cell.positionFromVertex(vertexData);
-    } else {
-        try {
-            o = cell.randomPositionInCell(vertexData);
-        } catch (Cell::FailedToFindRandomPositionInCellException) {
-            return std::vector<Candidate>();
-        }
+    std::vector<double> x_c,x_r;
+    
+    x_c = cell.positionFromVertex(vertexData);
+    double ox = parameter(3)*x_c[0];
+    double oy = parameter(3)*x_c[1];
+    
+    if (parameter(3) != 1.0) { // position weighted with random position
+      try {
+	x_r = cell.randomPositionInCell(vertexData);
+      } catch (Cell::FailedToFindRandomPositionInCellException) {
+	return std::vector<Candidate>();
+      }
+      ox += (1.0-parameter(3))*x_r[0];
+      oy += (1.0-parameter(3))*x_r[1];
     }
-
-    double ox = o[0];  // central point COM if flaggged (p_3=1), random otherwise
-    double oy = o[1];
-
+    
     std::vector<Candidate> candidates;
 
     for (size_t i = 0; i < cell.numWall() - 1; ++i) {
@@ -3592,12 +3602,22 @@ ShortestPath::ShortestPath(std::vector<double> &paraValue,
         std::cerr
             << "Division::ShortestPath::ShortestPath() "
             << "Four or six parameters are used V_threshold, Lwall_fraction, "
-            << "Lwall_threshold, and COM (1 = COM, 0 = Random) "
+            << "Lwall_threshold, and COM (1 = COM, 0 = Random, "
+	    << "[1:0] weighted CoM-random position) " << std::endl
             << "If six parameters are used, two additional parameters are for "
-            << "centerTriangulation(1) and double resting length (1: double-edge-variables, "
-            << "0:single)."
+            << "centerTriangulation(1) and double resting length "
+	    << "(1: double-edge-variables, 0:single)."
             << std::endl;
         std::exit(EXIT_FAILURE);
+    }
+
+        if (paraValue[3]<0.0 || paraValue[3]>1.0) {
+      std::cerr
+	<< "Division::ShortestPath::ShortestPath() "
+	<< "COM flag (fourth parameter) needs to be in [0:1] "
+	<< "(1 = CoM, 0 = Random, [1:0] weighted CoM-random position)."
+	<< std::endl;
+      std::exit(EXIT_FAILURE);
     }
 
     if ((indValue.size() == 2 && indValue[1].size() != 1) ||
@@ -4009,21 +4029,22 @@ std::vector<ShortestPath::Candidate> ShortestPath::
 
     assert(cell.numWall() > 1);
 
-    std::vector<double> o;
+    std::vector<double> x_c,x_r;
 
-    if (parameter(3) == 1) {
-        o = cell.positionFromVertex(vertexData);
-    } else {
-        try {
-            o = cell.randomPositionInCell(vertexData);
-        } catch (Cell::FailedToFindRandomPositionInCellException) {
-            return std::vector<Candidate>();
-        }
+    x_c = cell.positionFromVertex(vertexData);
+    double ox = parameter(3)*x_c[0];
+    double oy = parameter(3)*x_c[1];
+
+    if (parameter(3) != 1.0) { // position weighted with random position
+      try {
+	x_r = cell.randomPositionInCell(vertexData);
+      } catch (Cell::FailedToFindRandomPositionInCellException) {
+	return std::vector<Candidate>();
+      }
+      ox += (1.0-parameter(3))*x_r[0];
+      oy += (1.0-parameter(3))*x_r[1];
     }
-
-    double ox = o[0];
-    double oy = o[1];
-
+    
     std::vector<Candidate> candidates;
 
     for (size_t i = 0; i < cell.numWall() - 1; ++i) {
