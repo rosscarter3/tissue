@@ -190,9 +190,9 @@ namespace Creation {
   /// @brief In each cell a molecule is produced/created with a rate dependent on three other molecules.
   ///
   /// @details The variable update is for each cell given by 
-  /// @f[ \frac{dc}{dt} = - k_c X Y @f]
-  /// where @f$ k_c @f$ is a constant parameter, @f$ c @f$ is the variable to be updated,
-  /// and @f$ X Y Z @f$ are the concentrations of the production-dependent molecules.
+  /// \f[ \frac{dc}{dt} = - k_c X Y \f]
+  /// where \f$ k_c \f$ is a constant parameter, \f$ c \f$ is the variable to be updated,
+  /// and \f$ X Y Z \f$ are the concentrations of the production-dependent molecules.
   /// In a model file the reaction is defined as
   /// @verbatim
   /// Creation::Three 1 2 1 3

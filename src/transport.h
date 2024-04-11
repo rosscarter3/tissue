@@ -402,8 +402,7 @@ class ActiveTransportCellEffluxMM : public BaseReaction {
 /// transport is between neighboring cells
 /// is described by:
 ///
-/// @f[ \frac{dA_i}{dt} =  \sum_{j} ( (p_0+p_1 [AUX]_i) A_{ij} )
-/// - \sum_{j} (p_2+ p_3 P_{ij}) A_i @f]
+/// @f[ \frac{dA_i}{dt} =  \sum_{j} ( (p_0+p_1 [AUX]_i) A_{ij} )- \sum_{j} (p_2+ p_3 P_{ij}) A_i @f]
 ///
 /// @f[ \frac{dA_{ij}}{dt} = (from above) + p_4 (A_{ji}-A_{ij}) @f]
 ///
@@ -421,10 +420,6 @@ class ActiveTransportCellEffluxMM : public BaseReaction {
 /// @endverbatim
 ///
 /// where the reaction assumes that each wall keeps two variables per membrane molecule.
-///
-///
-///
-
 class ActiveTransportWall : public BaseReaction {
    public:
     ActiveTransportWall(std::vector<double> &paraValue,
@@ -463,9 +458,6 @@ class ActiveTransportWall : public BaseReaction {
 ///
 /// where the reaction assumes that each wall keeps two variables of influx carrier (and flux) per membrane molecule.
 ///
-///
-///
-
 class InfluxActiveTransportCell : public BaseReaction {
    public:
     InfluxActiveTransportCell(std::vector<double> &paraValue,

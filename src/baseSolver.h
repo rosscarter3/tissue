@@ -15,7 +15,7 @@
 /// @brief A factory class for classes describing different numerical solvers
 /// for the ordinary differential equations
 ///
-/// Each solver is implemented inheriting the BaseSolver, and main differences will 
+/// @details Each solver is implemented inheriting the BaseSolver, and main differences will 
 /// be the constructor that is typically from reading infomration from a file and
 /// simulate() that implements the solver. Note that the different solvers may have
 /// different numbers of copies of the data structures cellData, wallDeata, vertexData
@@ -46,7 +46,7 @@ protected:
   BaseSolver(Tissue *T,std::ifstream &IN);
   virtual ~BaseSolver();
   
-  ///
+  /// @endverbatim
   /// @brief This function implements the factory method for initiating a
   /// numerical solver.
   ///
@@ -80,14 +80,14 @@ protected:
   ///
   /// @brief Updates the tissue variables from the current state of the internal variables
   ///
-  /// This uses the updated variables in cellData, wallData, and vertexData, and copies these 
+  /// @details This uses the updated variables in cellData, wallData, and vertexData, and copies these 
   /// into the Tissue structure. If 'numCellVariable' is given, only the first numCellVariable
   /// entries for each line in cellData is copied to the structured (to be used when extra
   /// variables (not the same in each line of the cellData matrix) are stored in cellData, e.g.
   /// when centerTriangulation has been applied). 
   /// 
   void setTissueVariables(size_t numCellVariable=size_t(-1)); 
-  ///
+  /// @endverbatim
   /// @brief General printing function
   ///
   /// @details This is the main print function for output data during a simulation. It has a couple
@@ -108,13 +108,13 @@ protected:
   /// @endverbatim 
   /// as well as specific methods.
   ///
-  /// @note Caveat: Not yet general, but will be...?
+  /// @see Related pages printFlag
   ///
   void print(std::ostream &os=std::cout);
   ///
   /// @brief Prints standard tissue init
   ///
-  /// Prints the current state in init format using the data matrices.
+  /// @details Prints the current state in init format using the data matrices.
   /// It also checks that sizes in data and tissue are equal. It will use the number of cell variables from
   /// tissue, which will then loose information if a center triangulation has been performed.
   ///
@@ -122,7 +122,7 @@ protected:
   ///
   /// @brief Prints tissue init with center triangulation stored in cell data
   ///
-  /// Prints the current state in init format using the data matrices.
+  /// @details Prints the current state in init format using the data matrices.
   /// It also checks that sizes in data and tissue are equal. It will use the number of cell variables from
   /// the data structure, and if no center triangulation has been initiated, it will create one using the 
   /// current cell centers.
@@ -131,14 +131,14 @@ protected:
   /// 
   /// @brief Prints init in Pawels FEM format
   ///
-  /// Prints the current state in Pawels FEM init format using vertexData and
+  /// @details Prints the current state in Pawels FEM init format using vertexData and
   /// tissue connections.
   ///
   void printInitFem(std::ostream &os) const;
   /// 
   /// @brief Prints init in a triangulated tissue format
   ///
-  /// Prints the current state in a triangulated tissue format using cellData, wallData, vertexData
+  /// @details Prints the current state in a triangulated tissue format using cellData, wallData, vertexData
   /// and tissue connections. It will do this in a triangulation with a vertex at the center of each
   /// cell. If centerTriangulation has already been applied, it will use this data directly, otherwise
   /// it will triangulate using the cell center calculated by the current vertex positions.

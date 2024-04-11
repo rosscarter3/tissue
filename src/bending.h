@@ -100,12 +100,9 @@ namespace Bending {
   /// For each angle three edges are involved and contribute (in all dimensions) to the update (assuming x-,x,x+
   /// are positions for the vertices:
   ///
-  /// @f[ \frac{dx_{-}}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}} 
-  /// \frac{1}{g} [(x-x_+)+(x-x_-) \frac{f x_2}{g x_1}] @f]
-  /// @f[ \frac{dx}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}}
-  /// \frac{1}{g} [(x_+ - x)(1+\frac{f x_1}{g x_2}) + (x_- - x) (1+\frac{f x_2}{g x_1})] @f]
-  /// @f[ \frac{dx_{+}}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}}
-  /// \frac{1}{g} [(x-x_-)+(x-x_+) \frac{f x_1}{g x_2}] @f]
+  /// @f[ \frac{dx_{-}}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}} \frac{1}{g} [(x-x_+)+(x-x_-) \frac{f x_2}{g x_1}] @f]
+  /// @f[ \frac{dx}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}} \frac{1}{g} [(x_+ - x)(1+\frac{f x_1}{g x_2}) + (x_- - x) (1+\frac{f x_2}{g x_1})] @f]
+  /// @f[ \frac{dx_{+}}{dt} = k_{\Theta} (\Theta-\Theta^{t}) \frac{1}{(1 - F^2)^{0.5}} \frac{1}{g} [(x-x_-)+(x-x_+) \frac{f x_1}{g x_2}] @f]
   ///
   /// The reaction expects a strength of the bending force, and the edge variable index for the angle. 
   /// The prefered angle is stored as a second wall variable. In a model file it is defined as:
