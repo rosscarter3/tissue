@@ -62,11 +62,10 @@ derivs(Tissue &T,
 	vertexData[vIPlus][0]*vertexDerivs[vI][1] +
 	vertexData[vI][0]*vertexDerivs[vIPlus][1];
     }
-    
+    areaDerivs *= 0.5;
     double fac = areaDerivs/area;
     for (size_t k=0; k<numVariableIndex(0); ++k)
-      cellDerivs[n][variableIndex(0,k)] -= cellData[n][variableIndex(0,k)]*
-	fac;
+      cellDerivs[n][variableIndex(0,k)] -= cellData[n][variableIndex(0,k)]*fac;
   }
 }
 
@@ -99,7 +98,7 @@ void Dilution::FromVertexDerivs::derivsWithAbs(Tissue &T,
 	vertexData[vIPlus][0]*vertexDerivs[vI][1] +
 	vertexData[vI][0]*vertexDerivs[vIPlus][1];
     }
-    
+    areaDerivs *= 0.5;
     double fac = areaDerivs/area;
     for (size_t k=0; k<numVariableIndex(0); ++k)
       cellDerivs[n][variableIndex(0,k)] -= cellData[n][variableIndex(0,k)]*
