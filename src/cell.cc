@@ -632,6 +632,50 @@ calculateVolumeCenterTriangulation( DataMatrix
   return area;
 }
 
+double Cell::
+calculateVolumeChange( const DataMatrix &vertexData,
+		       const DataMatrix &vertexDerivs) {
+
+  assert( numVertex() );
+  size_t dimension = vertex(0)->numPosition();
+  
+  if( dimension == 2 ) {
+    // Assuming vertices are sorted and using cross-product rule
+    double volumeChange=0.0;
+    for( size_t k=0 ; k<numVertex() ; ++k ) {
+      size_t vI = vertex(k)->index();
+      size_t vIPlus = vertex((k+1)%(numVertex()))->index();
+      volumeChange += vertexData[vIPlus][1]*vertexDerivs[vI][0] - 
+	vertexData[vI][1]*vertexDerivs[vIPlus][0] -
+	vertexData[vIPlus][0]*vertexDerivs[vI][1] +
+	vertexData[vI][0]*vertexDerivs[vIPlus][1];
+    }
+    volumeChange *= 0.5;
+    // By triangulating the cell and calculate difference in triangular areas when derivs
+    // added to positions
+    double volume = calculateVolume(vertexData);
+    volumeChange = 0.0;
+    for( size_t k=0  k<numVertex() ; ++k ) {
+      size_t vI = vertex(k)->index();
+      size_t vIPlus = vertex((k+1)%(numVertex()))->index();
+      
+      volumeChange += vertexData[vIPlus][1]*vertexDerivs[vI][0] - 
+	vertexData ][1]*vertexDerivs[vIPlus][0] -
+	vertexData[vIPlus][0]*vertexDerivs[vI][1] +
+	vertexData[vI][0]*vertexDerivs[vIPlus][1];
+    }
+
+
+    
+    return volumeChange;
+  }
+  else {
+    std::cerr << "Cell::calculateVolumeChange(vertexDerivsData) ERROR " << std::endl
+	      << " Only implemented for 2D." << std::endl;
+    exit(EXIT_FAILURE);
+  }
+}
+
 std::vector<double> Cell::positionFromVertex() 
 {
   assert( numVertex() );

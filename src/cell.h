@@ -388,6 +388,22 @@ class Cell {
 					     &vertexData,
 					     DataMatrix &cellData,
 					     size_t centerIndex);
+
+  /// @brief Calculate size change from vertexDerivs using cross-product rule
+  ///
+  /// @details Uses a cross-product rule of the wall derivatives directions to calculate the cell
+  /// area change. In two dimensions the calculation is:
+  ///
+  /// @f[ A = \frac{1}{2} | \sum_i^{vertex} (x_i y_{i+1} - y_i x_{i+1}) | @f]
+  /// 
+  /// Works only if the cell vertices are sorted/cyclic. The vertex
+  /// positions and derivatives used are taken from the provided matrix.
+  /// The volume change is returned.
+  ///
+  /// @note Currently only implemented for 2D.
+  double calculateVolumeChange( const DataMatrix &vertexData,
+				const DataMatrix &vertexDerivs);
+  
   ///
   /// @brief Calculates the cell center-of-mass position.
   ///

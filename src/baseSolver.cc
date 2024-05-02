@@ -700,14 +700,14 @@ void BaseSolver::print(std::ostream &os) {
         PVD_file::writeTwoWall(*T_, cellFile, wallFile, tCount);
     }
 
-    else if (printFlag_ ==
-             26) {  // Same as flag 25, but without printing the wall variables in
-                    // the output file with gnuplot format. This flag is printing
-                    // the vtk paired wall and gnuplot outputs (corresponding to
-                    // flags 2 and 5, respectively). The gnuplot output is written
-                    // in a file called tissue.gdata.
+    else if (printFlag_ == 26) {
+      // Same as flag 25, but without printing the wall variables in
+      // the output file with gnuplot format. This flag is printing
+      // the vtk paired wall and gnuplot outputs (corresponding to
+      // flags 2 and 5, respectively). The gnuplot output is written
+      // in a file called tissue.gdata.
 
-        // Generating the output in gnuplot format.
+      // Generating the output in gnuplot format.
 
         // Print the cells, first connected vertecis and then variables
         std::ofstream of;
@@ -717,20 +717,20 @@ void BaseSolver::print(std::ostream &os) {
         } else {
             of.open("tissue.gdata", std::ios_base::app | std::ios_base::out);
         }
-
+	
         size_t Nc = cellData_.size();
         // os << Nc << " " << numPrintVar << std::endl;
         for (size_t i = 0; i < Nc; ++i) {
-            of << "0 " << i << " " << t_ << " ";
-            for (size_t k = 0; k < cellData_[i].size(); ++k)
-                of << cellData_[i][k] << " ";
-            of << i << " " << T_->cell(i).calculateVolume(vertexData_) << " "
-               << T_->cell(i).numWall() << std::endl;
+	  of << i << " "  << tCount << " " << t_ << " ";
+	  for (size_t k = 0; k < cellData_[i].size(); ++k) { 
+	    of << cellData_[i][k] << " ";
+	  }
+	  of << T_->cell(i).calculateVolume(vertexData_) << " "
+	     << T_->cell(i).calculateVolumeChange(vertexData_,vertexDerivs_) << " "
+	     << T_->cell(i).numWall() << std::endl;
         }
-        of << std::endl;
-
+	of << std::endl;
         // Generating the vtk paired wall outputs.
-
         std::string pvdFile = "vtk/tissue.pvd";
         std::string cellFile = "vtk/VTK_cells.vtu";
         std::string wallFile = "vtk/VTK_walls.vtu";
