@@ -207,7 +207,7 @@ namespace WallGrowth {
       
   ///
   /// @brief Constant stress/strain-driven wall growth dependent on a
-  /// distance to an maximal coordinate (e.g. tip)
+  /// distance to an maximal vertex coordinate (e.g. tip) in specified dimension.
   ///
   /// @details Constant growth driven by a streched wall. The wall lengths, L, are
   /// updated only if the length is shorter than the distance between the
@@ -221,10 +221,10 @@ namespace WallGrowth {
   /// @f$p_4@f$ is a flag for using stretch/strain instead of stress
   /// @f$p_5@f$ is a flag for using growth proportional to wall length (not constant)
   /// @f$d_v@f$ is the distance between the two wall vertices.
-  /// @f$d@f$ is the distance between the max value and wall.
-  ///  In addition, the column index for the wall length, the distance
+  /// @f$d@f$ is the total (all dimensions) distance between the max value and wall.
+  /// In addition, the column index for the wall length, the distance
   /// coordinate should be given at first level and stress index in second.
-  ///
+  /// @note The difference to StressSpatialSingle is that the distance is the total (all dimensions) distance.
   class StressSpatial : public BaseReaction {
     
   private:
@@ -261,12 +261,12 @@ namespace WallGrowth {
   
   ///
   /// @brief Constant stress/strain-driven wall growth dependent on a
-  /// distance to an maximal coordinate (e.g. tip)
+  /// distance to an maximal vertex coordinate (e.g. tip) in specified dimension
   ///
   /// @details Constant growth driven by a streched wall. The wall lengths, L, are
   /// updated only if the length is shorter than the distance between the
-  ///  vertices of the wall and then according to
-  ///  @f[ \frac{dL}{dt} = p_{0} (d_{v}-L-p_{1}) \frac{p_{2}^{p_3}}{(p_{2}^{p_{3}}+d^{p_{3}})} @f]
+  /// vertices of the wall and then according to
+  /// @f[ \frac{dL}{dt} = p_{0} (d_{v}-L-p_{1}) \frac{p_{2}^{p_3}}{(p_{2}^{p_{3}}+d^{p_{3}})} @f]
   /// iff @f$(d_{v}-L) > p_{1}@f$.
   /// @f$p_0@f$ is the growth rate.
   /// @f$p_1@f$ is a stress/strain threshold
@@ -274,11 +274,11 @@ namespace WallGrowth {
   /// @f$p_3@f$ is the n_Hill of the spatial factor
   /// @f$p_4@f$ is a flag for using stretch/strain instead of stress
   /// @f$p_5@f$ is a flag for using growth proportional to wall length (not constant)
-  /// @f$d_v@f$ is the distance between the two wall vertices.
+  /// @f$d_v@f$ is the distance between the two wall vertices in the specified dimension.
   /// @f$d@f$ is the distance between the max value and wall.
-  ///  In addition, the column index for the wall length, the distance
-  ///  coordinate should be given at first level and stress index in second.
-  ///
+  /// In addition, the column index for the wall length, the distance
+  /// coordinate should be given at first level and stress index in second.
+  /// @note The difference to Stress Spatial is that the distance is measured in the specified dimension only.
   class StressSpatialSingle : public BaseReaction {
     
   private:
