@@ -45,9 +45,9 @@ endif
 ifeq ($(UNAME_S),Darwin)
 	# CXXFLAGS = -O3 -DNDEBUG -Wall -pedantic -ansi -std=c++11
 	# LDFLAGS = -O3 -DNDEBUG -Wall -pedantic -std=c++11
-	
-	CXXFLAGS += -stdlib=libc++ -I/sw/include/ -I/opt/local/include
-	LDFLAGS += -L/sw/lib/ -L/opt/local/lib/
+
+	CXXFLAGS += -stdlib=libc++ -I/sw/include/ -I/opt/local/include -I/opt/homebrew/include
+	LDFLAGS += -L/sw/lib/ -L/opt/local/lib/ -L/opt/homebrew/lib/
 endif
 
 # if on an M1 mac, use clang to fix linker bug in gcc
