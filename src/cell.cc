@@ -653,20 +653,12 @@ calculateVolumeChange( const DataMatrix &vertexData,
     volumeChange *= 0.5;
     // By triangulating the cell and calculate difference in triangular areas when derivs
     // added to positions
-    double volume = calculateVolume(vertexData);
-    volumeChange = 0.0;
-    for( size_t k=0  k<numVertex() ; ++k ) {
-      size_t vI = vertex(k)->index();
-      size_t vIPlus = vertex((k+1)%(numVertex()))->index();
-      
-      volumeChange += vertexData[vIPlus][1]*vertexDerivs[vI][0] - 
-	vertexData ][1]*vertexDerivs[vIPlus][0] -
-	vertexData[vIPlus][0]*vertexDerivs[vI][1] +
-	vertexData[vI][0]*vertexDerivs[vIPlus][1];
-    }
-
-
-    
+    //double volume = calculateVolume(vertexData);
+    //volumeChange = 0.0;
+    //for( size_t k=0 ; k<numVertex() ; ++k ) {
+    //size_t vI = vertex(k)->index();
+    //size_t vIPlus = vertex((k+1)%(numVertex()))->index();
+    //}    
     return volumeChange;
   }
   else {
