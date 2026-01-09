@@ -746,6 +746,8 @@ BaseReaction::createReaction(std::vector<double> &paraValue,
         return new MassAction::HillSimple(paraValue, indValue);
 
     // Namespace Initiation, initiation.h
+    else if (idValue == "Initiation::Random")
+        return new Initiation::Random(paraValue, indValue);
     else if (idValue == "Initiation::RandomBoolean")
         return new Initiation::RandomBoolean(paraValue, indValue);
     else if (idValue == "Initiation::RandomBooleanBiased")

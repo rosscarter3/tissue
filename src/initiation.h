@@ -98,6 +98,79 @@ namespace Initiation {
           double h);
   };
 
+    ///
+  /// @brief This rule sets a cell variable to a random value at initiation
+  ///
+  /// @details For each cell the given cell index variable is set to
+  /// restricting variable given by
+  ///
+  /// @f[ y_{ij} = p_[0] * R @f]
+  ///
+  /// where p_0 is multiplied with a random number 2f$ R \in [0:1] @f$.
+  /// seed is an integer to seed the random number.
+  /// In the model file the reaction is defined by
+  /// @verbatim
+  /// Initiation::Random 2 1 1
+  /// p seed
+  /// cell_var_index
+  /// @endverbatim
+  ///
+  class Random : public BaseReaction {
+
+    public:
+
+      double localTime_=0.0; //variable to update time using h in update function
+      double nextTime_=0.0; //variable updated to hold the next time it will launch the procedure
+      ///
+      /// @brief Main constructor
+      ///
+      /// This is the main constructor which sets the parameters and variable
+      /// indices that defines the reaction.
+      ///
+      /// @param paraValue vector with parameters
+      ///
+      /// @param indValue vector of vectors with variable indices
+      ///
+      /// @see BaseReaction::createReaction(std::vector<double> &paraValue,...)
+      ///
+      Random(std::vector<double> &paraValue, 
+	     std::vector< std::vector<size_t> > &indValue );
+
+      ///
+      /// @brief Derivative function for this reaction class (does nothing for this class).
+      ///
+      /// @see BaseReaction::derivs(Compartment &compartment,size_t species,...)
+      ///
+      void derivs(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &wallData,
+          DataMatrix &vertexData,
+          DataMatrix &cellDerivs,
+          DataMatrix &wallDerivs,
+          DataMatrix &vertexDerivs );
+
+      /// @brief Initiation made before simulation
+      ///
+      /// @see BaseReaction::initiate()
+      ///
+      void initiate(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          DataMatrix &cellderivs,
+          DataMatrix &wallderivs,
+          DataMatrix &vertexDerivs );        
+
+      ///
+      /// @see BaseReaction::update()
+      ///
+      void update(Tissue &T,
+          DataMatrix &cellData,
+          DataMatrix &walldata,
+          DataMatrix &vertexData,
+          double h);
+  };
+
   ///
   /// @brief This rule sets a cell variable to 1 with probability @f$p_{0}@f$, 0 otherwise with a bias disallowing setting cells where
   /// more than @$N_t@$ neighbour cells are on

@@ -127,6 +127,94 @@ namespace Initiation {
       }
     }
 
+    Random::
+    Random(std::vector<double> &paraValue,
+        std::vector< std::vector<size_t> >
+        &indValue )
+    {
+      // Do some checks on the parameters and variable indeces
+      //
+      if( paraValue.size() != 2 ) {
+        std::cerr << "Initiation::Random::"
+          << "Random() "
+          << "Uses first parameter maxVal to be multiplied with Random number in [0:1] as initiation." << std::endl
+		  << "The second parameter sets the seed of the random generator." << std::endl;
+	  exit(EXIT_FAILURE);
+      }
+      if( paraValue[0]<0.0 ){
+        std::cerr << "Initiation::Random::"
+          << "Random() "
+          << "First parameter needs to be a positive number." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+
+      if( indValue.size() != 1 || indValue[0].size() != 1 ) {
+        std::cerr << "Initiation::Random::"
+          << "Random() "
+          << "Index for cell variable to be initiated given." << std::endl;
+        exit(EXIT_FAILURE);
+      }
+      //Set the variable values
+      //
+      setId("Initiation::Random");
+      setParameter(paraValue);
+      setVariableIndex(indValue);
+
+      //Set the parameter identities
+      //
+      std::vector<std::string> tmp( numParameter() );
+      tmp[0] = "p";
+      tmp[1] = "seed";
+
+      setParameterId( tmp );
+    }
+
+  void Random::
+    derivs(Tissue &T,
+        DataMatrix &cellData,
+        DataMatrix &wallData,
+        DataMatrix &vertexData,
+        DataMatrix &cellDerivs,
+        DataMatrix &wallDerivs,
+        DataMatrix &vertexDerivs )
+    {
+      // nothing
+    }
+
+  void Random::
+    initiate(Tissue &T,
+        DataMatrix &cellData,
+        DataMatrix &wallData,
+        DataMatrix &vertexData,
+        DataMatrix &cellDerivs,
+        DataMatrix &wallDerivs,
+        DataMatrix &vertexDerivs)
+    {
+      // Initiate with given seed
+      long int idum = long(parameter(1));
+      myRandom::sran3(idum);
+
+      //Do the initiation for each cell
+      size_t numCells = T.numCell();
+
+      size_t cIndex = variableIndex(0,0);
+      double maxRate = parameter(0);
+      //For each cell
+      for (size_t cellI = 0; cellI < numCells; ++cellI) {
+        cellData[cellI][cIndex] = maxRate*myRandom::ran3();
+      }
+    }
+
+  void Random::
+    update(Tissue &T,
+        DataMatrix &cellData,
+        DataMatrix &walldata,
+        DataMatrix &vertexData,
+        double h) 
+    {
+      // Nothing
+    }
+
   RandomBooleanBiased::
     RandomBooleanBiased(std::vector<double> &paraValue,
         std::vector< std::vector<size_t> >
