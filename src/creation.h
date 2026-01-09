@@ -12,19 +12,13 @@
 #include"baseReaction.h"
 #include<cmath>
 
-///
 /// @brief Namespace collecting reactions for molecular production
-///
 /// @details The reactions describe production (creation) of molecules in
 /// terms of concentrations. They may include advanced rules, while transcription
 /// is taken care of by Grn.
-///
 /// @see Grn
-///
 namespace Creation {
-  ///
   /// @brief In each cell a molecule is produced/created with a constant rate
-  ///
   /// @details The variable update is for each cell given by 
   /// @f[ \frac{dc}{dt} = k_c @f]
   /// where @f$ k_c @f$ is a constant parameter, and @f$ c @f$ is the variable to be updated.
@@ -34,7 +28,6 @@ namespace Creation {
   /// k_c
   /// c_index
   /// @endverbatim
-  ///
   class Zero : public BaseReaction {    
   public:    
     ///
@@ -81,9 +74,7 @@ namespace Creation {
 		       DataMatrix &sdydtVertex );    
   };
 
-  ///
   /// @brief In each cell a molecule is produced/created with a rate dependent on another molecule.
-  ///
   /// @details The variable update is for each cell given by 
   /// @f[ \frac{dc}{dt} = - k_c X @f]
   /// where @f$ k_c @f$ is a constant parameter, @f$ c @f$ is the variable to be updated,
@@ -95,7 +86,6 @@ namespace Creation {
   /// c_index
   /// X_index
   /// @endverbatim
-  ///
   class One : public BaseReaction {    
   public:
     ///
@@ -141,9 +131,7 @@ namespace Creation {
 		       DataMatrix &sdydtVertex );
   };
   
-  ///
   /// @brief In each cell a molecule is produced/created with a rate dependent on two other molecules.
-  ///
   /// @details The variable update is for each cell given by 
   /// @f[ \frac{dc}{dt} = - k_c X Y @f]
   /// where @f$ k_c @f$ is a constant parameter, @f$ c @f$ is the variable to be updated,
@@ -186,9 +174,7 @@ namespace Creation {
 		DataMatrix &vertexDerivs );
   };
 
-    ///
   /// @brief In each cell a molecule is produced/created with a rate dependent on three other molecules.
-  ///
   /// @details The variable update is for each cell given by 
   /// \f[ \frac{dc}{dt} = - k_c X Y \f]
   /// where \f$ k_c \f$ is a constant parameter, \f$ c \f$ is the variable to be updated,
@@ -232,13 +218,11 @@ namespace Creation {
 		DataMatrix &vertexDerivs );
   };
 
-  ///
   /// @brief In each cell a molecule is produced/created with rate dependent on the distance of the cell from the center
-  ///
   /// @details The variable update is for each cell given by ( SIGN= -1, production inside the sphere)
-  /// @f[ \frac{dc}{dt} = V \frac{r^n + R^n}{R^n} @f]
+  /// @f[ \frac{dc}{dt} = V \frac{R^n}{r^n + R^n} @f]
   /// or (SIGN = +1, production outside the sphere),
-  /// @f[ \frac{dc}{dt} = V \frac{r^n + R^n}{R^n} @f]
+  /// @f[ \frac{dc}{dt} = V \frac{r^n}{r^n + R^n} @f]
   /// where @f$ V, R, n, SIGN@f$ are constant parameters, @f$ c @f$ is the variable to be updated
   /// and @f$ r @f$ the distance of the cell to the center of the template.
   /// In a model file the reaction is defined as
@@ -247,7 +231,6 @@ namespace Creation {
   /// V R n SIGN
   /// c_index
   /// @endverbatim
-  ///
   class SpatialSphere : public BaseReaction {
   public:
     ///
