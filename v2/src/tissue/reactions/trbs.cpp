@@ -85,20 +85,25 @@ public:
               };
               double length[3] = {dist(0, 1), dist(1, 2), dist(0, 2)};
 
-              // Resting area: numerically stable Heron (edges sorted).
+              // Resting area: numerically stable Heron (edges sorted),
+              // guarded against degenerate/inverted trial configurations so a
+              // bad adaptive-solver trial step is rejected by error control
+              // instead of poisoning the state with NaNs.
               double lhe[3] = {restingLength[0], restingLength[1],
                                restingLength[2]};
               std::sort(lhe, lhe + 3);
               const double aHe = lhe[2], bHe = lhe[1], cHe = lhe[0];
+              const double heron = ((bHe + cHe) + aHe) * (-(aHe - bHe) + cHe) *
+                                   ((aHe - bHe) + cHe) * ((bHe - cHe) + aHe);
               const double restingArea =
-                  0.25 * std::sqrt(((bHe + cHe) + aHe) *
-                                   (-(aHe - bHe) + cHe) * ((aHe - bHe) + cHe) *
-                                   ((bHe - cHe) + aHe));
+                  0.25 * std::sqrt(std::max(heron, 1e-12));
 
               // Resting angles (law of cosines) and stiffnesses.
               auto angleOf = [&](double la, double lb, double opposite) {
-                return std::acos((la * la + lb * lb - opposite * opposite) /
-                                 (2.0 * la * lb));
+                double arg = (la * la + lb * lb - opposite * opposite) /
+                             (2.0 * la * lb);
+                arg = std::max(-1.0 + 1e-9, std::min(1.0 - 1e-9, arg));
+                return std::acos(arg);
               };
               const double angle0 =
                   angleOf(restingLength[0], restingLength[2], restingLength[1]);

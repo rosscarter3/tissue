@@ -18,14 +18,14 @@ CenterTriangulation::Initiate 0 1 1
 7       # CT data (center + internal edge lengths) appended after 7 cell vars
 
 VertexFromTRBScenterTriangulation 2 2 1 1
-100.0   # Y_mod (2D Young modulus of the wall; elastic strains held just
-        #   above yield so shape follows the grown rest geometry)
+2500.0  # Y_mod (Y and P scaled x25: same strains, 25x faster mechanics
+        #   so the overdamped arm rotation reaches biological rates)
 0.3     # P_ratio (Poisson)
 0       # wall length index
 7       # CT start index
 
 Pressure3D::CenterTriangulation 1 1 1
-0.07    # P_force (turgor per unit shell area)
+1.75    # P_force (turgor per unit shell area)
 7       # CT start index
 
 WallGrowth::StrainSaturationHill 6 3 1 1 1

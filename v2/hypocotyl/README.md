@@ -95,3 +95,45 @@ model uses the analytic toroidal formulas; a 3D shell version (legacy
 `hypocotyl3D` TRBS reactions, not yet ported) would remove the discrepancy.
 The `Pressure2D::CapForce` reaction documents why the naive 2D fix fails
 for closed hooks.
+
+
+## 3D TRBS shell model (hook3d)
+
+The definitive version: the hypocotyl epidermis as a closed, turgid 3D
+surface (720-cell tube + end caps at full resolution; production mesh 350
+cells), with proper 2D wall elasticity via triangular biquadratic springs
+(`VertexFromTRBScenterTriangulation`, exact port of the legacy TRBS force
+kernel) and shell-normal turgor (`Pressure3D::CenterTriangulation`). Hoop
+stress, the pressure cap force and the toroidal stress distribution are real
+physics here, so the hook opens the way the organ does: the inner side
+expands longitudinally and the arms follow.
+
+Mechanism (hook3d.model): uniform turgor loads the shell; axial walls and
+internal edges yield above a strain threshold (Lockhart), saturating at a
+maximal length (outer hook cells are born near saturation - the
+geometry-given differential); auxin (high on the inner side in darkness)
+represses yielding; illumination at t=0 depletes it.
+
+Two numerical lessons encoded here:
+1. The overdamped per-vertex drag of the framework suppresses organ-scale
+   rotations (the arm swing) by orders of magnitude - the reason the paper's
+   own model used quasi-static Newton-Raphson. Verified by a mobility test
+   (the grown state unrolls at 7 deg/h at 50x force scaling, 0.14 deg/h at
+   baseline). Fixed by scaling Y and P together (identical strains, faster
+   mechanics) and keeping the arms short.
+2. TRBS needs guarded acos/Heron evaluations so bad adaptive trial steps are
+   rejected by error control instead of NaN-poisoning the state.
+
+Results (`pipeline3d.py`; dark-equilibrated start at 161 deg):
+
+| t (h) | sim light | sim dark | experiment (light) |
+|---|---|---|---|
+| 0 | 161 | 161 | 159 |
+| 2 | 155 | 160 | 133 |
+| 5 | 104 | 161 | 63 |
+| 8 | 63 | 161 | 44 |
+| 10 | 43 | 162 | 35 |
+
+Inner hook arc extends 2.08x (exp 2-4x), outer 1.13x (exp 1.07x); the dark
+control is fully maintained. The ~1.5 h mid-phase lag tracks the auxin
+clearance time constant (k_d, k_growth are the tuning knobs).

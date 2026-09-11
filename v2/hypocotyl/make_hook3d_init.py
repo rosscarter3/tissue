@@ -24,10 +24,10 @@ R_HYP = 75.8
 LAMBDA_R = 2.88
 R_AXIS = LAMBDA_R * R_HYP
 BEND_DEG = 175.0            # relaxes toward ~160 deg under turgor
-BASAL_LEN = 150.0
-APICAL_LEN = 60.0
-N_BASAL, N_HOOK, N_APICAL = 8, 24, 4
-NCIRC = 20
+BASAL_LEN = 50.0   # short arms: minimize rotational drag
+APICAL_LEN = 40.0
+N_BASAL, N_HOOK, N_APICAL = 3, 24, 2
+NCIRC = 12
 
 AUXIN_BASE = 0.6
 AUXIN_MAX = 1.0

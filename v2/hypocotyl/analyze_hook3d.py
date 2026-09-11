@@ -4,8 +4,8 @@ tube-axis (ring centroids) and inner/outer surface arc lengths in the hook."""
 import math
 import sys
 
-NCIRC = 20
-N_BASAL, N_HOOK, N_APICAL = 8, 24, 4
+NCIRC = 12
+N_BASAL, N_HOOK, N_APICAL = 3, 24, 2
 NRINGS = N_BASAL + N_HOOK + N_APICAL + 1
 T_END = 10.0
 
