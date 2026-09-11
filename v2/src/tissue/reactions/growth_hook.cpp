@@ -136,5 +136,71 @@ public:
 TISSUE_REGISTER_REACTION(WallGrowthStrainSaturationHill,
                          "WallGrowth::StrainSaturationHill")
 
+// The same growth law applied to the center-triangulation internal edges
+// (center-to-vertex resting lengths stored in cell variables):
+//   dL_k/dt = k_growth * (eps_k - eps_th)+ * L_k * (1 - L_k/L_max)+ * H(c)
+// with eps_k the elastic strain of internal edge k and H the same Hill
+// gating on the OWN cell's concentration. Parameters as in
+// WallGrowth::StrainSaturationHill (6 parameters, strain mode); levels:
+// 0 = CT start index, 1 = cell concentration index.
+class CTWallGrowthStrainSaturationHill : public Reaction {
+public:
+  CTWallGrowthStrainSaturationHill(const ParameterList &p,
+                                   const IndexLevels &i) {
+    if (p.size() != 6)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainSaturationHill: uses six "
+          "parameters (k_growth, strain_threshold, L_max (0=off), K_Hill, "
+          "n_Hill, hill_flag).");
+    configure("CenterTriangulation::WallGrowth::StrainSaturationHill", p, i, 6,
+              {1, 1},
+              {"k_growth", "strain_threshold", "L_max", "K_Hill", "n_Hill",
+               "hill_flag"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &) override {
+    const size_t comIndex = variableIndex(0, 0);
+    const size_t concIndex = variableIndex(1, 0);
+    const size_t dim = vertexData.cols();
+    const double k = parameter(0);
+    const double threshold = parameter(1);
+    const double lMax = parameter(2);
+    const double n = parameter(4);
+    const double kHillN = std::pow(parameter(3), n);
+    const bool activating = parameter(5) == 1.0;
+    parallelFor(T.numCell(), [&](size_t b, size_t e) {
+      for (size_t c = b; c < e; ++c) {
+        const CellTopo &cell = T.cell(c);
+        const size_t lengthIndex = comIndex + dim;
+        const double cN = std::pow(cellData[c][concIndex], n);
+        const double hill =
+            activating ? cN / (kHillN + cN) : kHillN / (kHillN + cN);
+        for (size_t kk = 0; kk < cell.numVertex(); ++kk) {
+          const double L = cellData[c][lengthIndex + kk];
+          double d2 = 0.0;
+          for (size_t d = 0; d < dim; ++d) {
+            double diff =
+                vertexData[cell.vertices[kk]][d] - cellData[c][comIndex + d];
+            d2 += diff * diff;
+          }
+          const double eps = (std::sqrt(d2) - L) / L;
+          if (eps <= threshold)
+            continue;
+          double sat = 1.0;
+          if (lMax > 0.0) {
+            sat = 1.0 - L / lMax;
+            if (sat < 0.0)
+              sat = 0.0;
+          }
+          cellDerivs[c][lengthIndex + kk] +=
+              k * (eps - threshold) * L * sat * hill;
+        }
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CTWallGrowthStrainSaturationHill,
+                         "CenterTriangulation::WallGrowth::StrainSaturationHill")
+
 } // namespace
 } // namespace tissue
