@@ -143,10 +143,7 @@ public:
   void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
               Matrix &cellDerivs, Matrix &, Matrix &vertexDerivs) override {
     const size_t posIndex = variableIndex(0, 0);
-    const size_t dimension = vertexData.cols();
-    if (dimension != 3)
-      throw std::runtime_error(
-          "CenterTriangulation::EdgeSpring requires a 3D tissue.");
+    const size_t dimension = vertexData.cols(); // 2D or 3D
     const size_t lengthIndex = posIndex + dimension;
     const double kForce = parameter(0);
     const double fracAdh = parameter(1);
