@@ -65,9 +65,22 @@ Validation results on this machine (Apple M1):
   coefficients, then per-vertex summation — race-free and deterministic for
   *any* thread count.
 
-On a generated 40 000-cell / 80 400-wall tissue (growth + spring mechanics,
-RK5Adaptive), v2 finishes in ~1.2 s where the legacy simulator needs tens of
-minutes (see `bench` notes in the PR/commit message for exact numbers).
+Measured on a generated 40 000-cell / 80 400-wall tissue (wall growth +
+spring mechanics, RK5Adaptive, identical input files, Apple M1):
+
+| job | legacy | v2 | speedup |
+|---|---|---|---|
+| t=0..5, eps=1e-5 | 137.2 s (2502 steps) | 0.28 s (14 steps) | ~490x |
+| t=0..50, eps=1e-8 | killed after 865 s, unfinished | 1.2-1.4 s | >600x |
+| meristem tutorial (divisions, ~400 cells) | 4.7 s | 1.5 s | ~3x |
+
+The dominant factor at scale is the legacy RK5 wall-derivative bug (below):
+its corrupted embedded error estimate forces ~180x more solver steps at the
+same tolerance on any model with wall dynamics. On top of that, v2's
+per-step cost is ~4x lower at 40k cells (flat memory layout + fused kernels),
+with threading adding ~20% more on this memory-bandwidth-bound machine.
+Models without wall dynamics take the same steps as legacy and see only the
+per-step gains.
 
 ## Deliberate fixes over legacy (documented divergences)
 
