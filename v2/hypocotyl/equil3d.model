@@ -47,7 +47,7 @@ Pressure3D::CenterTriangulation 1 1 1
 12      # CT start index
 
 WallGrowth::StrainSaturationHill 6 3 1 1 1
-20.0    # k_growth (1/h per unit strain): Lockhart wall yielding
+0.0    # k_growth: frozen for equilibration
 0.005   # strain_threshold (yield strain)
 40.0    # L_max (um): cell length saturation (outer hook cells born near max)
 0.3     # K_Hill (auxin repression threshold)
@@ -58,7 +58,7 @@ WallGrowth::StrainSaturationHill 6 3 1 1 1
 1       # wall variable: growFlag (axial walls only)
 
 CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
-20.0    # k_growth: internal edges follow the same yielding law
+0.0    # k_growth: frozen for equilibration
 0.005   # strain_threshold
 30.0    # L_max (um) for internal edges
 0.3     # K_Hill
@@ -68,7 +68,7 @@ CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
 4       # cell variable: auxin
 
 Degradation::One 1 1 1
-0.9     # k_d: light-triggered auxin depletion (t=0 = illumination)
+0.0     # k_d: dark
 4       # cell variable: auxin
 
 VertexNoUpdateFromIndex 0 1 12

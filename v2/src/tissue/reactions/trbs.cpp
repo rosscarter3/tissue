@@ -12,10 +12,14 @@
 // and stored (per cell: [stress anisotropy a = 1 - s2/s1, principal stress
 // direction (x,y,z), s1]), the input to the dynamic anisotropic material of
 // Walia, Carter et al. (2024) Eq. 3 (see WallMechanics::FiberSpring).
-// It is evaluated in update(), i.e. once per accepted solver step rather
-// than inside every derivative evaluation: CMT reorientation is a slow
-// (~hour) process, and holding the material constant within a step keeps the
-// adaptive solver from chasing its own feedback between RK stages. The
+// It is evaluated in update(), i.e. between solver steps rather than inside
+// every derivative evaluation: CMT reorientation is a slow (~hour) process,
+// and holding the material constant within a step keeps the adaptive solver
+// from chasing its own feedback between RK stages. An optional third
+// parameter sets the minimum simulated time between refreshes (0 = every
+// step); since the stress pass costs about as much as ten derivative
+// evaluations, a refresh interval well below the CMT response time makes it
+// negligible. The
 // stress tensor computation is the exact legacy code path
 // (mechanicalTRBS.cc:843-1360): per-triangle Cauchy stress from the
 // deformation gradient, rotated to the global frame, area-averaged over the
@@ -37,10 +41,11 @@ class VertexFromTRBScenterTriangulation : public Reaction {
 public:
   VertexFromTRBScenterTriangulation(const ParameterList &p,
                                     const IndexLevels &i) {
-    if (p.size() != 2)
+    if (p.size() != 2 && p.size() != 3)
       throw std::runtime_error(
-          "VertexFromTRBScenterTriangulation: uses two parameters, Young "
-          "modulus and Poisson coefficient.");
+          "VertexFromTRBScenterTriangulation: uses two or three parameters, "
+          "Young modulus, Poisson coefficient and an optional stress-state "
+          "refresh interval (simulated time; 0 = every step).");
     bool ok = (i.size() == 2 || i.size() == 3) && i[0].size() == 1 &&
               i[1].size() == 1 && (i.size() == 2 || i[2].size() == 1);
     if (!ok)
@@ -49,8 +54,11 @@ public:
           "start of center-triangulation cell variables in level 1; optional "
           "level 2 = start index for storing the cell stress state "
           "[anisotropy, dir x, dir y, dir z, sigma1] (5 cell variables).");
-    configure("VertexFromTRBScenterTriangulation", p, i, 2,
-              std::vector<size_t>(i.size(), 1), {"Y_mod", "P_ratio"});
+    std::vector<std::string> ids{"Y_mod", "P_ratio"};
+    if (p.size() == 3)
+      ids.push_back("stress_interval");
+    configure("VertexFromTRBScenterTriangulation", p, i, p.size(),
+              std::vector<size_t>(i.size(), 1), std::move(ids));
   }
 
   // Forces only; the stress state is refreshed once per step in update().
@@ -72,9 +80,15 @@ public:
   }
 
   void update(Tissue &T, Matrix &cellData, Matrix &wallData,
-              Matrix &vertexData, double) override {
+              Matrix &vertexData, double h) override {
     if (numVariableIndexLevel() != 3)
       return;
+    if (numParameter() == 3 && parameter(2) > 0.0) {
+      sinceStressUpdate_ += h;
+      if (sinceStressUpdate_ < parameter(2))
+        return;
+      sinceStressUpdate_ = 0.0;
+    }
     // Scratch sinks kept as members: the stress pass writes no forces, but
     // evaluate() shares one code path with derivs().
     if (!scratchCell_.sameShape(cellData))
@@ -87,6 +101,7 @@ public:
 
 private:
   Matrix scratchCell_, scratchVertex_;
+  double sinceStressUpdate_ = 0.0;
 
   void evaluate(Tissue &T, Matrix &cellData, Matrix &wallData,
                 Matrix &vertexData, Matrix &cellDerivs, Matrix &vertexDerivs,
@@ -508,11 +523,21 @@ public:
     const double kHill = parameter(1);
     const double nHill = parameter(2);
     const size_t dim = vertexData.cols();
-    // Cache cell areas once per evaluation (cellVolume is O(cell walls)).
+    // Per-cell caches: area (cellVolume is O(cell walls)) and the Eq. 3
+    // redistribution factor g(a), which depends only on the cell's stress
+    // anisotropy — computing it here keeps the two pow() calls out of the
+    // per-wall loop.
     areas_.resize(T.numCell());
+    gFactor_.resize(T.numCell());
     parallelFor(T.numCell(), [&](size_t b, size_t e) {
-      for (size_t c = b; c < e; ++c)
+      for (size_t c = b; c < e; ++c) {
         areas_[c] = T.cellVolume(c, vertexData);
+        const double a =
+            std::max(0.0, std::min(1.0 - 1e-9, cellData[c][sIndex]));
+        const double an = std::pow(a, nHill);
+        gFactor_[c] =
+            an / (std::pow(1.0 - a, nHill) * std::pow(kHill, nHill) + an);
+      }
     });
     parallelScatter1(
         T.numWall(), vertexDerivs, [&](size_t b, size_t e, Matrix &out) {
@@ -536,11 +561,7 @@ public:
             for (size_t cIdx : {wall.cell1, wall.cell2}) {
               if (Tissue::isBackground(cIdx))
                 continue;
-              const double a =
-                  std::max(0.0, std::min(1.0 - 1e-9, cellData[cIdx][sIndex]));
-              const double an = std::pow(a, nHill);
-              const double g =
-                  an / (std::pow(1.0 - a, nHill) * std::pow(kHill, nHill) + an);
+              const double g = gFactor_[cIdx];
               double nvec[3] = {cellData[cIdx][sIndex + 1],
                                 cellData[cIdx][sIndex + 2],
                                 cellData[cIdx][sIndex + 3]};
@@ -572,7 +593,8 @@ public:
   }
 
 private:
-  std::vector<double> areas_; // per-call cell area cache
+  std::vector<double> areas_;   // per-call cell area cache
+  std::vector<double> gFactor_; // per-call Eq. 3 redistribution cache
 };
 TISSUE_REGISTER_REACTION(WallMechanicsFiberSpring, "WallMechanics::FiberSpring")
 

@@ -68,7 +68,7 @@ CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
 4       # cell variable: auxin
 
 Degradation::One 1 1 1
-0.9     # k_d: light-triggered auxin depletion (t=0 = illumination)
+0.0     # k_d: dark
 4       # cell variable: auxin
 
 VertexNoUpdateFromIndex 0 1 12

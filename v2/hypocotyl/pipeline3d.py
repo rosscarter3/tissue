@@ -18,7 +18,7 @@ def variant(src, out, nogrowth=False, dark=False):
 if __name__ == '__main__':
     solver = sys.argv[1] if len(sys.argv) > 1 else 'solver3d.rk5'
     variant('hook3d.model', 'equil3d.model', nogrowth=True, dark=True)
-    open('solver3d_eq.rk5','w').write('RK5Adaptive\n0 2.5\n0 2\n0.02 1e-4\n')
+    open('solver3d_eq.rk5','w').write('RK5Adaptive\n0 2.5\n0 2\n0.02 1e-3\n')
     subprocess.run([SIM, 'equil3d.model', 'hook3d.init', 'solver3d_eq.rk5',
                     '-init_output', 'hook3d_eq.init',
                     '-init_output_format', 'centerTriTissue'],

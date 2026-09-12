@@ -137,3 +137,76 @@ Results (`pipeline3d.py`; dark-equilibrated start at 161 deg):
 Inner hook arc extends 2.08x (exp 2-4x), outer 1.13x (exp 1.07x); the dark
 control is fully maintained. The ~1.5 h mid-phase lag tracks the auxin
 clearance time constant (k_d, k_growth are the tuning knobs).
+
+
+## Performance
+
+Measured on the 350-cell hook shell (Apple M1), full pipeline = 2.5 h
+equilibration + 10 h light + 10 h dark (the latter two in parallel):
+
+| configuration | full pipeline | per simulated hour |
+|---|---|---|
+| initial anisotropic version | 75 min | 390 s |
+| + stress-refresh interval | 56 min | 292 s |
+| + Hill-factor caching | 47 min | 244 s |
+| + solver tolerance 1e-4 -> 1e-3 | **94 s** | **7 s** |
+
+**48x faster, with a bit-for-bit unchanged trajectory.** The three changes:
+
+1. **Stress-state refresh interval** (`VertexFromTRBScenterTriangulation`
+   parameter 3). Profiling showed 37% of runtime in the per-step stress
+   tensor + Jacobi pass. CMT reorientation is an hours-scale process, so the
+   material is refreshed every 0.02 h instead of every step (-25%).
+2. **Eq. 3 Hill factor cached per cell** instead of recomputed per wall-cell
+   pair, hoisting two `pow()` calls out of the inner loop (-16%).
+3. **Solver tolerance.** The dominant cost: `eps=1e-4` forced tiny steps to
+   resolve elastic transients that the growth-driven trajectory does not
+   depend on — the system is strongly attracted to force balance, so the
+   slow manifold is insensitive to them. Validated by comparing 1e-4, 1e-3
+   and 1e-2 over the full 10 h run: identical hook angles (162.7 -> 116.1
+   deg) and inner fold (1.759x) in all three. 1e-3 is the shipped default
+   (1e-2 halves runtime again if needed).
+
+What does **not** help at this scale:
+
+- **Threading**: 122 s (1 thread) vs 123 s (8 threads). With 350 cells and
+  708 walls each parallel region is a few microseconds of work, comparable
+  to the synchronization cost. The thread pool's grain thresholds correctly
+  keep these loops serial; threading pays from ~10k cells upward (the 40k
+  cell benchmark in ../README.md). Run independent conditions (light/dark,
+  parameter sweeps) as separate processes instead - that is what
+  `pipeline3d.py` does.
+- **Larger max step** (`h_max` 0.02 -> 0.1): no change, error control
+  already chooses smaller steps.
+
+Remaining opportunity: a **quasi-static solver** (Newton or FIRE
+minimization of the elastic energy between growth steps, as the paper's own
+Python model used). Explicit integration costs steps proportional to
+Y/growth-rate, which is exactly the ratio that has to be large for the
+quasi-static approximation to hold - so the cost is structural, not a
+constant factor. That would also remove the need to scale Y and P together
+for mobility. Estimated further 5-20x, and it would let the mesh be refined
+without a step-size penalty.
+
+## Visualising the material anisotropy
+
+`pvhook3d_aniso.py` builds `hook3d_anisotropy.pvsm`:
+
+```sh
+../build/simulator hook3d.model hook3d_eq.init solver3d_vtk.rk5 \
+    -centerTri_init -vtk_output vtk3d
+/Applications/ParaView-5.10.0.app/Contents/bin/pvpython pvhook3d_aniso.py 10
+open -a ParaView-5.10.0 hook3d_anisotropy.pvsm
+```
+
+The shell is coloured by stress anisotropy a = 1 - s2/s1, and a white line
+glyph at each cell centre lies along that cell's maximal principal stress
+direction - the axis the fibre stiffness is redistributed onto by Eq. 3,
+i.e. the model's prediction of the CMT/cellulose orientation. Glyph length
+scales with a (isotropic cells show a dot, strongly anisotropic cells a
+bar).
+
+In the closed hook the bars wrap around the tube (circumferential, matching
+dark CMT arrays). During opening the outer-flank bars rotate to run along
+the tube while the inner side stays circumferential and its anisotropy
+*rises* - the inner/outer switch asymmetry of Figs 3E-F and 4E.
