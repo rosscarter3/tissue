@@ -242,4 +242,8 @@ void BaseSolver::printInit(std::ostream &os) const {
   T_->printInit(cellData_, wallData_, vertexData_, os);
 }
 
+void BaseSolver::printInitCenterTri(std::ostream &os) const {
+  T_->printInitCenterTri(cellData_, wallData_, vertexData_, os);
+}
+
 } // namespace tissue

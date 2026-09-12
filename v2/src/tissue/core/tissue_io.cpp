@@ -256,6 +256,47 @@ void Tissue::readInitCenterTri(std::istream &in, int verbose) {
 
 // --- init printing ----------------------------------------------------------------
 
+void Tissue::printInitCenterTri(const Matrix &cellData, const Matrix &wallData,
+                                const Matrix &vertexData,
+                                std::ostream &os) const {
+  const size_t dim = dimension();
+  auto oldPrecision = os.precision();
+  os.precision(20);
+  os << numCell() << " " << numWall() << " " << numVertex() << std::endl;
+  for (size_t i = 0; i < numWall(); ++i) {
+    const Wall &w = walls_[i];
+    auto cellOut = [&](size_t c) -> long long {
+      return isBackground(c) ? -1 : static_cast<long long>(c);
+    };
+    os << i << " " << cellOut(w.cell1) << " " << cellOut(w.cell2) << " "
+       << w.vertex1 << " " << w.vertex2 << std::endl;
+  }
+  os << std::endl << numVertex() << " " << dim << std::endl;
+  for (size_t i = 0; i < numVertex(); ++i) {
+    for (size_t d = 0; d < dim; ++d)
+      os << vertexData[i][d] << " ";
+    os << std::endl;
+  }
+  os << std::endl << numWall() << " 1 " << (wallData.cols() - 1) << std::endl;
+  for (size_t i = 0; i < numWall(); ++i) {
+    for (size_t j = 0; j < wallData.rowSize(i); ++j)
+      os << wallData[i][j] << " ";
+    os << std::endl;
+  }
+  os << std::endl << numCell() << " " << numCellVariable_ << std::endl;
+  for (size_t i = 0; i < numCell(); ++i) {
+    const size_t n = cells_[i].numVertex();
+    if (cellData.rowSize(i) < numCellVariable_ + dim + n)
+      parseError("Tissue::printInitCenterTri: cell " + std::to_string(i) +
+                 " has no center-triangulation data in its row.");
+    for (size_t j = 0; j < numCellVariable_ + dim + n; ++j)
+      os << cellData[i][j] << " ";
+    os << std::endl;
+  }
+  os << std::endl;
+  os.precision(oldPrecision);
+}
+
 void Tissue::printInit(const Matrix &cellData, const Matrix &wallData,
                        const Matrix &vertexData, std::ostream &os) const {
   assert(numCell() == cellData.rows());

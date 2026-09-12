@@ -11,7 +11,9 @@ surface quads (rings x sectors); sector theta=0 faces the hook center
 Wall variables: [restLength, growFlag, bendFlag]
   growFlag = 1 on axial walls (longitudinal growth only)
   bendFlag = 1 on axial walls (chains for bending stiffness)
-Cell variables: [0,0,0,0, auxin, cellType, thetaDeg] (CT data appended at 7)
+Cell variables: [0,0,0,0, auxin, cellType, thetaDeg,
+                aniso, sdirx, sdiry, sdirz, sigma1]  (CT data appended at 12;
+                7-11 are written by the TRBS stress-state computation)
   auxin: 0.6 baseline (dark maintenance), up to 1.0 on the inner hook side
   cellType: 0 = shell quad, 1 = end cap
 """
@@ -116,9 +118,9 @@ with open(OUT, "w") as f:
     f.write(f"\n{len(walls)} 1 2\n")
     for (c1, c2, v1, v2, grow, bendf) in walls:
         f.write(f"{dist(v1, v2):.6f} {grow} {bendf}\n")
-    f.write(f"\n{NCELLS} 7\n")
+    f.write(f"\n{NCELLS} 12\n")
     for (auxin, ctype, phi) in cells:
-        f.write(f"0 0 0 0 {auxin:.4f} {ctype} {phi:.2f}\n")
+        f.write(f"0 0 0 0 {auxin:.4f} {ctype} {phi:.2f} 0 0 0 0 0\n")
 
 inner_len = dist(vid(N_BASAL, 0), vid(N_BASAL + 1, 0))
 outer_len = dist(vid(N_BASAL, NCIRC // 2), vid(N_BASAL + 1, NCIRC // 2))

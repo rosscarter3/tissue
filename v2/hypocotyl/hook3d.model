@@ -12,21 +12,36 @@
 # longitudinally and the hook opens.
 #
 # units: um, hours
-6 0 0
+8 0 0
 
 CenterTriangulation::Initiate 0 1 1
-7       # CT data (center + internal edge lengths) appended after 7 cell vars
+12      # CT data appended after the 12 cell variables
 
-VertexFromTRBScenterTriangulation 2 2 1 1
-2500.0  # Y_mod (Y and P scaled x25: same strains, 25x faster mechanics
-        #   so the overdamped arm rotation reaches biological rates)
+VertexFromTRBScenterTriangulation 2 3 1 1 1
+2000.0  # Y_mod: MATRIX modulus Y_m (pectin/hemicellulose, isotropic). The
+        #   fiber part Y_f is added by WallMechanics::FiberSpring below.
+        #   Calibrated so the effective fiber:matrix stiffness ratio is the
+        #   paper's Y_m:Y_f = 75:100 (see calib.py). Y,P scaled x25 so the
+        #   overdamped arm rotation reaches biological rates.
 0.3     # P_ratio (Poisson)
 0       # wall length index
-7       # CT start index
+12      # CT start index
+7       # store cell stress state [aniso, dir xyz, sigma1] at vars 7-11
+
+WallMechanics::FiberSpring 3 2 1 1
+135.0   # Y_fiber: CMT-guided cellulose stiffness (per unit transverse wall
+        #   width), redistributed between the principal stress directions by
+        #   Eq. 3 of Walia et al. (2024). Isotropic limit (a=0): both
+        #   directions get Y_f/2; full anisotropy (a=1): all of it along the
+        #   maximal stress direction, none perpendicular (2.3x ratio).
+0.7     # K_hill (paper: k = 0.7)
+1.2     # n_hill (paper: n = 1.2)
+0       # wall length index
+7       # cell stress-state start index
 
 Pressure3D::CenterTriangulation 1 1 1
 1.75    # P_force (turgor per unit shell area)
-7       # CT start index
+12      # CT start index
 
 WallGrowth::StrainSaturationHill 6 3 1 1 1
 20.0    # k_growth (1/h per unit strain): Lockhart wall yielding
@@ -46,9 +61,14 @@ CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
 0.3     # K_Hill
 6       # n_Hill
 0       # hill_flag: repressing
-7       # CT start index
+12      # CT start index
 4       # cell variable: auxin
 
 Degradation::One 1 1 1
 0.9     # k_d: light-triggered auxin depletion (t=0 = illumination)
 4       # cell variable: auxin
+
+VertexNoUpdateFromIndex 0 1 12
+# clamp the basal end-cap ring (seedling anchored at the soil line): the
+# apex swings up and the opened tube points vertically
+0 1 2 3 4 5 6 7 8 9 10 11

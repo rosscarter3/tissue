@@ -8,8 +8,18 @@
 // coefficients, and forces on the center (a cell variable) and the two
 // vertices.
 //
-// The optional legacy levels for storing strain/stress eigendirections (MT
-// feedback) are not ported; only the isotropic 2-level form is accepted.
+// An optional third index level enables the cell stress state to be computed
+// and stored (per cell: [stress anisotropy a = 1 - s2/s1, principal stress
+// direction (x,y,z), s1]), the input to the dynamic anisotropic material of
+// Walia, Carter et al. (2024) Eq. 3 (see WallMechanics::FiberSpring).
+// It is evaluated in update(), i.e. once per accepted solver step rather
+// than inside every derivative evaluation: CMT reorientation is a slow
+// (~hour) process, and holding the material constant within a step keeps the
+// adaptive solver from chasing its own feedback between RK stages. The
+// stress tensor computation is the exact legacy code path
+// (mechanicalTRBS.cc:843-1360): per-triangle Cauchy stress from the
+// deformation gradient, rotated to the global frame, area-averaged over the
+// cell, and diagonalized with the legacy Jacobi iteration.
 //
 #include <algorithm>
 #include <cmath>
@@ -17,6 +27,7 @@
 
 #include "tissue/core/tissue.h"
 #include "tissue/parallel/scatter.h"
+#include "tissue/parallel/thread_pool.h"
 #include "tissue/reactions/reaction.h"
 
 namespace tissue {
@@ -30,18 +41,56 @@ public:
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulation: uses two parameters, Young "
           "modulus and Poisson coefficient.");
-    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+    bool ok = (i.size() == 2 || i.size() == 3) && i[0].size() == 1 &&
+              i[1].size() == 1 && (i.size() == 2 || i[2].size() == 1);
+    if (!ok)
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulation: wall length index in level 0; "
-          "start of center-triangulation cell variables in level 1. (The "
-          "legacy 4-level strain/stress-direction storage is not ported.)");
-    configure("VertexFromTRBScenterTriangulation", p, i, 2, {1, 1},
-              {"Y_mod", "P_ratio"});
+          "start of center-triangulation cell variables in level 1; optional "
+          "level 2 = start index for storing the cell stress state "
+          "[anisotropy, dir x, dir y, dir z, sigma1] (5 cell variables).");
+    configure("VertexFromTRBScenterTriangulation", p, i, 2,
+              std::vector<size_t>(i.size(), 1), {"Y_mod", "P_ratio"});
   }
 
+  // Forces only; the stress state is refreshed once per step in update().
   void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
               Matrix &vertexData, Matrix &cellDerivs, Matrix &,
               Matrix &vertexDerivs) override {
+    evaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
+             /*wantForces=*/true, /*wantStress=*/false);
+  }
+
+  void initiate(Tissue &T, Matrix &cellData, Matrix &wallData,
+                Matrix &vertexData, Matrix &cellDerivs, Matrix &,
+                Matrix &vertexDerivs) override {
+    // Prime the stress state so the first derivative evaluation already has a
+    // material orientation (otherwise the first step is isotropic).
+    if (numVariableIndexLevel() == 3)
+      evaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
+               false, true);
+  }
+
+  void update(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, double) override {
+    if (numVariableIndexLevel() != 3)
+      return;
+    // Scratch sinks kept as members: the stress pass writes no forces, but
+    // evaluate() shares one code path with derivs().
+    if (!scratchCell_.sameShape(cellData))
+      scratchCell_.reshapeLike(cellData);
+    if (!scratchVertex_.sameShape(vertexData))
+      scratchVertex_.reshapeLike(vertexData);
+    evaluate(T, cellData, wallData, vertexData, scratchCell_, scratchVertex_,
+             false, true);
+  }
+
+private:
+  Matrix scratchCell_, scratchVertex_;
+
+  void evaluate(Tissue &T, Matrix &cellData, Matrix &wallData,
+                Matrix &vertexData, Matrix &cellDerivs, Matrix &vertexDerivs,
+                bool wantForces, bool wantStress) {
     if (vertexData.cols() != 3)
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulation requires a 3D tissue.");
@@ -52,12 +101,16 @@ public:
     const double poisson = parameter(1);
     const double lambda = young * poisson / (1 - poisson * poisson);
     const double mio = young / (1 + poisson);
+    const bool storeStress = wantStress && numVariableIndexLevel() == 3;
+    const size_t stressIndex = storeStress ? variableIndex(2, 0) : 0;
 
     parallelScatter1(
         T.numCell(), vertexDerivs, [&](size_t b, size_t e, Matrix &vOut) {
           for (size_t c = b; c < e; ++c) {
             const CellTopo &cell = T.cell(c);
             const size_t n = cell.numWall();
+            double stressCellGlobal[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+            double totalRestingArea = 0.0;
             for (size_t k = 0; k < n; ++k) {
               const size_t k1 = (k + 1) % n;
               const size_t v2 = cell.vertices[k];
@@ -149,17 +202,200 @@ public:
               const double f2v =
                   tensile[1] * delta[1] + angular[1] * delta[0] +
                   angular[2] * delta[2];
-              for (size_t d = 0; d < 3; ++d) {
-                const double forceCom =
-                    f0c * (pos[1][d] - pos[0][d]) + f0v * (pos[2][d] - pos[0][d]);
-                const double forceV2 =
-                    f1c * (pos[0][d] - pos[1][d]) + f1v * (pos[2][d] - pos[1][d]);
-                const double forceV3 =
-                    f2c * (pos[0][d] - pos[2][d]) + f2v * (pos[1][d] - pos[2][d]);
-                cellDerivs[c][comIndex + d] += forceCom;
-                vOut[v2][d] += forceV2;
-                vOut[v3][d] += forceV3;
+              if (wantForces) {
+                for (size_t d = 0; d < 3; ++d) {
+                  const double forceCom = f0c * (pos[1][d] - pos[0][d]) +
+                                          f0v * (pos[2][d] - pos[0][d]);
+                  const double forceV2 = f1c * (pos[0][d] - pos[1][d]) +
+                                         f1v * (pos[2][d] - pos[1][d]);
+                  const double forceV3 = f2c * (pos[0][d] - pos[2][d]) +
+                                         f2v * (pos[1][d] - pos[2][d]);
+                  cellDerivs[c][comIndex + d] += forceCom;
+                  vOut[v2][d] += forceV2;
+                  vOut[v3][d] += forceV3;
+                }
               }
+
+              if (storeStress) {
+                // Per-triangle Cauchy stress in the element plane, rotated to
+                // the global frame (legacy mechanicalTRBS.cc:843-1055).
+                const double trE = (delta[1] * cot0 + delta[2] * cot1 +
+                                    delta[0] * cot2) /
+                                   (4.0 * restingArea);
+                const double curAngle1 = angleOf(length[0], length[1], length[2]);
+                const double Qa = std::cos(curAngle1) * length[0];
+                const double Qc = std::sin(curAngle1) * length[0];
+                const double Qb = length[1];
+                const double restAngle1 =
+                    angleOf(restingLength[0], restingLength[1], restingLength[2]);
+                const double Pa = std::cos(restAngle1) * restingLength[0];
+                const double Pc = std::sin(restAngle1) * restingLength[0];
+                const double Pb = restingLength[1];
+                const double shapeResting[3][2] = {
+                    {0.0, 1.0 / Pc},
+                    {-1.0 / Pb, (Pa - Pb) / (Pb * Pc)},
+                    {1.0 / Pb, -Pa / (Pb * Pc)}};
+                const double posLocal[3][2] = {{Qa, Qc}, {0, 0}, {Qb, 0}};
+                double F[2][2] = {{0, 0}, {0, 0}};
+                for (int ii = 0; ii < 3; ++ii) {
+                  F[0][0] += posLocal[ii][0] * shapeResting[ii][0];
+                  F[1][0] += posLocal[ii][1] * shapeResting[ii][0];
+                  F[0][1] += posLocal[ii][0] * shapeResting[ii][1];
+                  F[1][1] += posLocal[ii][1] * shapeResting[ii][1];
+                }
+                double Bc[2][2]; // left Cauchy-Green B = F F^T
+                Bc[0][0] = F[0][0] * F[0][0] + F[0][1] * F[0][1];
+                Bc[1][0] = F[1][0] * F[0][0] + F[1][1] * F[0][1];
+                Bc[0][1] = F[0][0] * F[1][0] + F[0][1] * F[1][1];
+                Bc[1][1] = F[1][0] * F[1][0] + F[1][1] * F[1][1];
+                double B2[2][2];
+                B2[0][0] = Bc[0][0] * Bc[0][0] + Bc[0][1] * Bc[1][0];
+                B2[1][0] = Bc[1][0] * Bc[0][0] + Bc[1][1] * Bc[1][0];
+                B2[0][1] = Bc[0][0] * Bc[0][1] + Bc[0][1] * Bc[1][1];
+                B2[1][1] = Bc[1][0] * Bc[0][1] + Bc[1][1] * Bc[1][1];
+                const double curArea = 0.25 * std::sqrt(std::max(
+                    (length[0] + length[1] + length[2]) *
+                        (-length[0] + length[1] + length[2]) *
+                        (length[0] - length[1] + length[2]) *
+                        (length[0] + length[1] - length[2]),
+                    1e-12));
+                double S[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+                const double fac = curArea / restingArea;
+                S[0][0] = fac * ((lambda * trE - mio / 2) * Bc[0][0] +
+                                 (mio / 2) * B2[0][0]);
+                S[1][0] = fac * ((lambda * trE - mio / 2) * Bc[1][0] +
+                                 (mio / 2) * B2[1][0]);
+                S[0][1] = fac * ((lambda * trE - mio / 2) * Bc[0][1] +
+                                 (mio / 2) * B2[0][1]);
+                S[1][1] = fac * ((lambda * trE - mio / 2) * Bc[1][1] +
+                                 (mio / 2) * B2[1][1]);
+                // Rotation local->global from the triangle's frame.
+                double X[3], Bv[3], Z[3], Yv[3];
+                double tA = 0, tB = 0;
+                for (size_t d = 0; d < 3; ++d) {
+                  X[d] = pos[2][d] - pos[1][d];
+                  Bv[d] = pos[0][d] - pos[1][d];
+                  tA += X[d] * X[d];
+                  tB += Bv[d] * Bv[d];
+                }
+                tA = std::sqrt(tA);
+                tB = std::sqrt(tB);
+                for (size_t d = 0; d < 3; ++d) {
+                  X[d] /= tA;
+                  Bv[d] /= tB;
+                }
+                Z[0] = X[1] * Bv[2] - X[2] * Bv[1];
+                Z[1] = X[2] * Bv[0] - X[0] * Bv[2];
+                Z[2] = X[0] * Bv[1] - X[1] * Bv[0];
+                double zn = std::sqrt(Z[0] * Z[0] + Z[1] * Z[1] + Z[2] * Z[2]);
+                for (size_t d = 0; d < 3; ++d)
+                  Z[d] /= zn;
+                Yv[0] = Z[1] * X[2] - Z[2] * X[1];
+                Yv[1] = Z[2] * X[0] - Z[0] * X[2];
+                Yv[2] = Z[0] * X[1] - Z[1] * X[0];
+                double R[3][3];
+                for (size_t d = 0; d < 3; ++d) {
+                  R[d][0] = X[d];
+                  R[d][1] = Yv[d];
+                  R[d][2] = Z[d];
+                }
+                // S_global = R S R^T, accumulated area-weighted.
+                for (int r = 0; r < 3; ++r)
+                  for (int t = 0; t < 3; ++t) {
+                    double v = 0.0;
+                    for (int u = 0; u < 3; ++u)
+                      for (int w = 0; w < 3; ++w)
+                        v += R[r][u] * S[u][w] * R[t][w];
+                    stressCellGlobal[r][t] += restingArea * v;
+                  }
+                totalRestingArea += restingArea;
+              }
+            }
+
+            if (storeStress && totalRestingArea > 0.0) {
+              for (int r = 0; r < 3; ++r)
+                for (int t = 0; t < 3; ++t)
+                  stressCellGlobal[r][t] /= totalRestingArea;
+              // Jacobi diagonalization (legacy mechanicalTRBS.cc:1269-1334).
+              double eig[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+              double pivot = 1.0;
+              const double pi = 3.1415;
+              int iterations = 0;
+              // A symmetric 3x3 needs only a handful of Jacobi sweeps; the
+              // cap bounds the cost when an eigenvalue pair is degenerate.
+              while (pivot > 0.00001 && ++iterations < 20) {
+                int I = 1, J = 0;
+                pivot = std::fabs(stressCellGlobal[1][0]);
+                if (std::fabs(stressCellGlobal[2][0]) > pivot) {
+                  pivot = std::fabs(stressCellGlobal[2][0]);
+                  I = 2;
+                  J = 0;
+                }
+                if (std::fabs(stressCellGlobal[2][1]) > pivot) {
+                  pivot = std::fabs(stressCellGlobal[2][1]);
+                  I = 2;
+                  J = 1;
+                }
+                double rotAngle;
+                if (std::fabs(stressCellGlobal[I][I] - stressCellGlobal[J][J]) <
+                    0.00001)
+                  rotAngle = pi / 4;
+                else
+                  rotAngle = 0.5 * std::atan((2 * stressCellGlobal[I][J]) /
+                                             (stressCellGlobal[J][J] -
+                                              stressCellGlobal[I][I]));
+                const double Si = std::sin(rotAngle);
+                const double Co = std::cos(rotAngle);
+                double rot[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+                rot[I][I] = Co;
+                rot[J][J] = Co;
+                rot[I][J] = Si;
+                rot[J][I] = -Si;
+                double tmp[3][3];
+                for (int r = 0; r < 3; ++r)
+                  for (int t = 0; t < 3; ++t) {
+                    tmp[r][t] = 0.0;
+                    for (int w = 0; w < 3; ++w)
+                      tmp[r][t] += stressCellGlobal[r][w] * rot[w][t];
+                  }
+                for (int r = 0; r < 3; ++r)
+                  for (int t = 0; t < 3; ++t) {
+                    stressCellGlobal[r][t] = 0.0;
+                    for (int w = 0; w < 3; ++w)
+                      stressCellGlobal[r][t] += rot[w][r] * tmp[w][t];
+                  }
+                for (int r = 0; r < 3; ++r)
+                  for (int t = 0; t < 3; ++t)
+                    tmp[r][t] = eig[r][t];
+                for (int r = 0; r < 3; ++r)
+                  for (int t = 0; t < 3; ++t) {
+                    eig[r][t] = 0.0;
+                    for (int w = 0; w < 3; ++w)
+                      eig[r][t] += tmp[r][w] * rot[w][t];
+                  }
+              }
+              // In-plane principal pair: two largest eigenvalues (the shell
+              // normal eigenvalue is ~0 in a membrane under tension).
+              int order[3] = {0, 1, 2};
+              double ev[3] = {stressCellGlobal[0][0], stressCellGlobal[1][1],
+                              stressCellGlobal[2][2]};
+              for (int r = 0; r < 3; ++r)
+                for (int t = r + 1; t < 3; ++t)
+                  if (ev[order[t]] > ev[order[r]])
+                    std::swap(order[r], order[t]);
+              const double s1 = ev[order[0]];
+              const double s2 = ev[order[1]];
+              double a = 0.0;
+              if (std::fabs(s1) > 1e-12)
+                a = 1.0 - std::min(s1, s2) / std::max(s1, s2);
+              if (a < 0.0)
+                a = 0.0;
+              if (a > 1.0)
+                a = 1.0;
+              cellData[c][stressIndex] = a;
+              for (size_t d = 0; d < 3; ++d)
+                cellData[c][stressIndex + 1 + d] = eig[d][order[0]];
+              cellData[c][stressIndex + 4] = s1;
             }
           }
         });
@@ -236,6 +472,109 @@ public:
 };
 TISSUE_REGISTER_REACTION(Pressure3DCenterTriangulation,
                          "Pressure3D::CenterTriangulation")
+
+// Dynamic anisotropic wall material of Walia, Carter et al. (2024), Eq. 3:
+// the fiber (cellulose/CMT) part of the wall stiffness, Y_f, redistributes
+// between the principal stress directions according to the current stress
+// anisotropy a (stored per cell by VertexFromTRBScenterTriangulation):
+//   g(a)        = a^n / ((1-a)^n k^n + a^n)
+//   Y_principal = 0.5 (1 + g) Y_f     (along maximal stress: CMTs align with
+//   Y_second    = 0.5 (1 - g) Y_f      stress, cellulose follows CMTs)
+// Implemented as oriented reinforcement springs on the walls: each wall gets
+// stiffness K = Y_f * [0.5(1+g) cos^2(t) + 0.5(1-g) sin^2(t)] * w, averaged
+// over its adjacent cells, where t is the angle between the wall and the
+// cell's principal stress direction and w = A_cell/(2 l_wall) the transverse
+// width the wall represents. At a=0 this is the isotropic contribution
+// Y_f/2 in every direction, so the total wall modulus is the matrix TRBS
+// Y_m plus this term, exactly the paper's decomposition.
+class WallMechanicsFiberSpring : public Reaction {
+public:
+  WallMechanicsFiberSpring(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 3)
+      throw std::runtime_error(
+          "WallMechanics::FiberSpring: uses three parameters (Y_fiber, "
+          "K_hill, n_hill).");
+    configure("WallMechanics::FiberSpring", p, i, 3, {1, 1},
+              {"Y_fiber", "K_hill", "n_hill"});
+    // level 0: wall resting length index; level 1: cell stress-state start
+    // index ([a, dir x, dir y, dir z, s1], written by the TRBS reaction).
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &,
+              Matrix &vertexDerivs) override {
+    const size_t lengthIndex = variableIndex(0, 0);
+    const size_t sIndex = variableIndex(1, 0);
+    const double yFiber = parameter(0);
+    const double kHill = parameter(1);
+    const double nHill = parameter(2);
+    const size_t dim = vertexData.cols();
+    // Cache cell areas once per evaluation (cellVolume is O(cell walls)).
+    areas_.resize(T.numCell());
+    parallelFor(T.numCell(), [&](size_t b, size_t e) {
+      for (size_t c = b; c < e; ++c)
+        areas_[c] = T.cellVolume(c, vertexData);
+    });
+    parallelScatter1(
+        T.numWall(), vertexDerivs, [&](size_t b, size_t e, Matrix &out) {
+          for (size_t w = b; w < e; ++w) {
+            const Wall &wall = T.wall(w);
+            const size_t v1 = wall.vertex1;
+            const size_t v2 = wall.vertex2;
+            double u[3] = {0, 0, 0};
+            double d = 0.0;
+            for (size_t dd = 0; dd < dim; ++dd) {
+              u[dd] = vertexData[v1][dd] - vertexData[v2][dd];
+              d += u[dd] * u[dd];
+            }
+            d = std::sqrt(d);
+            if (d <= 0.0)
+              continue;
+            for (size_t dd = 0; dd < dim; ++dd)
+              u[dd] /= d;
+            // Stiffness contributions from the adjacent cells.
+            double K = 0.0;
+            for (size_t cIdx : {wall.cell1, wall.cell2}) {
+              if (Tissue::isBackground(cIdx))
+                continue;
+              const double a =
+                  std::max(0.0, std::min(1.0 - 1e-9, cellData[cIdx][sIndex]));
+              const double an = std::pow(a, nHill);
+              const double g =
+                  an / (std::pow(1.0 - a, nHill) * std::pow(kHill, nHill) + an);
+              double nvec[3] = {cellData[cIdx][sIndex + 1],
+                                cellData[cIdx][sIndex + 2],
+                                cellData[cIdx][sIndex + 3]};
+              double nn = std::sqrt(nvec[0] * nvec[0] + nvec[1] * nvec[1] +
+                                    nvec[2] * nvec[2]);
+              double cos2 = 0.0;
+              if (nn > 1e-12) {
+                double dot = (u[0] * nvec[0] + u[1] * nvec[1] + u[2] * nvec[2]) / nn;
+                cos2 = dot * dot;
+              } else {
+                cos2 = 0.5; // no direction yet (first evaluation): isotropic
+              }
+              const double orient =
+                  0.5 * (1.0 + g) * cos2 + 0.5 * (1.0 - g) * (1.0 - cos2);
+              const double width = areas_[cIdx] / (2.0 * d);
+              K += yFiber * orient * width;
+            }
+            const double L = wallData[w][lengthIndex];
+            double coeff = K * (1.0 / L - 1.0 / d);
+            if (d <= 0.0 && L <= 0.0)
+              coeff = 0.0;
+            for (size_t dd = 0; dd < dim; ++dd) {
+              double div = (vertexData[v1][dd] - vertexData[v2][dd]) * coeff;
+              out[v1][dd] -= div;
+              out[v2][dd] += div;
+            }
+          }
+        });
+  }
+
+private:
+  std::vector<double> areas_; // per-call cell area cache
+};
+TISSUE_REGISTER_REACTION(WallMechanicsFiberSpring, "WallMechanics::FiberSpring")
 
 } // namespace
 } // namespace tissue

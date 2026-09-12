@@ -129,6 +129,11 @@ int main(int argc, char *argv[]) {
           std::cerr << "Printing init in file " << fileName
                     << " using tissue format." << std::endl;
           solver->printInit(out);
+        } else if (initFormat == "centerTriTissue") {
+          std::cerr << "Printing init in file " << fileName
+                    << " using tissue format storing center triangulation "
+                    << "in cell data." << std::endl;
+          solver->printInitCenterTri(out);
         } else {
           std::cerr << "Warning: main() - init output format '" << initFormat
                     << "' is not ported to tissue v2 yet. No init file "

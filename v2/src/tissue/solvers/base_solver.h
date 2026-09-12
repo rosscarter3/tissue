@@ -38,6 +38,9 @@ public:
   void print(std::ostream &os = std::cout);
   // Final state in init format (used by -init_output).
   void printInit(std::ostream &os) const;
+  // Final state with center-triangulation data (-init_output_format
+  // centerTriTissue).
+  void printInitCenterTri(std::ostream &os) const;
 
   double startTime() const { return startTime_; }
   double endTime() const { return endTime_; }

@@ -138,6 +138,12 @@ public:
   // Prints state in init format (round-trippable with readInit).
   void printInit(const Matrix &cellData, const Matrix &wallData,
                  const Matrix &vertexData, std::ostream &os) const;
+  // Init format with center-triangulation data appended per cell row
+  // (round-trippable with readInitCenterTri). Requires cell rows extended by
+  // CenterTriangulation::Initiate (center + edge lengths after
+  // numCellVariable()).
+  void printInitCenterTri(const Matrix &cellData, const Matrix &wallData,
+                          const Matrix &vertexData, std::ostream &os) const;
 
   // --- simulation hooks (called by solvers) -----------------------------------
   void derivs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
