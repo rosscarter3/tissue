@@ -210,3 +210,41 @@ In the closed hook the bars wrap around the tube (circumferential, matching
 dark CMT arrays). During opening the outer-flank bars rotate to run along
 the tube while the inner side stays circumferential and its anisotropy
 *rises* - the inner/outer switch asymmetry of Figs 3E-F and 4E.
+
+
+## Full opening run (apical clamp)
+
+`VertexNoUpdateFromIndex` pins the **apical** end-cap ring (vertices 348-359,
+the cotyledon end) rather than the base, so the hook unrolls about the pinned
+apex and the basal shank swings out into the straight axis. Run to t = 200 h
+with `solver3d_long.rk5` (eps 1e-2, validated against 1e-3 with the
+anisotropic material: angles identical to six significant figures).
+
+| t (h) | 0 | 10 | 20 | 40 | 60 | 100 | 150 | 200 |
+|---|---|---|---|---|---|---|---|---|
+| light | 163.2 | 126.2 | 101.2 | 71.0 | 51.2 | 24.5 | 9.3 | **3.0** |
+| dark | 163.2 | 163.0 | 164.8 | 168.9 | 172.3 | 176.3 | 176.3 | 172.5 |
+
+The hook opens fully: 163.2 deg -> 3.0 deg, with the inner epidermal arc
+extending 2.30x and the outer 1.11x (experiment: inner 2-4x, outer ~1.07x).
+The inner/outer arc ratio reaches 0.992, i.e. a straight tube. Thresholds are
+crossed at 90 h (<30 deg), 110 h (<20 deg) and 147 h (<10 deg). The dark
+control never opens.
+
+**Stress anisotropy reverts once the organ is straight.** Over the full run
+the outer flank switches circumferential -> longitudinal at 2 h, peaks near
+-0.42 at 6-8 h while differential growth is fastest, then relaxes back and
+crosses to circumferential again at ~52 h as the curvature disappears. By
+t = 200 h both flanks sit at a = 0.42-0.51, circumferential - which is the
+analytic thin-walled pressure-vessel value (hoop stress twice longitudinal
+gives a = 0.5). The longitudinal switch is therefore a signature of the
+*opening transient*, not of the opened organ, and the converged state is an
+independent check on the stress solver.
+
+**Timescale caveat.** Real hooks open in ~10 h; this run takes ~100 h to reach
+30 deg. The stretch is the `L_max` saturation tail, not the mechanics: inner
+and outer walls share one saturation length, so the differential that drives
+opening vanishes exactly as the hook straightens, giving an exponential
+approach (~x0.85 per 10 h). Giving the inner and outer flanks separate
+saturation lengths - they are already distinguishable by sector flag - would
+complete opening on a realistic timescale.

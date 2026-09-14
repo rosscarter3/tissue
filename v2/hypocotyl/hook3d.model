@@ -72,6 +72,7 @@ Degradation::One 1 1 1
 4       # cell variable: auxin
 
 VertexNoUpdateFromIndex 0 1 12
-# clamp the basal end-cap ring (seedling anchored at the soil line): the
-# apex swings up and the opened tube points vertically
-0 1 2 3 4 5 6 7 8 9 10 11
+# Clamp the APICAL end-cap ring (ring 29, the cotyledon end). The hook then
+# unrolls about the apex and the basal shank swings out to become the
+# straight vertical axis, rather than the apex swinging about a fixed base.
+348 349 350 351 352 353 354 355 356 357 358 359
