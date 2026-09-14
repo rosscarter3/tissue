@@ -66,21 +66,29 @@ Validation results on this machine (Apple M1):
   *any* thread count.
 
 Measured on a generated 40 000-cell / 80 400-wall tissue (wall growth +
-spring mechanics, RK5Adaptive, identical input files, Apple M1):
+spring mechanics, Apple M1, all numbers re-measured 2026-09-14):
 
 | job | legacy | v2 | speedup |
 |---|---|---|---|
-| t=0..5, eps=1e-5 | 137.2 s (2502 steps) | 0.28 s (14 steps) | ~490x |
-| t=0..50, eps=1e-8 | killed after 865 s, unfinished | 1.2-1.4 s | >600x |
+| Euler, 1000 fixed steps (identical work) | 18.4 s | 5.2 s | **3.6x** |
+| RK5Adaptive t=0..5, eps=1e-5 | 104.7 s (2501 steps) | 0.24 s (13 steps) | **~430x** |
+| RK5Adaptive t=0..50, eps=1e-8 | killed after 865 s, unfinished | 1.2-1.4 s | >600x |
 | meristem tutorial (divisions, ~400 cells) | 4.7 s | 1.5 s | ~3x |
 
-The dominant factor at scale is the legacy RK5 wall-derivative bug (below):
-its corrupted embedded error estimate forces ~180x more solver steps at the
-same tolerance on any model with wall dynamics. On top of that, v2's
-per-step cost is ~4x lower at 40k cells (flat memory layout + fused kernels),
-with threading adding ~20% more on this memory-bandwidth-bound machine.
-Models without wall dynamics take the same steps as legacy and see only the
-per-step gains.
+Two separable effects. **Raw throughput** is ~1.8x per derivative evaluation
+(flat memory layout, fused kernels) and 3.6x per Euler step once the
+redundant duplicate evaluation legacy performs each step is removed.
+**Step count** is where the large factors come from: on any model with wall
+dynamics the legacy RK5 wall-derivative bug (below) corrupts the embedded
+error estimate, forcing 2501 steps where the correct scheme needs 13 — a
+192x difference at the same tolerance. Models without wall dynamics take the
+same steps as legacy and see only the throughput gain.
+
+Threading currently adds nothing on this machine: these kernels are
+memory-bandwidth-bound and repeated runs show 1-thread and 8-thread parity
+even at 40k cells. The thread pool and its grain thresholds are in place for
+machines with more bandwidth, and independent runs (conditions, parameter
+sweeps) parallelize perfectly as separate processes.
 
 ## Deliberate fixes over legacy (documented divergences)
 
