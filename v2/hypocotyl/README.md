@@ -197,7 +197,26 @@ RK5Adaptive, about 4.5% of the opening either way:
 The explanation is simply how little of the force balance the fibre carries:
 Y_m = 20000 against Y_f = 1350, so the fibre is ~6% of wall stiffness, and a
 strain-gated growth law turns a 6% stiffness change into a few-percent growth
-change. (Tested because a parallel model — pavement-cell lobing, whose
+change. A four-point dose-response under `QuasiStatic` confirms the gain is
+linear in the fibre's share, measured at peak sensitivity (t = 1 h):
+
+| Y_f | share of stiffness | effect (deg) | linear prediction |
+|---|---|---|---|
+| 1350 | 6.3% | 0.000 | – |
+| 675 | 3.3% | 1.878 | 2.081 |
+| 337.5 | 1.7% | 3.040 | 3.122 |
+| 0 | 0% | 4.162 | 4.162 |
+
+within 10% of proportional throughout. (An earlier hint of strong
+non-linearity — isoxaben at Y_f = 470 appearing to cost only 0.5° — was an
+artefact of comparing across different solvers and timepoints: the observable
+saturates late, when the hook is nearly open, so *when* the effect is measured
+matters more than it looks. Peak sensitivity is around t = 1 h.)
+
+Note also that reducing Y_f cuts both the magnitude *and* the anisotropy of
+the fibre term, and only the magnitude channel matters here: oryzalin
+(`K_hill` -> 50, which makes the fibre isotropic at unchanged magnitude)
+changes nothing at all, while Y_f -> 0 changes 4.2°. (Tested because a parallel model — pavement-cell lobing, whose
 boundary is kinematically clamped — finds *exactly* zero for its analogous
 stiffening channel, and predicted from that the effect should scale with the
 softest mode's drag time. It does not: removing the lag entirely leaves the
