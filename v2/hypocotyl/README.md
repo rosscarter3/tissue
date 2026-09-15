@@ -114,6 +114,42 @@ flank (1.00 vs 0.45 baseline), and apoplastic pH with the inner flank more
 alkaline than the outer in darkness (acidification 0.05 vs 0.25).
 
 
+## Parameter provenance
+
+How many knobs bought the agreement, and which. Anything marked *fitted* was
+adjusted against a model output and cannot also be evidence for it.
+
+| parameter | source |
+|---|---|
+| r = 75.8 µm, R/r = 2.88 | **measured** — the paper's fitted toroid |
+| 16 epidermal files | **measured** — *Arabidopsis* anatomy (~16–24) |
+| k = 0.7, n = 1.2 (Eq. 3) | **measured** — the paper's values verbatim |
+| Y_m : Y_f = 75 : 100 | **measured** — the paper's stiffness ratio |
+| auxin 0.45 / 1.00, pH 0.25 / 0.05 | **measured** — Figs 2 and S3 |
+| k_d = 0.5 (τ = 2 h) | **measured** — the hook barely moves for the first ~2 h |
+| acid drive/relax = 2.0 (τ = 0.5 h) | **measured** — both flanks acidify within 30 min |
+| **k_growth = 80** | **fitted** — set so opening runs on the measured timescale |
+| **MATURE_FACTOR = 1.05** | **fitted** — set to the measured outer fold change |
+| **Y, Y_f, P absolute scale (×25)** | **fitted in effect** — see below |
+| Poisson 0.3, yield strain 0.005 | chosen, standard values |
+| K_auxin 0.55, n 6; K_acid 0.45, n 3 | chosen by hand; no independent measurement, and not demonstrably held fixed during development |
+| CT internal-edge L_max = 30 | chosen |
+| generated bend 172°, apex taper 0.86 | chosen so the relaxed shape starts near the measured 159° |
+| stress refresh 0.02 h, solver tolerances | numerical; validated not to change the trajectory |
+
+The third fitted entry deserves its name. Scaling Y, Y_fiber and P together
+leaves the *equilibrium* shape untouched, which is why it was treated as a free
+numerical choice — but under `RK5Adaptive` the shell never reaches equilibrium,
+and the scale sets how far it lags (see the quasi-static section). The lag sets
+the opening rate. So the ×25 is a second knob on the same observable
+`k_growth` was fitted to, and the two are not independent.
+
+That is three effective degrees of freedom behind the opening curve, one of
+which (MATURE_FACTOR) also buys the independent inner-flank prediction. The
+neck of the argument is that nothing in the list was fitted to the microtubule
+reorientation, the anisotropy magnitudes, or the perturbation responses.
+
+
 ## Mechanism (`hook.model`)
 
 | reaction | role |
@@ -167,13 +203,14 @@ Dark-equilibrated start, light at t = 0, angles in degrees
 | 10 | 12.5 | 34.5 | 2.16 | – | 1.11 | – | 89 | 80 |
 
 **Hook-angle RMSE 11.9°** over 0–10 h, tracking within ~4° through the first
-6 h — but read that as fit quality, not as a prediction: `k_growth` was tuned
-so that opening runs on the measured timescale, and several other parameters
-(turgor, the two Hill thresholds, the auxin decay rate) were set by hand
-against the same curve. What is *not* fitted to it, and so carries the
-evidential weight, is everything in the remaining columns: the fold changes,
-the microtubule reorientation, and the shape of the curve away from the
-timescale it was tuned on. The model over-opens late: real hooks stall near 35–45° once the
+6 h — but read that as fit quality, not as a prediction. Three effective
+degrees of freedom sit behind this curve (see *Parameter provenance*):
+`k_growth`, `MATURE_FACTOR`, and the ×25 scaling of Y and P, which is
+shape-neutral at equilibrium but sets the drag lag that partly determines the
+opening rate under `RK5Adaptive`. What is *not* fitted to this curve, and so
+carries the evidential weight, is everything else: the inner-flank fold
+change, the microtubule reorientation, the anisotropy magnitudes, and the
+perturbation responses. The model over-opens late: real hooks stall near 35–45° once the
 cotyledons separate, which this model has no representation of (the paper's
 own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
 experimental). The dark control never opens — but that is a consistency
