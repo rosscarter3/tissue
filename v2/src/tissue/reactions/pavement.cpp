@@ -276,11 +276,14 @@ TISSUE_REGISTER_REACTION(CmtCurvatureRecruitment, "CMT::CurvatureRecruitment")
 // stiffness by ~160% at typical m and still buys 0.9% -- because the path is
 // shut, not because the term is small.
 //
-// An earlier version of this comment blamed drag lag. That was wrong on both
-// counts: the hook's effect survives QuasiStatic, where there is no lag by
-// construction, and this model does carry substantial lag (RK5Adaptive and
-// QuasiStatic differ by 11% in cell area and 34% in perimeter at t = 48 h).
-// Lag is present here and simply is not the channel.
+// An earlier version of this comment blamed drag lag. That was wrong: the
+// apical-hook model's Y_fiber effect survives QuasiStatic, where there is no
+// lag by construction. Lag IS present in this model -- a rate-scaling sweep
+// (all rates x s, t_end / s) has RK5Adaptive converging on QuasiStatic as
+// growth slows, with the lobeyness gap going 14.7% -> 9.6% -> -0.3% for
+// s = 1, 1/2, 1/4, against a QuasiStatic result that moves by under 0.3%
+// across the same range. So lag is real and measurable here; it simply is
+// not the channel through which stiffness acts.
 //
 // Keep the term: it is physically real, and it is the right place for
 // cellulose stiffening in any variant with strain-gated growth. But a fitted
