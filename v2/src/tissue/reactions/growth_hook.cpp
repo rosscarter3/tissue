@@ -202,5 +202,85 @@ public:
 TISSUE_REGISTER_REACTION(CTWallGrowthStrainSaturationHill,
                          "CenterTriangulation::WallGrowth::StrainSaturationHill")
 
+// Acid growth: irreversible wall extension gated by BOTH of the chemical
+// signals measured during apical hook opening (Walia, Carter et al. 2024,
+// Fig. 2), on top of Lockhart strain yielding and a per-wall maximum length.
+//
+//   dL/dt = k (eps - eps_th)+ * L * (1 - L/Lmax_wall)+ * G_auxin * G_acid
+//   G_auxin = Ka^na / (Ka^na + auxin^na)      auxin represses extension
+//   G_acid  = acid^nc / (Kc^nc + acid^nc)     acidification permits it
+//
+// The paper's finding is that growth "is gated by wall alkalinity and auxin,
+// both of which are depleted upon illumination": two independent permissive
+// gates released by light, neither of which by itself sets the inner/outer
+// differential (acidification is measured on both flanks, and the inner side
+// carries MORE auxin yet grows more). The differential therefore has to come
+// from the mechanics and from each cell's remaining elongation capacity,
+// which is why Lmax is read per wall rather than as a single parameter:
+// outer-flank cells are born near their mature length, inner-flank cells are
+// short and have most of their elongation ahead of them.
+//
+// Parameters: k_growth, strain_threshold, K_auxin, n_auxin, K_acid, n_acid
+// Levels: 0 wall length index, 1 cell auxin index, 2 cell acid index,
+//         3 wall grow-flag index, 4 wall Lmax index
+class WallGrowthAcid : public Reaction {
+public:
+  WallGrowthAcid(const ParameterList &p, const IndexLevels &i) {
+    configure("WallGrowth::AcidGrowth", p, i, 6, {1, 1, 1, 1, 1},
+              {"k_growth", "strain_threshold", "K_auxin", "n_auxin", "K_acid",
+               "n_acid"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &wallDerivs,
+              Matrix &) override {
+    const size_t lengthIndex = variableIndex(0, 0);
+    const size_t auxinIndex = variableIndex(1, 0);
+    const size_t acidIndex = variableIndex(2, 0);
+    const size_t flagIndex = variableIndex(3, 0);
+    const size_t lmaxIndex = variableIndex(4, 0);
+    const double k = parameter(0);
+    const double threshold = parameter(1);
+    const double nAux = parameter(3), nAcid = parameter(5);
+    const double kAuxN = std::pow(parameter(2), nAux);
+    const double kAcidN = std::pow(parameter(4), nAcid);
+    parallelFor(T.numWall(), [&](size_t b, size_t e) {
+      for (size_t w = b; w < e; ++w) {
+        if (wallData[w][flagIndex] == 0.0)
+          continue;
+        const double L = wallData[w][lengthIndex];
+        const double eps = (T.wallLengthFromVertices(w, vertexData) - L) / L;
+        if (eps <= threshold)
+          continue;
+        const double lMax = wallData[w][lmaxIndex];
+        double sat = lMax > 0.0 ? 1.0 - L / lMax : 1.0;
+        if (sat <= 0.0)
+          continue;
+        // Mean of the adjacent cells' chemistry.
+        const Wall &wall = T.wall(w);
+        double auxin = 0.0, acid = 0.0;
+        size_t nc = 0;
+        for (size_t c : {wall.cell1, wall.cell2}) {
+          if (Tissue::isBackground(c))
+            continue;
+          auxin += cellData[c][auxinIndex];
+          acid += cellData[c][acidIndex];
+          ++nc;
+        }
+        if (nc) {
+          auxin /= static_cast<double>(nc);
+          acid /= static_cast<double>(nc);
+        }
+        const double aN = std::pow(auxin, nAux);
+        const double cN = std::pow(std::max(acid, 0.0), nAcid);
+        const double gAuxin = kAuxN / (kAuxN + aN);
+        const double gAcid = cN / (kAcidN + cN);
+        wallDerivs[w][lengthIndex] +=
+            k * (eps - threshold) * L * sat * gAuxin * gAcid;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(WallGrowthAcid, "WallGrowth::AcidGrowth")
+
 } // namespace
 } // namespace tissue

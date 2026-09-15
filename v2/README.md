@@ -84,11 +84,52 @@ error estimate, forcing 2501 steps where the correct scheme needs 13 — a
 192x difference at the same tolerance. Models without wall dynamics take the
 same steps as legacy and see only the throughput gain.
 
-Threading currently adds nothing on this machine: these kernels are
+Threading adds nothing on this machine: these kernels are
 memory-bandwidth-bound and repeated runs show 1-thread and 8-thread parity
-even at 40k cells. The thread pool and its grain thresholds are in place for
-machines with more bandwidth, and independent runs (conditions, parameter
-sweeps) parallelize perfectly as separate processes.
+even at 40k cells (3.9-4.4 s for the Euler-1000 benchmark, either way). What
+matters much more is *not* threading small loops. The grain threshold — the
+size below which a loop runs serially — was originally 1024 elements, which
+is far below the real crossover: a parallel region costs a mutex, a
+condition-variable broadcast and a join (tens of microseconds) against tens
+of nanoseconds of work per element. On the 514-cell hook shell that put the
+wall loops (1040 elements) and the cell table (8224) just over the line and
+spent half the wall clock in the kernel:
+
+| grain | real | user | sys |
+|---|---|---|---|
+| 1024 (was) | 58.2 s | 29.0 s | **29.1 s** |
+| 8192 | 38.2 s | 24.5 s | 9.5 s |
+| **65536 (now)** | **29.5 s** | 21.5 s | **1.0 s** |
+| single-threaded | 29.9 s | 21.5 s | 1.2 s |
+
+**1.5x to 2.6x on that model, with a bit-identical trajectory** (element-wise
+loops cannot change results, and the one reduction — the scatter — is
+separately guarded, see below). The spread is real and worth knowing: lock
+contention gets much worse when the machine is otherwise busy, so the fix
+helps least on an idle machine (2 h run: 262 s -> 170 s CPU, 1.5x) and most
+when several conditions run in parallel, which is the normal case. Two
+back-to-back A/B pairs of a 0.5 h run with four other jobs resident:
+
+| grain | CPU (user + sys) | real |
+|---|---|---|
+| 1024 | 110.3 s (53.2 + 57.1) / 114.2 s (50.3 + 63.9) | 103.9 s / 85.3 s |
+| 65536 | 41.8 s (40.5 + 1.3) / 40.1 s (39.2 + 0.8) | 48.2 s / 45.2 s |
+
+i.e. 2.7x less CPU and 2.0x less wall clock, with system time down ~50x.
+Neutral at 40k cells. Override with `TISSUE_GRAIN` to re-measure the
+crossover elsewhere.
+
+The deterministic scatter (private per-partition copies of the target table,
+reduced in partition order) carries a cost of O(threads x |target|) that does
+not shrink as the loop is split, so it only pays when the loop is at least as
+long as the target table is wide; it now checks that explicitly, and reuses
+its scratch buffers instead of allocating a set per call. This is the real
+reason wall-force threading shows little gain even at scale — a two-pass
+gather over the vertex incidence lists has no such term and is the scalable
+alternative.
+
+Independent runs (conditions, parameter sweeps) parallelize perfectly as
+separate processes, which is what the hypocotyl pipeline does.
 
 ## Deliberate fixes over legacy (documented divergences)
 
@@ -132,7 +173,14 @@ legacy aliases.
 Compartment changes: `Division::VolumeRandomDirection`,
 `Division::ShortestPath2D`, `RemovalOutsideRadius`.
 
-Solvers: `RK5Adaptive`, `RK4`, `Euler`, `HeunIto`.
+Solvers: `RK5Adaptive`, `RK4`, `Euler`, `HeunIto`, and `QuasiStatic` (new in
+v2, no legacy counterpart): growth stepping with mechanical equilibrium solved
+by FIRE relaxation rather than integrated. Explicit integration of overdamped
+mechanics is bounded by the *stiffest* elastic mode while the modelled process
+runs on the *softest* one — a ratio near 1e5 on the hook shell, where mean
+`h` is 2e-5 h. Solving equilibrium instead removes that bound and the need to
+scale Y and P for mobility. It does not reproduce `RK5Adaptive` on a model
+tuned against the lagged dynamics; see the header of `quasi_static.cpp`.
 
 Print flags: 0, 1, 2 (VTK), 3, 4, 5 (gnuplot), 77, 107.
 

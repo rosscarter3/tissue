@@ -170,6 +170,15 @@ void Tissue::derivs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
               vertexDerivs);
 }
 
+std::vector<size_t> Tissue::positionalCellVariables() const {
+  std::vector<size_t> v;
+  for (const auto &r : reactions_)
+    r->positionalCellVariables(v);
+  std::sort(v.begin(), v.end());
+  v.erase(std::unique(v.begin(), v.end()), v.end());
+  return v;
+}
+
 void Tissue::derivsWithAbs(Matrix &cellData, Matrix &wallData,
                            Matrix &vertexData, Matrix &cellDerivs,
                            Matrix &wallDerivs, Matrix &vertexDerivs,

@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "tissue/parallel/thread_pool.h"
 
 #include <algorithm>
@@ -33,6 +34,19 @@ ThreadPool::~ThreadPool() {
   for (auto &w : workers_)
     w.join();
 }
+
+// Elements below which a parallel region is not worth its synchronization.
+// Override with TISSUE_GRAIN (0 = always parallel) to re-measure the
+// crossover on a different machine.
+const size_t ThreadPool::defaultGrain = [] {
+  if (const char *e = std::getenv("TISSUE_GRAIN")) {
+    char *end = nullptr;
+    unsigned long v = std::strtoul(e, &end, 10);
+    if (end != e)
+      return static_cast<size_t>(v);
+  }
+  return static_cast<size_t>(65536);
+}();
 
 void ThreadPool::workerLoop(size_t workerIndex) {
   uint64_t seenEpoch = 0;

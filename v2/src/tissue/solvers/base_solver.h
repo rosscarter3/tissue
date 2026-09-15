@@ -61,6 +61,8 @@ protected:
   int printFlag_ = 0;
   int numPrint_ = 0;
   unsigned int numOk_ = 0, numBad_ = 0;
+  // trial steps rejected by the embedded error estimate
+  unsigned int numReject_ = 0;
 
   // print schedule state
   bool doPrint_ = true;
