@@ -116,8 +116,10 @@ back-to-back A/B pairs of a 0.5 h run with four other jobs resident:
 | 65536 | 41.8 s (40.5 + 1.3) / 40.1 s (39.2 + 0.8) | 48.2 s / 45.2 s |
 
 i.e. 2.7x less CPU and 2.0x less wall clock, with system time down ~50x.
-Neutral at 40k cells. Override with `TISSUE_GRAIN` to re-measure the
-crossover elsewhere.
+Independently confirmed on an unrelated workload (pavement-cell lobing, 37
+cells / 2353 walls, 24 h simulated): ~270 s -> 149 s, 1.8x, with model
+observables unchanged to four significant figures. Neutral at 40k cells.
+Override with `TISSUE_GRAIN` to re-measure the crossover elsewhere.
 
 The deterministic scatter (private per-partition copies of the target table,
 reduced in partition order) carries a cost of O(threads x |target|) that does
