@@ -959,5 +959,113 @@ private:
 TISSUE_REGISTER_REACTION(GrowthForceBoundaryDilation,
                          "GrowthForce::BoundaryDilation")
 
+
+// ---------------------------------------------------------------------------
+// WallMechanics::Bending
+//
+// Wall bending stiffness with the correct continuum limit, so that the
+// selected wavelength is set by the physics and not by the mesh.
+//
+// WallMechanics::BendingChain applies F_v = k (midpoint - x_v), a discrete
+// Laplacian stencil, conservative for E = sum_v (k/2)|s_v|^2. For a sinusoid
+// of amplitude A and wavelength lambda at vertex spacing h that energy is
+//
+//   E / length = k pi^4 A^2 h^3 / lambda^4
+//
+// (verified against the exact discrete sum: the ratio per halving of h
+// converges on 1/8, and the closed form agrees to four significant figures).
+//
+// So the WAVELENGTH exponent is already correct -- it penalises short
+// wavelengths as lambda^-4, exactly as a bending term should. The defect is
+// the h^3 prefactor: the effective stiffness is proportional to the cube of
+// the vertex spacing, so halving the mesh weakens bending EIGHTFOLD.
+//
+// (An earlier version of this comment said the energy went as h/lambda^2 and
+// blamed a wrong wavelength exponent. Both were wrong: that probe summed
+// |F_v| A, a force density, which does scale as h^1. The remedy below was
+// derived from the energy and is unaffected -- B = k h^3 / 4 carries the
+// correct h^3 -- but the size of the effect is 8x per halving, not 2x.)
+//
+// That is not academic. Refining this model's wall discretisation from 0.6 to
+// 0.3 um moved lobeyness from 1.155 to 1.083 and the neck count from 7.43 to
+// 9.71 per cell (+30.7%): weaker effective bending, shorter selected
+// wavelength, more and shallower lobes. The lobe spacing was partly a
+// property of the mesh. (Since lambda ~ B^(1/4), an eightfold bending change
+// predicts 8^(1/4) = 1.68x more necks; the measured 1.31x is smaller, so the
+// wavelength is not set by bending alone here.)
+//
+// A real bending energy for a chain is
+//
+//   E = sum_v (B/2) kappa_v^2 l_v,   kappa_v = 2 |s_v| / h^2,   l_v = h
+//     = sum_v 2 B |s_v|^2 / h^3
+//
+// with s_v = (x_a + x_b)/2 - x_v the sagitta vector. Substituting a sinusoid
+// gives an energy per unit length proportional to B A^2 / lambda^4 with no h
+// in it -- the same fourth-power law BendingChain already has, but now with a
+// mesh-independent prefactor.
+//
+// The force is the same three-point stencil BendingChain uses, which is why
+// this is a small change rather than a new operator:
+//
+//   F_v = 4 B s_v / h^3,   F_a = F_b = -F_v / 2
+//
+// so it is exactly BendingChain with k replaced by 4B/h^3, evaluated per
+// vertex from the current spacing. B is a bending modulus (force x length^2)
+// and is a material property, unlike k_bend which had to be retuned for every
+// discretisation.
+//
+// BendingChain is left alone: the apical-hook model is calibrated against it.
+class WallMechanicsBending : public Reaction {
+public:
+  WallMechanicsBending(const ParameterList &p, const IndexLevels &i) {
+    configure("WallMechanics::Bending", p, i, 1, {1}, {"B_bend"});
+  }
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    const size_t flagIndex = variableIndex(0, 0);
+    const double bBend = parameter(0);
+    const size_t dim = vertexData.cols();
+    parallelScatter1(
+        T.numVertex(), vertexDerivs, [&](size_t begin, size_t end,
+                                         Matrix &out) {
+          for (size_t v = begin; v < end; ++v) {
+            size_t chain[2];
+            size_t found = 0;
+            for (size_t w : T.vertex(v).walls) {
+              if (wallData[w][flagIndex] != 0.0) {
+                if (found < 2)
+                  chain[found] = w;
+                ++found;
+              }
+            }
+            if (found != 2)
+              continue; // chain ends and junctions carry no bending force
+            const size_t a = T.wall(chain[0]).otherVertex(v);
+            const size_t b = T.wall(chain[1]).otherVertex(v);
+            double da = 0.0, db = 0.0;
+            for (size_t d = 0; d < dim; ++d) {
+              da += (vertexData[a][d] - vertexData[v][d]) *
+                    (vertexData[a][d] - vertexData[v][d]);
+              db += (vertexData[b][d] - vertexData[v][d]) *
+                    (vertexData[b][d] - vertexData[v][d]);
+            }
+            const double h = 0.5 * (std::sqrt(da) + std::sqrt(db));
+            if (h <= 0.0)
+              continue;
+            const double k = 4.0 * bBend / (h * h * h);
+            for (size_t d = 0; d < dim; ++d) {
+              const double f =
+                  k * (0.5 * (vertexData[a][d] + vertexData[b][d]) -
+                       vertexData[v][d]);
+              out[v][d] += f;
+              out[a][d] -= 0.5 * f;
+              out[b][d] -= 0.5 * f;
+            }
+          }
+        });
+  }
+};
+TISSUE_REGISTER_REACTION(WallMechanicsBending, "WallMechanics::Bending")
+
 } // namespace
 } // namespace tissue
