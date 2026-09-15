@@ -135,7 +135,8 @@ adjusted against a model output and cannot also be evidence for it.
 | K_auxin 0.55, n 6; K_acid 0.45, n 3 | chosen by hand; no independent measurement, and not demonstrably held fixed during development |
 | CT internal-edge L_max = 30 | chosen |
 | generated bend 172°, apex taper 0.86 | chosen so the relaxed shape starts near the measured 159° |
-| stress refresh 0.02 h, solver tolerances | numerical; validated not to change the trajectory |
+| stress refresh 0.02 h | numerical; measured to move the hook angle ≤2×10⁻³° vs refreshing every step |
+| solver tolerance 1e-2 | numerical; measured to agree with 1e-3 to 1.4×10⁻⁴° on this model |
 
 The third fitted entry deserves its name. Scaling Y, Y_fiber and P together
 leaves the *equilibrium* shape untouched, which is why it was treated as a free
@@ -432,7 +433,15 @@ timings for it are in the table after.
 | + Hill-factor caching | 47 min | 244 s |
 | + solver tolerance 1e-4 → 1e-3 | **94 s** | **7 s** |
 
-**48× faster with a bit-for-bit unchanged trajectory.** The three changes:
+**48× faster, with the trajectory unchanged to 2×10⁻³ degrees.** Not
+bit-for-bit, which is what this used to claim. Two of the three changes below
+are exact refactors; the stress-refresh interval is not, and holding the
+material constant for ~1000 solver steps instead of updating it every step
+moves the hook angle by up to 2×10⁻³° over 0.05 h (measured against
+`interval = 0`). Far below anything that matters here, but the justification
+for the interval — that CMT reorientation is an hours-scale process — is an
+argument about the *biology* being insensitive, not about the arithmetic being
+identical, and it was quoted as the latter. The three changes:
 
 1. **Stress-state refresh interval** (`VertexFromTRBScenterTriangulation`
    parameter 3). Profiling put 37% of runtime in the per-step stress tensor +
@@ -442,8 +451,9 @@ timings for it are in the table after.
    pair, hoisting two `pow()` calls out of the inner loop (−16%).
 3. **Solver tolerance.** The dominant cost: `eps=1e-4` forced tiny steps to
    resolve elastic transients the growth-driven trajectory does not depend
-   on. Validated by comparing 1e-4, 1e-3 and 1e-2 over a full run — identical
-   hook angles and inner fold in all three.
+   on. Validated by comparing 1e-4, 1e-3 and 1e-2 over a full run of the
+   350-cell model, and re-checked on the current 514-cell one: 1e-2 and 1e-3
+   agree to 1.4×10⁻⁴ degrees, i.e. seven significant figures, not "identical".
 
 What does **not** help at this scale:
 
