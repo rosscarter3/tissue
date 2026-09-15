@@ -47,6 +47,8 @@ private:
   static void combineHeun(Matrix &y, const Matrix &y0, const Matrix &k1,
                           const Matrix &k2, double h);
   void restorePositional(Matrix &y, const Matrix &y0) const;
+  void forceOnly();
+  void applyPrescribed(double h);
 
   double hGrowth_ = 0.0;
   double forceTol_ = 1e-3;
@@ -54,6 +56,8 @@ private:
   double dt0_ = 0.0, dtMax_ = 0.0, scaleHint_ = 1.0;
   unsigned int relaxNotConverged_ = 0;
   Matrix velocity_;
+  Matrix vertexVel_;              // prescribed (non-relaxable) velocity
+  bool hasPrescribed_ = false;
   Matrix cellStart_, wallStart_, cellK1_, wallK1_;
   std::vector<size_t> posIndex_;   // flat cellData indices that are positions
   std::vector<double> posVel_;     // their FIRE velocities

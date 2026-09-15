@@ -184,6 +184,16 @@ runs on the *softest* one — a ratio near 1e5 on the hook shell, where mean
 scale Y and P for mobility. It does not reproduce `RK5Adaptive` on a model
 tuned against the lagged dynamics; see the header of `quasi_static.cpp`.
 
+A reaction that prescribes *velocity* rather than force — imposed tissue-level
+dilation (`GrowthForce::Radial`/`MoveVertexRadially`), a moving boundary —
+cannot be relaxed: the term never vanishes, so a naive relaxer drives it
+without bound instead of converging. Such reactions declare themselves with
+`Reaction::prescribesVelocity()` and supply `velocityDerivs()`; `QuasiStatic`
+then integrates that contribution over the growth step and holds it out of the
+relaxation. Setting a derivative to zero (a clamp, `VertexNoUpdateFromIndex`)
+is not prescribed velocity — zero is consistent with force balance and needs
+no declaration.
+
 Print flags: 0, 1, 2 (VTK), 3, 4, 5 (gnuplot), 77, 107.
 
 This covers every model shipped in `examples/tutorials`. A model using an

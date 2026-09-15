@@ -77,6 +77,26 @@ public:
   // step; the default (none) is right for every ordinary reaction.
   virtual void positionalCellVariables(std::vector<size_t> &) const {}
 
+  // True if this reaction's vertex contribution is a prescribed *velocity*
+  // rather than a force - a term that does not vanish at mechanical
+  // equilibrium (imposed tissue-level dilation, a moving boundary). Explicit
+  // solvers cannot tell the difference and do not need to, but a solver that
+  // relaxes to force balance must not try to zero such a term: it never can,
+  // and will instead drive the prescribed motion without bound. Reactions
+  // that say true here must also implement velocityDerivs().
+  //
+  // Setting a derivative to *zero* (a clamp) is not prescribed velocity:
+  // zero is consistent with force balance, so clamps need nothing here.
+  virtual bool prescribesVelocity() const { return false; }
+
+  // The prescribed velocity contribution, written the same way derivs()
+  // writes vertexDerivs. Only called by force-balance solvers, which apply it
+  // as motion over the growth step and hold it out of the relaxation.
+  virtual void velocityDerivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+                              Matrix &vertexData, Matrix &vertexVel) {
+    (void)T; (void)cellData; (void)wallData; (void)vertexData; (void)vertexVel;
+  }
+
   virtual void update(Tissue &, Matrix & /*cellData*/, Matrix & /*wallData*/,
                       Matrix & /*vertexData*/, double /*h*/) {}
 

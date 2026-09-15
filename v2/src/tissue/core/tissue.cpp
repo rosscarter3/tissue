@@ -170,6 +170,32 @@ void Tissue::derivs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
               vertexDerivs);
 }
 
+// Force-balance solvers need the two kinds of vertex contribution apart:
+// forces (relaxable, vanish at equilibrium) and prescribed velocities
+// (not relaxable, applied as motion over the growth step).
+void Tissue::derivsSplit(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
+                         Matrix &cellDerivs, Matrix &wallDerivs,
+                         Matrix &vertexDerivs, Matrix &vertexVel) {
+  cellDerivs.fill(0.0);
+  wallDerivs.fill(0.0);
+  vertexDerivs.fill(0.0);
+  vertexVel.fill(0.0);
+  for (auto &r : reactions_) {
+    if (r->prescribesVelocity())
+      r->velocityDerivs(*this, cellData, wallData, vertexData, vertexVel);
+    else
+      r->derivs(*this, cellData, wallData, vertexData, cellDerivs, wallDerivs,
+                vertexDerivs);
+  }
+}
+
+bool Tissue::hasPrescribedVelocity() const {
+  for (const auto &r : reactions_)
+    if (r->prescribesVelocity())
+      return true;
+  return false;
+}
+
 std::vector<size_t> Tissue::positionalCellVariables() const {
   std::vector<size_t> v;
   for (const auto &r : reactions_)

@@ -116,8 +116,7 @@ size_t QuasiStatic::relax() {
   std::fill(v.begin(), v.end(), 0.0);
   posVel_.assign(posIndex_.size(), 0.0);
 
-  T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
-             vertexDerivs_);
+  forceOnly();
   size_t evals = 1;
   const double f0 = maxForce();
   if (f0 <= 0.0)
@@ -191,14 +190,37 @@ size_t QuasiStatic::relax() {
     for (size_t j = 0; j < posIndex_.size(); ++j)
       cx[posIndex_[j]] += dt * posVel_[j];
 
-    T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
-               vertexDerivs_);
+    forceOnly();
     ++evals;
     if (maxForce() <= target)
       return evals;
   }
   ++relaxNotConverged_;
   return evals;
+}
+
+// Forces only: prescribed-velocity reactions are held out, because a term
+// that does not vanish at equilibrium cannot be relaxed - FIRE would drive it
+// without bound instead of converging.
+void QuasiStatic::forceOnly() {
+  if (hasPrescribed_)
+    T_->derivsSplit(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
+                    vertexDerivs_, vertexVel_);
+  else
+    T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
+               vertexDerivs_);
+}
+
+// Imposed motion over one growth step, applied before relaxation.
+void QuasiStatic::applyPrescribed(double h) {
+  if (!hasPrescribed_)
+    return;
+  T_->derivsSplit(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
+                  vertexDerivs_, vertexVel_);
+  auto x = vertexData_.flat();
+  auto v = vertexVel_.flat();
+  for (size_t k = 0; k < x.size(); ++k)
+    x[k] += h * v[k];
 }
 
 void QuasiStatic::simulate() {
@@ -215,6 +237,11 @@ void QuasiStatic::simulate() {
   T_->initiateDirection(cellData_, wallData_, vertexData_, cellDerivs_,
                         wallDerivs_, vertexDerivs_);
   initPrintSchedule(1e-12);
+  hasPrescribed_ = T_->hasPrescribedVelocity();
+  vertexVel_.reshapeLike(vertexData_);
+  if (hasPrescribed_)
+    std::cerr << "QuasiStatic: model prescribes vertex velocity; integrating "
+                 "that separately from the relaxation." << std::endl;
 
   // Set the FIRE timestep from the fastest elastic mode, estimated once from
   // the initial force response: dt_stable ~ 2/sqrt(K) for inertial dynamics.
@@ -243,8 +270,8 @@ void QuasiStatic::simulate() {
     // --- growth / chemistry step, vertices held fixed ------------------
     // These variables are non-stiff: their rates change over hours, so a
     // Heun (predictor-corrector) step at the growth step size is ample.
-    T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
-               vertexDerivs_);
+    applyPrescribed(h);
+    forceOnly();
     ++totalEvals;
     cellStart_.copyFrom(cellData_);
     wallStart_.copyFrom(wallData_);
@@ -254,8 +281,7 @@ void QuasiStatic::simulate() {
     addScaled(wallData_, wallK1_, h);
     restorePositional(cellData_, cellStart_);
 
-    T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
-               vertexDerivs_);
+    forceOnly();
     ++totalEvals;
     // y = y0 + h/2 (k1 + k2)
     combineHeun(cellData_, cellStart_, cellK1_, cellDerivs_, h);
@@ -274,16 +300,17 @@ void QuasiStatic::simulate() {
 
     if (t_ >= endTime_ - 1e-12) {
       if (doPrint_) {
-        T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
-                   vertexDerivs_);
+        forceOnly();
         print();
       }
       std::cerr << "Simulation done. growth steps: " << numOk_
                 << ", force evaluations: " << totalEvals << " ("
                 << (totalEvals / std::max(1u, numOk_)) << " per step)";
       if (relaxNotConverged_)
-        std::cerr << ", " << relaxNotConverged_
-                  << " steps hit the relaxation iteration cap";
+        std::cerr << "\n  WARNING: " << relaxNotConverged_ << " of " << numOk_
+                  << " growth steps hit the relaxation cap (" << maxRelax_
+                  << ") without reaching force balance - those steps are NOT"
+                     " converged. Raise the cap or loosen force_tol.";
       std::cerr << std::endl;
       return;
     }

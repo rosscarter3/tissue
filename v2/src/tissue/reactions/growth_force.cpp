@@ -23,6 +23,18 @@ public:
                                "(k_growth, r_pow in {0,1}).");
     configure("Force::Radial", p, i, 2, {}, {"k_growth", "r_pow"});
   }
+  // Radial expansion is imposed motion, not a force: it does not vanish at
+  // force balance, so a force-balance solver must integrate it rather than
+  // relax it (see Reaction::prescribesVelocity).
+  bool prescribesVelocity() const override { return true; }
+  void velocityDerivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+                      Matrix &vertexData, Matrix &vertexVel) override {
+    Matrix ignoredCell, ignoredWall;
+    ignoredCell.reshapeLike(cellData);
+    ignoredWall.reshapeLike(wallData);
+    derivs(T, cellData, wallData, vertexData, ignoredCell, ignoredWall,
+           vertexVel);
+  }
   void derivs(Tissue &, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
               Matrix &, Matrix &vertexDerivs) override {
     const double k = parameter(0);

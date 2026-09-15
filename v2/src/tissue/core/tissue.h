@@ -148,6 +148,14 @@ public:
   // --- simulation hooks (called by solvers) -----------------------------------
   void derivs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
               Matrix &cellDerivs, Matrix &wallDerivs, Matrix &vertexDerivs);
+  // derivs(), but with prescribed-velocity reactions routed into vertexVel
+  // instead of vertexDerivs, so a force-balance solver can relax the one and
+  // integrate the other. Ordering within each group matches derivs().
+  void derivsSplit(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
+                   Matrix &cellDerivs, Matrix &wallDerivs, Matrix &vertexDerivs,
+                   Matrix &vertexVel);
+  bool hasPrescribedVelocity() const;
+
   // Cell columns that reactions drive as positions (center-triangulation
   // vertices), which solvers separating mechanics from growth must relax
   // rather than integrate on the growth step.
