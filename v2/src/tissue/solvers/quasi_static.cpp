@@ -33,6 +33,13 @@
 //   <printFlag> <numPrint>
 //   <h_growth> <force_tol> <max_relax_iterations>
 //
+// Comparing against another solver: QuasiStatic relaxes to force balance
+// *before* its first print, so its frame 0 is the relaxed configuration while
+// the explicit solvers print the initial file as given. Absolute values at
+// t = 0 therefore differ by whatever the initial state was out of balance by;
+// compare growth factors against each run's own frame 0, not absolute values
+// across solvers.
+//
 // force_tol is relative: relaxation stops when the largest vertex force falls
 // below force_tol times the largest force seen at the start of that step's
 // relaxation (plus an absolute floor), so it adapts to the force scale of the
