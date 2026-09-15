@@ -186,13 +186,13 @@ direction to the experiment: removing it makes the hook open slightly faster
 
 **This is not an artefact of the drag lag.** Repeating the control under
 `QuasiStatic`, where the shell is at force balance every step and there is no
-lag by construction, gives the same answer — 4.2° at peak against 3.4° under
+lag by construction, gives the same answer — 4.0° at peak against 3.4° under
 RK5Adaptive, about 4.5% of the opening either way:
 
 | t (h) | 0.75 | 1.00 | 1.50 |
 |---|---|---|---|
-| Y_f = 1350 | 113.5 | 69.2 | 15.6 |
-| Y_f = 0 | 110.5 | 65.1 | 13.6 |
+| Y_f = 1350 | 113.3 | 69.3 | 15.6 |
+| Y_f = 0 | 110.2 | 65.3 | 13.6 |
 
 The explanation is simply how little of the force balance the fibre carries:
 Y_m = 20000 against Y_f = 1350, so the fibre is ~6% of wall stiffness, and a
@@ -238,7 +238,7 @@ matters more than it looks. Peak sensitivity is around t = 1 h.)
 Note also that reducing Y_f cuts both the magnitude *and* the anisotropy of
 the fibre term, and only the magnitude channel matters here: oryzalin
 (`K_hill` -> 50, which makes the fibre isotropic at unchanged magnitude)
-changes nothing at all, while Y_f -> 0 changes 4.2°. (Tested because a parallel model — pavement-cell lobing, whose
+changes nothing at all, while Y_f -> 0 changes 4.0°. (Tested because a parallel model — pavement-cell lobing, whose
 boundary is kinematically clamped — finds *exactly* zero for its analogous
 stiffening channel, and predicted from that the effect should scale with the
 softest mode's drag time. It does not: removing the lag entirely leaves the
@@ -385,7 +385,7 @@ does **not** reproduce the trajectory, and that is the interesting part:
 | t (h) | 0 | 0.5 | 1.0 | 1.5 | 2.0 |
 |---|---|---|---|---|---|
 | RK5Adaptive | 159.2 | 170.5 | 159.9 | 139.1 | 121.5 |
-| QuasiStatic | 159.0 | 149.0 | 69.2 | 15.6 | 6.3 |
+| QuasiStatic | 159.0 | 149.0 | 69.3 | 15.6 | 6.3 |
 
 Halving the growth step and tightening the force tolerance tenfold moves the
 QuasiStatic column by under 3°, so this is not discretisation error. The two
