@@ -184,6 +184,28 @@ So the fibre accounts for roughly 4% of the effect, and in the *opposite*
 direction to the experiment: removing it makes the hook open slightly faster
 (less stiffness, more strain, more yielding), whereas isoxaben blocks opening.
 
+**This is not an artefact of the drag lag.** Repeating the control under
+`QuasiStatic`, where the shell is at force balance every step and there is no
+lag by construction, gives the same answer — 4.2° at peak against 3.4° under
+RK5Adaptive, about 4.5% of the opening either way:
+
+| t (h) | 0.75 | 1.00 | 1.50 |
+|---|---|---|---|
+| Y_f = 1350 | 113.5 | 69.2 | 15.6 |
+| Y_f = 0 | 110.5 | 65.1 | 13.6 |
+
+The explanation is simply how little of the force balance the fibre carries:
+Y_m = 20000 against Y_f = 1350, so the fibre is ~6% of wall stiffness, and a
+strain-gated growth law turns a 6% stiffness change into a few-percent growth
+change. (Tested because a parallel model — pavement-cell lobing, whose
+boundary is kinematically clamped — finds *exactly* zero for its analogous
+stiffening channel, and predicted from that the effect should scale with the
+softest mode's drag time. It does not: removing the lag entirely leaves the
+effect intact. Note that scaling *one* of several competing force terms does
+change the equilibrium; only scaling them all together leaves it invariant,
+which is why the Y/P mobility rescaling is shape-neutral but zeroing Y_f is
+not.)
+
 The matrix modulus (Y_m = 20000) dominates the fibre term, which enters
 `WallMechanics::FiberSpring` as `Y_f · orient · area/(2d)` with
 `orient ∈ [0.5(1−g), 0.5(1+g)]`. Even full anisotropy therefore redistributes
