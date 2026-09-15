@@ -10,8 +10,9 @@ dependent stiffness set by the local stress state — the mechanism proposed in
 > *Developmental Cell* **59**:3245–3259.
 
 Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
-the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner/outer
-tissue-length fold changes, the inner/outer microtubule reorientation
+the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner-flank
+tissue-length fold change (2.16x against 2.149x measured; the outer flank
+overshoots, 1.11x against 1.055x), the inner/outer microtubule reorientation
 asymmetry, and the auxin- and pH-dependent perturbations. It does **not**
 reproduce the microtubule and cellulose perturbations — the fibre stiffness
 turns out to carry too little load for wall anisotropy to drive anything.
@@ -72,13 +73,32 @@ curved segment the inner surface sits at radius R − r and the outer at R + r,
 so inner cells are born short and outer cells long.
 
 The **mature length is shared**: every hook epidermal cell has the same
-`Lmax`, set to 1.05× the longest (outer-flank) cell. That one assumption,
-with no free inner/outer parameter, predicts both measured fold changes:
+`Lmax`, set to 1.05× the longest (outer-flank) cell. That one assumption, with
+no free inner/outer parameter, gives each flank a ceiling close to what is
+measured:
 
-| | model | measured (t = 8 h) |
-|---|---|---|
-| outer flank | 1.05× | 1.055× |
-| inner flank | 2.17× | 2.149× |
+| | ceiling set by the geometry | measured (t = 8 h) | reached in simulation |
+|---|---|---|---|
+| outer flank | 1.05× | 1.055× | 1.11× |
+| inner flank | 2.17× | 2.149× | 2.10× (2.16× by t = 10 h) |
+
+The first column is a property of the initial file, not a result: it is what
+the generated rest lengths allow, printed by `make_init.py`. Only the third
+column is a simulation outcome, and for the outer flank it sits ~6% above the
+ceiling, at 1.11× against 1.055× measured. Two reasons, neither of which is
+walls growing past `Lmax` (they cannot — `WallGrowth::AcidGrowth` stops
+outright once `1 - L/Lmax` reaches zero):
+
+- the observable is a **deformed** arc length while `Lmax` bounds the **rest**
+  length, and the mean wall elastic strain rises from 3.0% at t = 0 to 6.0% by
+  t = 8 h as turgor is expressed against softening walls — about half the gap;
+- `Lmax` is set from the *longest* outer cell, so shorter cells elsewhere in
+  the sector have headroom above 1.05× of their own initial length.
+
+The inner flank tracks its target closely either way. Quoted as three separate
+columns because the geometric construction and the simulated outcome are
+different claims, and conflating them would make the agreement look better
+than it is.
 
 Chemistry initialised from Figs 2 and S3: a DR5 auxin maximum on the inner
 flank (1.00 vs 0.45 baseline), and apoplastic pH with the inner flank more
