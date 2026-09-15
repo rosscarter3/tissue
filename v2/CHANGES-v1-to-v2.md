@@ -146,7 +146,9 @@ further 5–20×.
   the cellulose/CMT stiffness component between principal stress directions
   following Eq. 3 of Walia, Carter et al. (2024). Evaluated between steps, not
   inside derivative calls.
-- **Supporting reactions** — `WallMechanics::BendingChain`,
+- **Supporting reactions** — `WallMechanics::BendingChain` (a Laplacian
+  stencil whose effective stiffness scales as h^3, so `k_bend` is tied to
+  the mesh; see its header),
   `CenterTriangulation::EdgeRelaxation`, `WallGrowth::StrainSaturationHill`,
   `WallGrowth::AcidGrowth`, `Pressure2D::AreaPotential`,
   `VertexNoUpdateFromIndex`.

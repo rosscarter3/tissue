@@ -6,8 +6,33 @@
 // neighbors (equal and opposite halves on the neighbors, momentum
 // conserving):
 //   F_v = k_bend (0.5 (x_a + x_b) - x_v),  F_a = F_b = -F_v/2
-// Short-wavelength wrinkles are strongly penalized while smooth organ-scale
-// curvature is barely affected. (New in v2; used by the apical-hook model.)
+// This is a discrete Laplacian stencil, not a curvature operator. Its energy
+// is E = sum_v (k/2)|s_v|^2 with s_v = 0.5(x_a + x_b) - x_v (the forces above
+// are exactly -dE/dx once each vertex's own and its neighbours' stencils are
+// summed, so it is conservative). For a sinusoid of amplitude A and
+// wavelength L sampled at spacing h,
+//
+//   E / length = (k/4) A^2 (1 - cos(2 pi h / L))^2 / h  ->  k pi^4 A^2 h^3 / L^4
+//
+// verified numerically against the discrete sum (ratio 7.45, 7.86, 7.96, 7.99
+// over successive halvings of h, converging on 8).
+//
+// Two consequences. The wavelength dependence is L^-4, so short-wavelength
+// wrinkles really are strongly penalized while smooth organ-scale curvature is
+// barely affected - the reaction does the job it claims to. But the effective
+// stiffness carries an explicit h^3, so **k_bend is tied to the mesh**:
+// halving the wall length weakens the bending eightfold. A model calibrated at
+// one resolution is not calibrated at another.
+//
+// For a mesh-independent form, hold B = k_bend * h^3 / 4 fixed instead and
+// recompute k per vertex from the current spacing; B is then a bending modulus
+// with energy 4 pi^4 B A^2 / L^4 and no h in it. (Raised by the pavement-cell
+// session, which hit this as mesh-dependent lobe spacing. No model in this
+// tree uses BendingChain - the apical-hook model has no bending term - so
+// nothing here is affected, and it is left as-is rather than changed under
+// anything that may be calibrated against it elsewhere.)
+//
+// (New in v2.)
 //
 #include <stdexcept>
 
