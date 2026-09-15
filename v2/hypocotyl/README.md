@@ -1,250 +1,338 @@
-# Apical hook opening — cell-resolved 2D model
+# Apical hook opening — a cell-resolved 3D model
 
-A mechanistic, cell-resolved implementation of apical hook opening in the
-tissue v2 simulator, based on:
+A biologically parameterised model of *Arabidopsis* apical hook opening,
+built on the Tissue v2 solver. The hypocotyl epidermis is represented as a
+closed, turgid, centre-triangulated 3D shell whose walls have direction-
+dependent stiffness set by the local stress state — the mechanism proposed in
 
-> Walia A.†, **Carter R.**†, Wightman R., Meyerowitz E.M., Jönsson H.,
-> Jones A.M. (2024) *Differential growth is an emergent property of
-> mechanochemical feedback mechanisms in curved plant organs.*
-> Developmental Cell 59:3245-3258. doi:10.1016/j.devcel.2024.09.021
-> (PDF in this directory; model code: zenodo.org/records/13379829)
+> A. Walia, R. Carter, *et al.* (2024) "Dynamic cell wall anisotropy governs
+> differential growth during apical hook development in *Arabidopsis*."
+> *Developmental Cell* **59**:3245–3259.
 
-The paper models the hook as a toroidal pressure vessel with two ODEs (inner
-and outer side length). This directory re-embodies its mechanism in a
-**2D vertex model of the median longitudinal section** with realistic
-geometry and anatomy, so that differential growth, tissue stresses and organ
-shape emerge from cell-level rules.
+Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
+the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner/outer
+tissue-length fold changes, the inner/outer microtubule reorientation
+asymmetry, and the auxin- and pH-dependent perturbations. It does **not**
+reproduce the microtubule and cellulose perturbations — the fibre stiffness
+turns out to carry too little load for wall anisotropy to drive anything.
+That discrepancy, and what to do about it, is documented below.
 
-## Geometry (make_hook_init.py)
 
-- Hypocotyl radius r = 75.8 um and hook curvature R = 2.88 r: the paper's
-  fitted values; closed hook angle ~156 deg after turgor equilibration
-  (experimental t0: 158.7 deg).
-- Anatomy across the diameter (10 cell files): epidermis (10 um), two cortex
-  layers (22 + 22 um), endodermis (12 um), stele (2 x 9.8 um), mirrored
-  (cf. Gendreau et al. 1997 for hypocotyl anatomy).
-- 43 axial slices (basal straight, 32 hook slices, apical straight);
-  430 cells, 913 walls. Inner hook epidermal cells ~13 um, outer ~26 um at
-  start (geometry-given, matching the measured inner:outer asymmetry).
-- Auxin (cell variable 4): baseline 0.6 everywhere in darkness (transiting
-  auxin represses growth = maintenance phase); DR5-like maximum (1.0) on the
-  inner hook side with a wide plateau. Illumination at t=0 starts first-order
-  decay (k = 0.9/h).
-
-## Mechanism (hook.model), mapped from the paper
-
-| paper ingredient | implementation |
-|---|---|
-| uniform turgor loading | `Pressure2D::AreaPotential` (P on every cell) |
-| thick outer epidermal wall = growth constraint | outer-surface walls 33x stiffer (`WallMechanics::Spring` K_force2, stiffFlag); inner exterior wall soft (it thins during opening, Fig S2) |
-| growth saturation at maximal cell length | `WallGrowth::StrainSaturationHill` L_max: outer epidermis frozen (extends 1.07x in experiments), inner epidermis capped at 40 um (3x; Fig 1 fold change) |
-| subepidermal longitudinal force sL(t) | active auxin-gated elongation of interior files (`strain_flag=0` mode), gated to stop against compression |
-| auxin gates growth (YUC6-OX blocks opening) | repressing Hill (K=0.3, n=6) on every growth term |
-| light-triggered auxin depletion | `Degradation::One` on the auxin variable (t=0 = illumination) |
-| tissue stresses (qua2 cracks: epidermal tension) | emerges: outer wall tension >> interior; interior compressed |
-
-Numerical stabilizers (new v2 reactions, both physically motivated):
-`CenterTriangulation::EdgeSpring` + `EdgeRelaxation` make cell interiors
-viscoelastic (instantaneously stiff, fluid over ~10 min — suppresses the
-quad-mesh shear mode), and `WallMechanics::BendingChain` gives wall files
-plate-like bending stiffness (suppresses wrinkling without resisting
-organ-scale shear).
-
-## Running
+## Quick start
 
 ```sh
-python3 make_hook_init.py hook.init   # generate geometry
-python3 pipeline.py                   # equilibrate (dark), then light + dark runs
-python3 analyze_hook.py run_light.out # hook angle + arc lengths vs time
-# animation (VTK + ParaView):
-../build/simulator hook.model hook_eq.init solver_anim.rk5 -vtk_output vtk
-open -a ParaView-5.10.0 hook_opening.pvsm
+python3 make_init.py                 # generate the geometry -> hook.init
+python3 pipeline.py                  # equilibrate in the dark, then run light + dark
+python3 analyze.py run_light.out     # observables vs experiment
+python3 run_perturbations.py         # oryzalin / isoxaben / YUC6-OX / low light
+python3 plot_compare.py 12           # all six comparison figures -> figures/
 ```
 
-The pipeline first relaxes the tissue to its pressurized dark steady state
-(growth frozen), the biological maintenance phase, then runs illumination
-(hook.model) and dark control (hook_dark.model) from that state.
+ParaView animation with the predicted CMT axes:
 
-## Results (this parameterization)
-
-| t (h) | sim light | sim dark | experiment (light) |
-|---|---|---|---|
-| 0 | 156 | 156 | 159 |
-| 2 | 140 | 146 | 133 |
-| 4 | 119 | 139 | 82 |
-| 6 | 98 | 132 | 53 |
-| 8 | 80 | 126 | 44 |
-| 10 | 66 | 122 | 35 |
-
-- Differential growth emerges: at t=10 the inner epidermal arc has extended
-  1.44x, the outer 1.05x (experiment: inner 2-4x at full opening, outer
-  ~1.07x). Opening completes (<40 deg) by t~16 h.
-- Dark control: hook maintained, slow drift (matches the slow dark opening
-  reported in the paper's Fig 5 scenario).
-- Tissue-stress state matches qua2 observations: epidermis under tension
-  (outer wall carrying ~30x interior levels), interior under compression.
-
-## Known limitation
-
-Opening runs ~1.5-2x slower than experiment in mid-phase. A 2D median
-section cannot represent the hoop-stress asymmetry of the 3D toroid
-(higher circumferential stress on the inner side, Walia et al. Fig 3B),
-whose in-plane consequence is an artificial net closing moment carried by
-the outer wall tension. This is precisely why the paper's own quantitative
-model uses the analytic toroidal formulas; a 3D shell version (legacy
-`hypocotyl3D` TRBS reactions, not yet ported) would remove the discrepancy.
-The `Pressure2D::CapForce` reaction documents why the naive 2D fix fails
-for closed hooks.
+```sh
+/Applications/ParaView-5.10.0.app/Contents/bin/pvpython paraview_state.py 12
+open -a ParaView-5.10.0 hook.pvsm
+```
 
 
-## 3D TRBS shell model (hook3d)
+## Files
 
-The definitive version: the hypocotyl epidermis as a closed, turgid 3D
-surface (720-cell tube + end caps at full resolution; production mesh 350
-cells), with proper 2D wall elasticity via triangular biquadratic springs
-(`VertexFromTRBScenterTriangulation`, exact port of the legacy TRBS force
-kernel) and shell-normal turgor (`Pressure3D::CenterTriangulation`). Hoop
-stress, the pressure cap force and the toroidal stress distribution are real
-physics here, so the hook opens the way the organ does: the inner side
-expands longitudinally and the arms follow.
+| file | role |
+|---|---|
+| `make_init.py` | geometry + initial auxin/pH/wall fields → `hook.init` |
+| `hook.model` | the ten reactions (mechanics, material, growth, chemistry) |
+| `solver.rk5`, `solver_eq.rk5`, `solver_vtk.rk5` | production / equilibration / animation settings |
+| `pipeline.py` | dark equilibration → parallel light + dark + VTK runs |
+| `run_perturbations.py` | one parameter change per treatment, run in parallel |
+| `analyze.py` | hook angle, arc fold change, MT angle, auxin, pH |
+| `expdata.py` | the published measurements, parsed from the authors' package |
+| `plot_compare.py` | six experiment-vs-simulation figures |
+| `paraview_state.py` | ParaView state + renders |
+| `refdata/walia2024/` | the authors' `data.py` + `length_measurements.csv` |
 
-Mechanism (hook3d.model): uniform turgor loads the shell; axial walls and
-internal edges yield above a strain threshold (Lockhart), saturating at a
-maximal length (outer hook cells are born near saturation - the
-geometry-given differential); auxin (high on the inner side in darkness)
-represses yielding; illumination at t=0 depletes it.
+Generated files (`*.init`, `*.out`, `vtk/`, `*.pvsm`, `equil.model`,
+`hook_dark.model`, `pt_*.model`) are not tracked.
 
-Two numerical lessons encoded here:
-1. The overdamped per-vertex drag of the framework suppresses organ-scale
-   rotations (the arm swing) by orders of magnitude - the reason the paper's
-   own model used quasi-static Newton-Raphson. Verified by a mobility test
-   (the grown state unrolls at 7 deg/h at 50x force scaling, 0.14 deg/h at
-   baseline). Fixed by scaling Y and P together (identical strains, faster
-   mechanics) and keeping the arms short.
-2. TRBS needs guarded acos/Heron evaluations so bad adaptive trial steps are
-   rejected by error control instead of NaN-poisoning the state.
 
-Results (`pipeline3d.py`; dark-equilibrated start at 161 deg):
+## Geometry (`make_init.py`)
 
-| t (h) | sim light | sim dark | experiment (light) |
-|---|---|---|---|
-| 0 | 161 | 161 | 159 |
-| 2 | 155 | 160 | 133 |
-| 5 | 104 | 161 | 63 |
-| 8 | 63 | 161 | 44 |
-| 10 | 43 | 162 | 35 |
+Anatomy from the paper's fitted toroid and from hypocotyl histology:
 
-Inner hook arc extends 2.08x (exp 2-4x), outer 1.13x (exp 1.07x); the dark
-control is fully maintained. The ~1.5 h mid-phase lag tracks the auxin
-clearance time constant (k_d, k_growth are the tuning knobs).
+- hypocotyl radius r = 75.8 µm, hook curvature R = 2.88 r (both fitted in the
+  paper), generated bend 172° relaxing to ~159° under turgor
+- 16 epidermal cell files around the circumference (*Arabidopsis* has ~16–24)
+- 3 basal + 26 hook + 3 apical rings, with a gentle taper over the apical
+  segment where the cotyledons attach
+- 514 cells, 1040 walls, 528 vertices
+
+The inner/outer length difference is not imposed — it is geometry. On the
+curved segment the inner surface sits at radius R − r and the outer at R + r,
+so inner cells are born short and outer cells long.
+
+The **mature length is shared**: every hook epidermal cell has the same
+`Lmax`, set to 1.05× the longest (outer-flank) cell. That one assumption,
+with no free inner/outer parameter, predicts both measured fold changes:
+
+| | model | measured (t = 8 h) |
+|---|---|---|
+| outer flank | 1.05× | 1.055× |
+| inner flank | 2.17× | 2.149× |
+
+Chemistry initialised from Figs 2 and S3: a DR5 auxin maximum on the inner
+flank (1.00 vs 0.45 baseline), and apoplastic pH with the inner flank more
+alkaline than the outer in darkness (acidification 0.05 vs 0.25).
+
+
+## Mechanism (`hook.model`)
+
+| reaction | role |
+|---|---|
+| `CenterTriangulation::Initiate` | centre vertex per cell |
+| `VertexFromTRBScenterTriangulation` | wall elasticity (triangular biquadratic springs), writes the cell stress tensor |
+| `WallMechanics::FiberSpring` | CMT-guided cellulose stiffness, redistributed by Eq. 3 |
+| `Pressure3D::CenterTriangulation` | turgor normal to the shell |
+| `WallGrowth::AcidGrowth` | acid-growth wall yielding |
+| `CenterTriangulation::WallGrowth::StrainSaturationHill` | internal edges follow the surface |
+| `Degradation::One` ×2, `Creation::Zero` | auxin depletion, apoplast acidification |
+| `VertexNoUpdateFromIndex` | clamps the apical end-cap ring |
+
+**Dynamic anisotropic material.** The wall's fibre stiffness Y_f is split
+between the two principal stress directions by Eq. 3 of the paper,
+
+    g(a) = a^n / ((1−a)^n k^n + a^n),   k = 0.7, n = 1.2
+
+where a = 1 − σ₂/σ₁ is the local stress anisotropy. At a = 0 both directions
+get Y_f/2; at a = 1 all of it lies along the maximal stress direction. The
+matrix modulus Y_m is isotropic; the two are calibrated to the paper's
+Y_m : Y_f = 75 : 100.
+
+**Acid growth.** Illumination releases the auxin gate and acidifies the
+apoplast; walls then yield above a Lockhart threshold and saturate at the
+mature length:
+
+    dL/dt = k (ε − ε_th)₊ · L · (1 − L/Lmax)₊ · G_auxin · G_acid
+    G_auxin = K_a^n / (K_a^n + auxin^n)      auxin represses extension
+    G_acid  = acid^m / (K_c^m + acid^m)      acidification permits it
+
+Auxin decays with τ = 2 h after light (so the hook barely moves for the first
+~2 h, as measured); acidification completes within 30 min at both flanks.
+
+
+## Results
+
+Dark-equilibrated start, light at t = 0, angles in degrees
+(`python3 analyze.py run_light.out`):
+
+| t (h) | sim angle | exp angle | sim inner | exp inner | sim outer | exp outer | MT inner | MT outer |
+|---|---|---|---|---|---|---|---|---|
+| 0 | 159.2 | 158.7 | 1.00 | 1.00 | 1.00 | 1.00 | 90 | 90 |
+| 1 | 159.9 | 155.6 | 1.42 | – | 1.13 | – | 89 | 3 |
+| 2 | 121.5 | 133.4 | 1.71 | 1.36 | 1.14 | 1.07 | 89 | 9 |
+| 3 | 97.0 | 102.9 | 1.83 | – | 1.13 | – | 90 | 22 |
+| 4 | 79.2 | 81.5 | 1.89 | 1.92 | 1.13 | 1.04 | 90 | 33 |
+| 5 | 64.2 | 63.2 | 1.95 | – | 1.12 | – | 90 | 41 |
+| 6 | 50.5 | 53.3 | 2.00 | 2.04 | 1.12 | 1.06 | 90 | 49 |
+| 8 | 26.9 | 44.3 | 2.10 | 2.15 | 1.11 | 1.05 | 89 | 64 |
+| 10 | 12.5 | 34.5 | 2.16 | – | 1.11 | – | 89 | 80 |
+
+**Hook-angle RMSE 11.9°** over 0–10 h, tracking within ~4° through the first
+6 h. The model over-opens late: real hooks stall near 35–45° once the
+cotyledons separate, which this model has no representation of (the paper's
+own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
+experimental). The dark control never opens.
+
+**Microtubule reorientation.** MT angle is read out as the predicted CMT axis,
+i.e. the maximal principal stress direction (90° = circumferential/transverse,
+0° = longitudinal). The inner flank holds 89–90° circumferential throughout
+while the outer flank switches to longitudinal within the first hour and
+rotates back as the organ straightens — the inner/outer switch asymmetry of
+Figs 3E–F and 4E, emergent rather than imposed.
+
+**Perturbations** (`run_perturbations.py`), each a single parameter change.
+Two of the five reproduce the experiment and three do not — see the
+limitation below:
+
+Hook angle in degrees; WT light is 79.2° at 4 h and 12.5° at 10 h.
+
+| treatment | what it changes | 4 h | 10 h | vs experiment |
+|---|---|---|---|---|
+| YUC6-OX | auxin gate never released (k_d = 0) | 121.0 | 53.8 | ✓ opening blocked (exp plateaus ~113°) |
+| low light | slower auxin depletion, weaker acidification | 121.2 | 29.2 | ✓ opening slowed |
+| oryzalin | MTs depolymerised → isotropic fibre (K_hill → 50) | 79.2 | 12.5 | ✗ **identical to WT**; exp is blocked |
+| isoxaben 100 nM | less cellulose (Y_f 1350 → 470) | 78.7 | 11.8 | ✗ no effect (marginally *faster*); exp is blocked |
+| isoxaben 600 nM | Y_f → 200 | 78.6 | 11.5 | ✗ no effect; exp is blocked |
+
+The treatments acting on the *chemical gates* work; the treatments acting on
+the *wall fibre* do nothing at all.
+
+
+## The main open problem: the fibre carries almost no load
+
+The wall's fibre stiffness is mechanically negligible in this
+parameterisation. Setting `Y_fiber` to **zero** — removing the CMT-guided
+cellulose entirely — costs at most 3.4° of hook angle over a 4 h run in which
+the organ opens by 80°:
+
+| t (h) | 0 | 1 | 2 | 3 | 3.75 |
+|---|---|---|---|---|---|
+| Y_f = 1350 (WT) | 159.2 | 159.9 | 121.5 | 97.0 | 83.3 |
+| Y_f = 0 | 159.2 | 157.8 | 118.1 | 93.7 | 79.9 |
+
+So the fibre accounts for roughly 4% of the effect, and in the *opposite*
+direction to the experiment: removing it makes the hook open slightly faster
+(less stiffness, more strain, more yielding), whereas isoxaben blocks opening.
+
+The matrix modulus (Y_m = 20000) dominates the fibre term, which enters
+`WallMechanics::FiberSpring` as `Y_f · orient · area/(2d)` with
+`orient ∈ [0.5(1−g), 0.5(1+g)]`. Even full anisotropy therefore redistributes
+a small fraction of the total wall stiffness, so Eq. 3 has no mechanical
+consequence.
+
+What this means for the results above:
+
+- The **stress anisotropy and CMT reorientation are a faithful readout** —
+  the inner/outer switch asymmetry in `fig4` and `fig5` is a real prediction
+  of the stress solver, and it matches Figs 3E–F and 4E.
+- But anisotropy is **not a driver** of opening in this model. The
+  differential growth comes entirely from the geometric `Lmax` differential
+  and the auxin/pH gates. That is why oryzalin and isoxaben do nothing, and
+  it is a weaker claim than the paper's.
+
+The fix is a recalibration of Y_m : Y_f toward the paper's 75 : 100, i.e.
+making the fibre carry most of the load rather than ~1/15 of it. A probe run
+at `Y_f = 27000` (20x) does separate oryzalin from its own control — 162.9°
+vs 161.0° at 1 h, against 0.2° of separation at `Y_f = 1350` — so the
+direction is right. That is an early-time probe only (the stiffer wall makes
+the ODE about 10x more expensive per unit simulated time, so the run had not
+reached the phase where the flanks diverge); whether 20x is *enough* is still
+open.
+
+This is therefore a re-tuning exercise rather than a one-line parameter
+change: Y_m, Y_f, turgor, the growth rate and the mobility scaling (see
+numerical lesson 1) all trade against each other, and the current fit
+(RMSE 11.9°) was tuned against the existing balance. It is the single most
+valuable next step for this model.
+
+
+## Figures
+
+`plot_compare.py` writes six figures to `figures/`, each overlaying the
+published measurements (from `refdata/walia2024/`) on the simulation:
+
+1. `fig1_opening` — hook angle vs time, light and dark
+2. `fig2_lengths` — inner/middle/outer cell length fold change
+3. `fig3_chemistry` — auxin depletion and apoplastic acidification
+4. `fig4_anisotropy` — stress anisotropy and MT angle, inner vs outer
+5. `fig5_cmt_polar` — CMT orientation distribution around the circumference
+6. `fig6_perturbations` — the five treatments above
+
+`paraview_state.py` additionally renders the shell coloured by auxin with a
+white line glyph at each cell centre along the predicted CMT axis, its length
+scaled by the stress anisotropy. In the closed hook the bars wrap around the
+tube; during opening the outer-flank bars rotate to run along it while the
+inner side stays circumferential and its anisotropy *rises*.
+
+
+## Why 3D
+
+The first version of this model was a 2D median section. It does not work,
+and the reason is instructive: a 2D sheet cannot carry hoop stress, so the
+toroid's circumferential asymmetry (higher hoop stress on the inner side,
+Fig. 3B) is absent and the outer wall's tension becomes an artificial net
+*closing* moment. The hook hinged at the shoulders instead of unrolling. This
+is why the paper's own quantitative model uses the analytic toroidal
+formulas. The 3D shell makes hoop stress, the pressure cap force and the
+toroidal stress distribution real physics, and the organ then opens the way
+it does in life: the inner side extends longitudinally and the arms follow.
+
+
+## Numerical lessons
+
+1. **Overdamped drag suppresses organ-scale rotation.** The framework's
+   per-vertex drag slows the arm swing by orders of magnitude — the reason
+   the paper's model used quasi-static Newton–Raphson. Verified by a mobility
+   test: the grown state unrolls at 7°/h at 50× force scaling and 0.14°/h at
+   baseline. Fixed by scaling Y and P together (identical strains, faster
+   mechanics).
+2. **TRBS needs guarded `acos` and Heron evaluations** so that bad adaptive
+   trial steps are rejected by error control rather than NaN-poisoning the
+   state.
+3. **Material feedback belongs in `update()`, not `derivs()`.** Recomputing
+   the stress-driven anisotropy inside the derivative evaluation makes the
+   right-hand side non-smooth and collapses the adaptive step size:
+   34 min equilibration became 2 min when it moved to once per accepted step.
+4. **Model-variant editing must fail loudly.** The dark-control variant was
+   originally produced by string substitution on the model text; rewording a
+   comment silently stopped the match, so "dark" runs were quietly depleting
+   auxin. All tunable parameters now carry `@TAG` markers and the variant
+   functions regex on those.
 
 
 ## Performance
 
-Measured on the 350-cell hook shell (Apple M1), full pipeline = 2.5 h
-equilibration + 10 h light + 10 h dark (the latter two in parallel):
+The optimisation history below was measured during development on the
+350-cell shell (Apple M1), full pipeline = equilibration + 10 h light + 10 h
+dark, the latter two in parallel. The current 514-cell mesh is ~1.5x larger;
+timings for it are in the table after.
 
 | configuration | full pipeline | per simulated hour |
 |---|---|---|
 | initial anisotropic version | 75 min | 390 s |
 | + stress-refresh interval | 56 min | 292 s |
 | + Hill-factor caching | 47 min | 244 s |
-| + solver tolerance 1e-4 -> 1e-3 | **94 s** | **7 s** |
+| + solver tolerance 1e-4 → 1e-3 | **94 s** | **7 s** |
 
-**48x faster, with a bit-for-bit unchanged trajectory.** The three changes:
+**48× faster with a bit-for-bit unchanged trajectory.** The three changes:
 
 1. **Stress-state refresh interval** (`VertexFromTRBScenterTriangulation`
-   parameter 3). Profiling showed 37% of runtime in the per-step stress
-   tensor + Jacobi pass. CMT reorientation is an hours-scale process, so the
-   material is refreshed every 0.02 h instead of every step (-25%).
+   parameter 3). Profiling put 37% of runtime in the per-step stress tensor +
+   Jacobi pass. CMT reorientation is an hours-scale process, so the material
+   is refreshed every 0.02 h rather than every step (−25%).
 2. **Eq. 3 Hill factor cached per cell** instead of recomputed per wall-cell
-   pair, hoisting two `pow()` calls out of the inner loop (-16%).
+   pair, hoisting two `pow()` calls out of the inner loop (−16%).
 3. **Solver tolerance.** The dominant cost: `eps=1e-4` forced tiny steps to
-   resolve elastic transients that the growth-driven trajectory does not
-   depend on — the system is strongly attracted to force balance, so the
-   slow manifold is insensitive to them. Validated by comparing 1e-4, 1e-3
-   and 1e-2 over the full 10 h run: identical hook angles (162.7 -> 116.1
-   deg) and inner fold (1.759x) in all three. 1e-3 is the shipped default
-   (1e-2 halves runtime again if needed).
+   resolve elastic transients the growth-driven trajectory does not depend
+   on. Validated by comparing 1e-4, 1e-3 and 1e-2 over a full run — identical
+   hook angles and inner fold in all three.
 
 What does **not** help at this scale:
 
-- **Threading**: 122 s (1 thread) vs 123 s (8 threads). With 350 cells and
-  708 walls each parallel region is a few microseconds of work, comparable
-  to the synchronization cost. The thread pool's grain thresholds correctly
-  keep these loops serial; threading pays from ~10k cells upward (the 40k
-  cell benchmark in ../README.md). Run independent conditions (light/dark,
-  parameter sweeps) as separate processes instead - that is what
-  `pipeline3d.py` does.
-- **Larger max step** (`h_max` 0.02 -> 0.1): no change, error control
-  already chooses smaller steps.
+- **Threading**: 122 s (1 thread) vs 123 s (8 threads). With ~500 cells each
+  parallel region is a few microseconds, comparable to synchronisation cost.
+  The thread pool's grain thresholds correctly keep these loops serial;
+  threading pays from ~10k cells upward (see `../README.md`). Run independent
+  conditions as separate processes instead — that is what `pipeline.py` and
+  `run_perturbations.py` do.
+- **Larger `h_max`** (0.02 → 0.1): no change, error control already chooses
+  smaller steps.
 
-Remaining opportunity: a **quasi-static solver** (Newton or FIRE
-minimization of the elastic energy between growth steps, as the paper's own
-Python model used). Explicit integration costs steps proportional to
-Y/growth-rate, which is exactly the ratio that has to be large for the
-quasi-static approximation to hold - so the cost is structural, not a
-constant factor. That would also remove the need to scale Y and P together
-for mobility. Estimated further 5-20x, and it would let the mesh be refined
-without a step-size penalty.
-
-## Visualising the material anisotropy
-
-`pvhook3d_aniso.py` builds `hook3d_anisotropy.pvsm`:
-
-```sh
-../build/simulator hook3d.model hook3d_eq.init solver3d_vtk.rk5 \
-    -centerTri_init -vtk_output vtk3d
-/Applications/ParaView-5.10.0.app/Contents/bin/pvpython pvhook3d_aniso.py 10
-open -a ParaView-5.10.0 hook3d_anisotropy.pvsm
-```
-
-The shell is coloured by stress anisotropy a = 1 - s2/s1, and a white line
-glyph at each cell centre lies along that cell's maximal principal stress
-direction - the axis the fibre stiffness is redistributed onto by Eq. 3,
-i.e. the model's prediction of the CMT/cellulose orientation. Glyph length
-scales with a (isotropic cells show a dot, strongly anisotropic cells a
-bar).
-
-In the closed hook the bars wrap around the tube (circumferential, matching
-dark CMT arrays). During opening the outer-flank bars rotate to run along
-the tube while the inner side stays circumferential and its anisotropy
-*rises* - the inner/outer switch asymmetry of Figs 3E-F and 4E.
+Remaining opportunity: a **quasi-static solver** (Newton or FIRE minimisation
+of the elastic energy between growth steps, as the paper's Python model
+used). Explicit integration costs steps proportional to Y/growth-rate, which
+is exactly the ratio that must be large for the quasi-static approximation to
+hold — so the cost is structural, not a constant factor. That would also
+remove the need to scale Y and P together for mobility, and would let the
+mesh be refined without a step-size penalty.
 
 
-## Full opening run (apical clamp)
+## Known limitations
 
-`VertexNoUpdateFromIndex` pins the **apical** end-cap ring (vertices 348-359,
-the cotyledon end) rather than the base, so the hook unrolls about the pinned
-apex and the basal shank swings out into the straight axis. Run to t = 200 h
-with `solver3d_long.rk5` (eps 1e-2, validated against 1e-3 with the
-anisotropic material: angles identical to six significant figures).
-
-| t (h) | 0 | 10 | 20 | 40 | 60 | 100 | 150 | 200 |
-|---|---|---|---|---|---|---|---|---|
-| light | 163.2 | 126.2 | 101.2 | 71.0 | 51.2 | 24.5 | 9.3 | **3.0** |
-| dark | 163.2 | 163.0 | 164.8 | 168.9 | 172.3 | 176.3 | 176.3 | 172.5 |
-
-The hook opens fully: 163.2 deg -> 3.0 deg, with the inner epidermal arc
-extending 2.30x and the outer 1.11x (experiment: inner 2-4x, outer ~1.07x).
-The inner/outer arc ratio reaches 0.992, i.e. a straight tube. Thresholds are
-crossed at 90 h (<30 deg), 110 h (<20 deg) and 147 h (<10 deg). The dark
-control never opens.
-
-**Stress anisotropy reverts once the organ is straight.** Over the full run
-the outer flank switches circumferential -> longitudinal at 2 h, peaks near
--0.42 at 6-8 h while differential growth is fastest, then relaxes back and
-crosses to circumferential again at ~52 h as the curvature disappears. By
-t = 200 h both flanks sit at a = 0.42-0.51, circumferential - which is the
-analytic thin-walled pressure-vessel value (hoop stress twice longitudinal
-gives a = 0.5). The longitudinal switch is therefore a signature of the
-*opening transient*, not of the opened organ, and the converged state is an
-independent check on the stress solver.
-
-**Timescale caveat.** Real hooks open in ~10 h; this run takes ~100 h to reach
-30 deg. The stretch is the `L_max` saturation tail, not the mechanics: inner
-and outer walls share one saturation length, so the differential that drives
-opening vanishes exactly as the hook straightens, giving an exponential
-approach (~x0.85 per 10 h). Giving the inner and outer flanks separate
-saturation lengths - they are already distinguishable by sector flag - would
-complete opening on a realistic timescale.
+- **Late over-opening.** Cotyledon separation and the maintenance phase are
+  not represented, so the model keeps opening past the ~35° experimental
+  plateau.
+- **Single mature length.** Inner and outer walls share one `Lmax`, so the
+  differential vanishes exactly as the hook straightens. This is what makes
+  the fold-change prediction parameter-free, but it also gives an exponential
+  approach to straight; separate per-flank saturation lengths would trade
+  that prediction for better late kinetics.
+- **Dark control drifts the wrong way.** Experimental dark hooks are
+  maintained and then open slowly (160° → 100° over 28 h). The simulated dark
+  control instead closes slightly further (159° → ~180°): with auxin
+  undepleted the inner flank is gated off, but the outer flank still creeps,
+  which tightens the hook. A dark maintenance phase is not modelled.
+- **Cell length vs tissue length.** `fig2`'s left panel plots the paper's
+  single-cell fold change (inner reaches ~4x); the simulation curve there is
+  a tissue-level arc measure and belongs with the middle panel
+  (`length_measurements.csv`, inner 2.15x), which it matches to 0.01x.
+- **Epidermis only.** Inner tissues are represented by turgor alone.

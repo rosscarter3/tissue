@@ -1,81 +1,89 @@
-# Apical hook opening model (2D median longitudinal section)
+# Apical hook opening, biologically parameterised
+# Walia A., Carter R., Wightman R., Meyerowitz E.M., Jonsson H., Jones A.M.
+# (2024) Dev Cell 59:3245-3258
 #
-# Mechanism after Walia, Carter et al. (2024) Dev Cell 59:3245-3258:
-#  - uniform turgor pressure loads the tissue; the thick outer epidermal
-#    walls are the main growth constraint (stiffer springs, stiffFlag)
-#  - walls extend irreversibly when elastic strain exceeds a threshold
-#    (Lockhart / Bozorg et al. 2016), saturating at a maximal length
-#  - auxin (high on the inner hook side in darkness) represses growth via a
-#    Hill function; illumination at t=0 triggers auxin depletion
-#  - subepidermal cells (low auxin) elongate first, pushing the epidermis
-#    (the paper's "subepidermal longitudinal force" emerges from geometry)
-# Opening = differential inner-side extension; outer cells are near their
-# maximal length and extend minimally.
+# The epidermis is a closed, turgid, centre-triangulated TRBS shell. Growth is
+# Lockhart wall yielding, gated by the TWO chemical signals the paper measures
+# and finds are "depleted upon illumination": auxin (represses extension) and
+# wall alkalinity (acidification permits it). Neither gate sets the
+# inner/outer differential - acidification happens on both flanks, and the
+# inner flank carries MORE auxin yet grows more. The differential instead
+# comes from each cell's remaining elongation capacity: all hook epidermal
+# cells mature to the same length, and outer-flank cells are born near it.
 #
-# units: um, hours
+# Wall material is dynamically anisotropic (Eq. 3): the fibre stiffness
+# redistributes onto the maximal principal stress direction, which is the
+# model's prediction of CMT orientation.
+#
+# units: um, hours.  Cell vars: 0-2 stress dir, 3 anisotropy, 4 sigma1,
+#                               5 auxin, 6 acid, 7 type, 8 theta
 10 0 0
 
-Pressure2D::AreaPotential 2 0
-18.0     # P_force (turgor, effective 2D)
-0       # f_V_norm: constant pressure
+CenterTriangulation::Initiate 0 1 1
+9       # CT data appended after the 9 cell variables
 
-WallMechanics::Spring 3 3 1 1 1
-600.0   # K_force (wall elasticity)
-1.0     # frac_adhesion (symmetric)
-20000.0  # K_force2 for stiffFlag==1 walls (thick outer epidermal walls)
+VertexFromTRBScenterTriangulation 3 3 1 1 1
+20000.0 # Y_mod: isotropic matrix modulus (pectin/hemicellulose).
+        #   Y, Y_fiber and P are scaled together so the elastic
+        #   strains are unchanged but mechanical relaxation is fast
+        #   compared with growth (overdamped vertex drag otherwise
+        #   lets the walls grow without the organ unrolling).
+0.3     # P_ratio
+0.02    # stress-state refresh interval (h)
 0       # wall length index
-1       # wall variable: save spring force (visualization/analysis)
-2       # wall variable: stiffness flag
+9       # CT start index
+0       # store stress state at 0 -> dir on VTK cell-vector, aniso on its length
 
-WallGrowth::StrainSaturationHill 7 4 1 1 1 1
-0.05    # k_growth (per tension unit per h)
-2.0     # yield tension (Lockhart threshold, stress form)
-40.0    # L_max (um): inner epidermal cells extend 3-4x (Walia et al. Fig 1)
-0.3     # K_Hill (auxin repression threshold)
-6       # n_Hill
-0       # hill_flag: 0 = repressing (auxin inhibits growth)
-2       # strain_flag: 2 = stress-driven (tension read from wall variable)
+WallMechanics::FiberSpring 3 2 1 1
+1350.0  # Y_fiber: CMT-guided cellulose, redistributed by Eq. 3
+0.7     # K_hill (paper: k = 0.7)
+1.2     # n_hill (paper: n = 1.2)
 0       # wall length index
-4       # cell variable: auxin
-3       # wall variable: epiGrowFlag (epidermal longitudinal walls)
-1       # wall variable: tension saved by WallMechanics::Spring
+0       # cell stress-state start index
 
-WallGrowth::StrainSaturationHill 7 3 1 1 1
-0.15    # k_growth (1/h): active relative elongation rate
--0.04   # strain_threshold: gate; cells push until compression ~ turgor scale
-100.0   # L_max (um): interior cells elongate like etiolated cortex
-0.3     # K_Hill (auxin represses expansion)
-6       # n_Hill
+Pressure3D::CenterTriangulation 1 1 1
+17.5    # P_force (turgor per unit shell area)
+9       # CT start index
+
+WallGrowth::AcidGrowth 6 5 1 1 1 1 1
+80.0    # @GROWTH k_growth (per unit strain per h)
+0.005   # strain_threshold (Lockhart yield strain)
+0.55    # K_auxin: auxin level at half-repression
+6       # n_auxin
+0.45    # K_acid: acidification at half-activation
+3       # n_acid
+0       # wall length index
+5       # cell auxin index
+6       # cell acid index
+1       # wall growFlag (axial walls only)
+3       # wall Lmax index (mature cell length)
+
+CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
+80.0    # @GROWTH_CT k_growth: internal edges follow the surface
+0.005   # strain_threshold
+30.0    # L_max for internal edges
+0.55    # K_Hill (auxin)
+4       # n_Hill
 0       # hill_flag: repressing
-0       # strain_flag: 0 = ACTIVE growth (subepidermal elongation engine,
-        #   the time-increasing subepidermal force of Walia et al. 2024)
-0       # wall length index
-4       # cell variable: auxin
-4       # wall variable: intGrowFlag (interior longitudinal walls)
+9       # CT start index
+5       # cell auxin index
 
 Degradation::One 1 1 1
-0.9     # k_d: light-triggered auxin depletion (t=0 = illumination)
-4       # cell variable: auxin
+0.5     # @AUXIN_DECAY k_d: light-triggered auxin depletion (t=0 = light);
+        #   tau = 2 h, so the gates release over the first ~2 h and the
+        #   hook barely moves before then, as measured
+5       # cell auxin index
 
-CenterTriangulation::Initiate 0 1 1
-7       # cell variables 0-6 exist; CT data appended from index 7
+Creation::Zero 1 1 1
+2.0     # @ACID_DRIVE acidification; with the relaxation below gives
+        #   acid = 1 (measured: both flanks acidify within 30 min of light)
+6       # cell acid index
 
-CenterTriangulation::EdgeSpring 2 1 1
-80.0   # K_force: cell interior (soft; bending stiffness handles wrinkles)
-1.0     # frac_adhesion
-7       # CT start index
+Degradation::One 1 1 1
+2.0     # @ACID_RELAX relaxation rate (sets tau with the drive above)
+6       # cell acid index
 
-CenterTriangulation::EdgeRelaxation 1 1 1
-6.0     # k_relax (1/h): interior is fluid on growth timescales
-7       # CT start index
-
-WallMechanics::BendingChain 1 1 1
-150.0   # k_bend: wall plate bending stiffness (suppresses kinks/wrinkles)
-5       # wall variable: bendFlag (longitudinal wall chains)
-
-WallMechanics::Spring 3 3 1 0 1
-0.0     # K_force zero: this reaction only adds transverse reinforcement
-1.0     # frac_adhesion
-1800.0  # K_force2: extra stiffness of transverse (radial) walls
-0       # wall length index
-6       # wall variable: transFlag
+VertexNoUpdateFromIndex 0 1 16
+# Clamp the apical end-cap ring (ring 32, cotyledon end): the hook unrolls
+# about the apex and the basal shank swings out into the straight axis.
+512 513 514 515 516 517 518 519 520 521 522 523 524 525 526 527

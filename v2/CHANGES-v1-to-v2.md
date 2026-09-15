@@ -148,14 +148,21 @@ further 5–20×.
   inside derivative calls.
 - **Supporting reactions** — `WallMechanics::BendingChain`,
   `CenterTriangulation::EdgeRelaxation`, `WallGrowth::StrainSaturationHill`,
-  `Pressure2D::AreaPotential`, `VertexNoUpdateFromIndex`.
+  `WallGrowth::AcidGrowth`, `Pressure2D::AreaPotential`,
+  `VertexNoUpdateFromIndex`.
 
-These support a cell-resolved apical hook model (`v2/hypocotyl/`): the 3D shell
-opens 161° → 43° over 10 h under light against a flat dark control, inner
-epidermal arc extending 2.08× vs outer 1.13×, and independently reproduces the
-paper's stress-anisotropy signature — circumferential principal stress on both
-flanks in darkness (inner 0.65, outer 0.37), switching to longitudinal on the
-outer side at 2 h under light while the inner side never switches.
+These support a cell-resolved apical hook model (`v2/hypocotyl/`, see its own
+README for the full validation). The 514-cell shell opens 159° → 13° over 10 h
+under light against a maintained dark control, with a hook-angle RMSE of 11.9°
+against the paper's measurements and inner/outer tissue extension of 2.16× /
+1.11× (measured 2.15× / 1.06×). It independently reproduces the paper's
+stress-anisotropy signature — circumferential principal stress on both flanks
+in darkness, switching to longitudinal on the outer side within the first hour
+under light while the inner side never switches — and the auxin- and
+pH-dependent perturbations (YUC6-OX, low light). It does not reproduce the
+microtubule and cellulose perturbations: the fibre stiffness carries too
+little load relative to the matrix modulus for Eq. 3 to affect the mechanics,
+so anisotropy is a faithful readout there rather than a driver.
 
 ## 7. Not ported
 

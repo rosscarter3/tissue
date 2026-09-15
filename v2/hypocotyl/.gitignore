@@ -1,9 +1,17 @@
-__pycache__/
-vtk*/
+# generated inputs (make_init.py, pipeline.py, run_perturbations.py)
+*.init
+equil.model
+hook_dark.model
+pt_*.model
+
+# run outputs
 *.out
 *.log
-*.init
-*.pyc
-hook_dark.model
-equil.model
+vtk/
+*.pvsm
+
+# the published paper itself (not ours to redistribute)
 *.pdf
+
+__pycache__/
+*.pyc
