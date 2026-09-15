@@ -344,7 +344,6 @@ void QuasiStatic::calibrateStep() {
 
   T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
              vertexDerivs_);
-  auto f = vertexDerivs_.flat();
   auto x = vertexData_.flat();
 
   double xScale = 0.0;
@@ -352,35 +351,84 @@ void QuasiStatic::calibrateStep() {
     xScale = std::max(xScale, std::fabs(x[k]));
   scaleHint_ = std::max(xScale, 1.0);
 
-  double fNorm = 0.0;
-  for (size_t k = 0; k < f.size(); ++k)
-    fNorm += f[k] * f[k];
-  fNorm = std::sqrt(fNorm);
+  // Largest Hessian eigenvalue by matrix-free power iteration. FIRE is stable
+  // for dt < 2/sqrt(lambda_max), so what matters is the *stiffest* mode - the
+  // shortest edge, typically - and nothing else.
+  //
+  // A single probe along the force direction (what this used to do) measures
+  // the stiffness the force happens to sample, which is dominated by whichever
+  // modes carry large forces. Those are the driven, soft ones. On a fine mesh
+  // that underestimates lambda_max badly, dt0 comes out too large, and FIRE
+  // spends its budget thrashing: every overshoot trips the P < 0 branch, which
+  // zeroes the velocity and halves dt, so it never builds up speed and hits
+  // the iteration cap without reaching force balance.
+  //
+  // -H v is obtained from a finite difference of the force, since F = -grad U.
+  const double eps = 1e-6 * scaleHint_;
+  std::vector<double> v(x.size()), f0(x.size()), saved(x.begin(), x.end());
+  {
+    auto f = vertexDerivs_.flat();
+    std::copy(f.begin(), f.end(), f0.begin());
+  }
+  // Seed off the force direction, falling back to a fixed pattern if the
+  // state is already balanced (a deterministic seed keeps runs reproducible).
+  double vNorm = 0.0;
+  for (size_t k = 0; k < v.size(); ++k) {
+    v[k] = f0[k];
+    vNorm += v[k] * v[k];
+  }
+  if (std::sqrt(vNorm) <= 0.0) {
+    for (size_t k = 0; k < v.size(); ++k)
+      v[k] = (k % 2 == 0) ? 1.0 : -1.0;
+    vNorm = static_cast<double>(v.size());
+  }
+  vNorm = std::sqrt(vNorm);
+  for (size_t k = 0; k < v.size(); ++k)
+    v[k] /= vNorm;
 
-  double K = 1.0;
-  if (fNorm > 0.0) {
-    const double eps = 1e-6 * scaleHint_;
-    std::vector<double> saved(x.begin(), x.end());
-    std::vector<double> f0(f.begin(), f.end());
+  double lambda = 1.0, prev = 0.0;
+  size_t iters = 0;
+  for (; iters < 24; ++iters) {
     for (size_t k = 0; k < x.size(); ++k)
-      x[k] += eps * f0[k] / fNorm;
+      x[k] = saved[k] + eps * v[k];
     T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
                vertexDerivs_);
     auto f1 = vertexDerivs_.flat();
-    double dF = 0.0;
-    for (size_t k = 0; k < f1.size(); ++k)
-      dF += (f1[k] - f0[k]) * (f1[k] - f0[k]);
-    dF = std::sqrt(dF);
-    K = std::max(dF / eps, 1e-12);
-    // restore
-    for (size_t k = 0; k < x.size(); ++k)
-      x[k] = saved[k];
+    double n = 0.0;
+    for (size_t k = 0; k < v.size(); ++k) {
+      v[k] = (f0[k] - f1[k]) / eps; // -H v
+      n += v[k] * v[k];
+    }
+    n = std::sqrt(n);
+    if (!(n > 0.0))
+      break;
+    lambda = n; // |H v| with |v| = 1 -> Rayleigh-like estimate
+    if (iters == 0)
+      firstProbe_ = lambda; // what a single force-direction probe would give
+    for (size_t k = 0; k < v.size(); ++k)
+      v[k] /= n;
+    if (iters > 2 && std::fabs(lambda - prev) <= 0.02 * lambda) {
+      ++iters;
+      break;
+    }
+    prev = lambda;
   }
-  // Conservative: the probe sees an average, not the extreme, mode.
-  dt0_ = 0.05 * 2.0 / std::sqrt(K);
-  dtMax_ = 10.0 * dt0_;
-  std::cerr << "QuasiStatic: stiffness probe K ~ " << K << ", FIRE dt0 = "
-            << dt0_ << std::endl;
+  for (size_t k = 0; k < x.size(); ++k)
+    x[k] = saved[k];
+  const double K = std::max(lambda, 1e-12);
+
+  // Stability limit for the inertial step, then a margin: power iteration
+  // converges from below, so leave room for what it has not yet resolved.
+  const double dtStable = 2.0 / std::sqrt(K);
+  dt0_ = 0.10 * dtStable;
+  dtMax_ = 0.50 * dtStable;
+  std::cerr << "QuasiStatic: lambda_max ~ " << K << " (" << iters
+            << " power iterations), FIRE dt0 = " << dt0_
+            << ", dt_max = " << dtMax_ << std::endl;
+  if (firstProbe_ > 0.0)
+    std::cerr << "  (a single force-direction probe would have said "
+              << firstProbe_ << ", i.e. " << (100.0 * (K / firstProbe_ - 1.0))
+              << "% low - the gap grows with mesh fineness)" << std::endl;
 }
 
 // Put the positional cell columns back to their pre-growth-step values.

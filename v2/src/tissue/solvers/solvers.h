@@ -54,6 +54,7 @@ private:
   double forceTol_ = 1e-3;
   int maxRelax_ = 2000;
   double dt0_ = 0.0, dtMax_ = 0.0, scaleHint_ = 1.0;
+  double firstProbe_ = 0.0;  // single-probe estimate, for the diagnostic
   unsigned int relaxNotConverged_ = 0;
   Matrix velocity_;
   Matrix vertexVel_;              // prescribed (non-relaxable) velocity
