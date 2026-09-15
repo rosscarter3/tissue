@@ -13,10 +13,13 @@ Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
 the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner-flank
 tissue-length fold change (2.16x against 2.149x measured; the outer flank
 overshoots, 1.11x against 1.055x), the inner/outer microtubule reorientation
-asymmetry, and the auxin- and pH-dependent perturbations. It does **not**
-reproduce the microtubule and cellulose perturbations — the fibre stiffness
-turns out to carry too little load for wall anisotropy to drive anything.
-That discrepancy, and what to do about it, is documented below.
+asymmetry, and the direction of the auxin- and pH-dependent perturbations
+(though those act on the growth gate directly, so their direction is
+guaranteed by construction and only their magnitude is a test — see below).
+It does **not** reproduce the microtubule and cellulose perturbations — the
+fibre stiffness turns out to carry too little load for wall anisotropy to
+drive anything. That discrepancy, and what to do about it, is documented
+below.
 
 
 ## Quick start
@@ -161,7 +164,12 @@ Dark-equilibrated start, light at t = 0, angles in degrees
 6 h. The model over-opens late: real hooks stall near 35–45° once the
 cotyledons separate, which this model has no representation of (the paper's
 own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
-experimental). The dark control never opens.
+experimental). The dark control never opens — but that is a consistency
+check, not evidence: the dark variant zeroes auxin depletion and both
+acidification terms, so every gate on growth is shut by construction and the
+hook could not open. It confirms the variant machinery does what it claims
+(the `@TAG` substitution failure below is exactly what it is there to catch),
+and nothing about the biology.
 
 **Microtubule reorientation.** MT angle is read out as the predicted CMT axis,
 i.e. the maximal principal stress direction (90° = circumferential/transverse,
@@ -171,21 +179,29 @@ rotates back as the organ straightens — the inner/outer switch asymmetry of
 Figs 3E–F and 4E, emergent rather than imposed.
 
 **Perturbations** (`run_perturbations.py`), each a single parameter change.
-Two of the five reproduce the experiment and three do not — see the
-limitation below:
+Hook angle in degrees; WT light is 79.2° at 4 h and 12.5° at 10 h. The two
+groups have to be read differently, because only one of them is a test:
 
-Hook angle in degrees; WT light is 79.2° at 4 h and 12.5° at 10 h.
+| treatment | what it changes | 4 h | 10 h | separation from control | measured separation |
+|---|---|---|---|---|---|
+| YUC6-OX | auxin gate never released (k_d = 0) | 121.0 | 53.8 | 41.3° | 78.7° |
+| low light | slower auxin depletion, weaker acidification | 121.2 | 29.2 | 16.7° | 11.6° |
+| oryzalin | MTs depolymerised → isotropic fibre (K_hill → 50) | 79.2 | 12.5 | **0.0°** | blocked |
+| isoxaben 100 nM | less cellulose (Y_f 1350 → 470) | 78.7 | 11.8 | −0.7° | blocked |
+| isoxaben 600 nM | Y_f → 200 | 78.6 | 11.5 | −1.0° | blocked |
 
-| treatment | what it changes | 4 h | 10 h | vs experiment |
-|---|---|---|---|---|
-| YUC6-OX | auxin gate never released (k_d = 0) | 121.0 | 53.8 | ✓ opening blocked (exp plateaus ~113°) |
-| low light | slower auxin depletion, weaker acidification | 121.2 | 29.2 | ✓ opening slowed |
-| oryzalin | MTs depolymerised → isotropic fibre (K_hill → 50) | 79.2 | 12.5 | ✗ **identical to WT**; exp is blocked |
-| isoxaben 100 nM | less cellulose (Y_f 1350 → 470) | 78.7 | 11.8 | ✗ no effect (marginally *faster*); exp is blocked |
-| isoxaben 600 nM | Y_f → 200 | 78.6 | 11.5 | ✗ no effect; exp is blocked |
+The first two act **directly on the growth gate**: with auxin never depleted,
+`G_auxin` stays low and growth is suppressed, so a slowdown is guaranteed by
+construction and its *direction* tests nothing. Only the magnitude is a
+result, and there the model under-blocks — YUC6-OX separates from WT by 41°
+where the measurement separates by 79°, about half. Low light is closer
+(17° against 12°), though the model's absolute angles run low throughout
+because it over-opens late.
 
-The treatments acting on the *chemical gates* work; the treatments acting on
-the *wall fibre* do nothing at all.
+The last three act on the **wall fibre** and are genuine, failed predictions:
+oryzalin is bit-identical to wild type, and isoxaben moves the angle by ~1° in
+the *wrong* direction. Those are the ones that matter, and they fail for the
+reason set out next.
 
 
 ## The main open problem: the fibre carries almost no load

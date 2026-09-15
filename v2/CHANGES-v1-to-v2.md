@@ -160,9 +160,11 @@ against the paper's measurements and inner/outer tissue extension of 2.16× /
 1.11× (measured 2.15× / 1.06×). It independently reproduces the paper's
 stress-anisotropy signature — circumferential principal stress on both flanks
 in darkness, switching to longitudinal on the outer side within the first hour
-under light while the inner side never switches — and the auxin- and
-pH-dependent perturbations (YUC6-OX, low light). It does not reproduce the
-microtubule and cellulose perturbations: the fibre stiffness carries too
+under light while the inner side never switches. The auxin- and pH-dependent
+perturbations (YUC6-OX, low light) come out in the right direction, but those
+act on the growth gate directly so the direction is guaranteed by
+construction; on magnitude the model under-blocks YUC6-OX about twofold. It
+does not reproduce the microtubule and cellulose perturbations: the fibre stiffness carries too
 little load relative to the matrix modulus for Eq. 3 to affect the mechanics,
 so anisotropy is a faithful readout there rather than a driver.
 
