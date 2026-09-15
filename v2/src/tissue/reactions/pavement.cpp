@@ -248,26 +248,44 @@ TISSUE_REGISTER_REACTION(CmtCurvatureRecruitment, "CMT::CurvatureRecruitment")
 // al. (2014) measure a 5x modulus ratio between cellulose microfibrils and
 // the wall matrix, so beta ~ 4 is the literature-scale value.
 //
-// MEASURED CAVEAT: in the pavement model this term does essentially nothing.
-// beta does not affect the mean growth rate, so beta = 0 is growth-matched to
-// the full model by construction, and over 48 h it costs 0.9% of the neck
-// count (5.58 -> 5.53) and 0.07% of lobeyness; with the growth-inhibition
-// channel also off it costs exactly nothing (2.95 necks either way). The
-// whole pattern comes from WallGrowth::StrainWallInhibited's gamma.
+// MEASURED CAVEAT: in the reference pavement model this term does almost
+// nothing -- beta = 0 costs 0.9% of the neck count (5.58 -> 5.53) and 0.07%
+// of lobeyness over 48 h, and with the growth-inhibition channel also off,
+// nothing at all (2.95 necks either way).
 //
-// That is not a defect, it is what an overdamped model at force balance must
-// do. Elastic stiffness can only influence a trajectory through drag lag; if
-// the tissue relaxes within a growth step, the equilibrium shape depends on
-// force *ratios* and rescaling one spring constant merely rescales a
-// transient nobody observes. This tissue's boundary is kinematically clamped
-// by GrowthForce::BoundaryDilation, so it has no soft long-wavelength mode
-// and no lag at all. The same test on the apical-hook model, which does have
-// a soft whole-arm rotation mode carrying full per-vertex drag, leaves a
-// small but non-zero residual (3.4 of 80 degrees).
+// The reason is arithmetic, not physical, and it is specific to how that run
+// is configured. It uses WallGrowth::StrainWallInhibited in ACTIVE mode
+// (growth_mode = 0, drive = 1.0) with the gate disabled (strain_th = -1), so
+// the growth rate is k L / (1 + gamma m) and the elastic strain -- the only
+// quantity beta affects -- appears nowhere in it. The direct path from
+// stiffness to growth is closed by construction.
 //
-// Keep the term -- it is physically real and will matter in any variant with
-// a compliant boundary -- but do not read a fitted beta here as evidence
-// about cellulose stiffness.
+// What remains is an indirect geometric path: stiffness changes the
+// instantaneous elastic shape, which changes local curvature, which changes m
+// through CMT::CurvatureRecruitment, which changes growth. The two controls
+// separate the contributions. With gamma = 0, m cannot reach growth at all
+// and beta moves the neck count by 0.0% and lobeyness by 0.03% -- the pure
+// elastic-shape effect. With gamma = 9 the curvature path opens and the neck
+// count moves by 0.9%. So the geometric path is real but weak.
+//
+// Do NOT generalise this to "wall stiffness does not matter". In a
+// strain-gated model the direct path is open, and the effect is then roughly
+// the term's share of the force balance: on the apical-hook model in this
+// repository Y_fiber is ~6% of wall stiffness and contributes ~4.5% of the
+// opening, under both RK5Adaptive and QuasiStatic. Here beta m raises wall
+// stiffness by ~160% at typical m and still buys 0.9% -- because the path is
+// shut, not because the term is small.
+//
+// An earlier version of this comment blamed drag lag. That was wrong on both
+// counts: the hook's effect survives QuasiStatic, where there is no lag by
+// construction, and this model does carry substantial lag (RK5Adaptive and
+// QuasiStatic differ by 11% in cell area and 34% in perimeter at t = 48 h).
+// Lag is present here and simply is not the channel.
+//
+// Keep the term: it is physically real, and it is the right place for
+// cellulose stiffening in any variant with strain-gated growth. But a fitted
+// beta in the reference configuration is not evidence about cellulose
+// stiffness -- those observables cannot constrain it.
 //
 // Everything else follows the legacy spring idiom exactly: the coefficient
 // K_eff (1/L_rest - 1/d), zeroed only when both d and L_rest vanish, scaled by
@@ -901,6 +919,23 @@ public:
         centre_[d] += vertexData[v][d];
     for (size_t d = 0; d < dim; ++d)
       centre_[d] /= static_cast<double>(boundary_.size());
+  }
+
+  // This is a prescribed velocity, not a force: g (x - centre) never vanishes,
+  // so a force-balance solver can never satisfy it and instead accelerates
+  // the boundary outward without bound. (Measured before the interface
+  // existed: cell area 296 -> 2.8e6 um^2 over 48 h under QuasiStatic, with
+  // every growth step hitting the relaxation cap.) Declaring it here lets
+  // QuasiStatic integrate this part over the growth step and hold it out of
+  // the relaxation; explicit solvers are unaffected.
+  bool prescribesVelocity() const override { return true; }
+  void velocityDerivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+                      Matrix &vertexData, Matrix &vertexVel) override {
+    Matrix ignoredCell, ignoredWall;
+    ignoredCell.reshapeLike(cellData);
+    ignoredWall.reshapeLike(wallData);
+    derivs(T, cellData, wallData, vertexData, ignoredCell, ignoredWall,
+           vertexVel);
   }
 
   void derivs(Tissue &, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
