@@ -364,11 +364,21 @@ void QuasiStatic::calibrateStep() {
   //
   // A single probe along the force direction (what this used to do) measures
   // the stiffness the force happens to sample, which is dominated by whichever
-  // modes carry large forces. Those are the driven, soft ones. On a fine mesh
-  // that underestimates lambda_max badly, dt0 comes out too large, and FIRE
-  // spends its budget thrashing: every overshoot trips the P < 0 branch, which
-  // zeroes the velocity and halves dt, so it never builds up speed and hits
-  // the iteration cap without reaching force balance.
+  // modes carry large forces. Those are the driven, soft ones, so the probe
+  // underestimates lambda_max, dt_max comes out above the stability limit, and
+  // FIRE spends its budget thrashing: every overshoot trips the P < 0 branch,
+  // which zeroes the velocity and halves dt, so it never builds up speed and
+  // hits the iteration cap without reaching force balance.
+  //
+  // How badly it underestimates depends mostly on how far the state is from
+  // force balance, not on mesh size. Far from balance the residual force is
+  // dominated by the large, soft driven mode; near balance it is spread over
+  // stiffer content. Same 514-cell hook mesh, measured both ways:
+  //   unequilibrated start: probe 16279 vs 131691 -> 8.1x low
+  //   equilibrated start:   probe 116537 vs 153431 -> 1.3x low
+  // (Stiffness spread plausibly matters too - a mesh of near-uniform edge
+  // lengths has less room between the softest and stiffest modes - but the
+  // equilibration state is the larger effect in everything measured here.)
   //
   // -H v is obtained from a finite difference of the force, since F = -grad U.
   const double eps = 1e-6 * scaleHint_;
@@ -435,7 +445,8 @@ void QuasiStatic::calibrateStep() {
   if (firstProbe_ > 0.0)
     std::cerr << "  (a single force-direction probe would have said "
               << firstProbe_ << ", i.e. " << (100.0 * (K / firstProbe_ - 1.0))
-              << "% low - the gap grows with mesh fineness)" << std::endl;
+              << "% low - largest when the start is far from force balance)"
+              << std::endl;
 }
 
 // Put the positional cell columns back to their pre-growth-step values.

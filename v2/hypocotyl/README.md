@@ -200,14 +200,36 @@ strain-gated growth law turns a 6% stiffness change into a few-percent growth
 change. A four-point dose-response under `QuasiStatic` confirms the gain is
 linear in the fibre's share, measured at peak sensitivity (t = 1 h):
 
-| Y_f | share of stiffness | effect (deg) | linear prediction |
-|---|---|---|---|
-| 1350 | 6.3% | 0.000 | – |
-| 675 | 3.3% | 1.878 | 2.081 |
-| 337.5 | 1.7% | 3.040 | 3.122 |
-| 0 | 0% | 4.162 | 4.162 |
+| Y_f | share of stiffness | effect (deg) | linear prediction | ratio |
+|---|---|---|---|---|
+| 1350 | 6.3% | 0.000 | – | – |
+| 675 | 3.3% | 1.965 | 2.007 | 0.98 |
+| 337.5 | 1.7% | 2.977 | 3.010 | 0.99 |
+| 0 | 0% | 4.013 | 4.013 | 1.00 |
 
-within 10% of proportional throughout. (An earlier hint of strong
+within 2% of proportional throughout. (These are re-runs with the relaxation
+cap raised to 100000. The first version of this table came from runs that
+silently hit a 3000 cap on some growth steps, i.e. were not fully relaxed;
+the converged numbers are *cleaner*, moving the ratios from 0.90/0.97 to
+0.98/0.99, but the earlier ones should not have been quoted. Always check the
+solver's cap warning.)
+
+**The quasi-static answer converges in the growth step.** That is not
+automatic — a model whose growth law has no braking term can fail to have a
+quasi-static limit at all — so it is worth demonstrating rather than assuming
+(0-2 h, relaxation cap 100000, zero cap hits):
+
+| h_growth | angle at 2 h | difference | inner fold |
+|---|---|---|---|
+| 0.02 | 7.215 | – | 2.1975 |
+| 0.01 | 6.286 | −0.929 | 2.2044 |
+| 0.005 | 5.917 | −0.369 | 2.2072 |
+| 0.0025 | 5.752 | −0.165 | 2.2085 |
+
+Successive differences shrink by a factor of ~0.42, extrapolating to ~5.6°
+and an inner fold of ~2.209. The production runs use `RK5Adaptive` regardless;
+this establishes that the `QuasiStatic` comparisons above rest on a limit that
+exists. (An earlier hint of strong
 non-linearity — isoxaben at Y_f = 470 appearing to cost only 0.5° — was an
 artefact of comparing across different solvers and timepoints: the observable
 saturates late, when the hook is nearly open, so *when* the effect is measured
