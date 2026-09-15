@@ -248,6 +248,27 @@ TISSUE_REGISTER_REACTION(CmtCurvatureRecruitment, "CMT::CurvatureRecruitment")
 // al. (2014) measure a 5x modulus ratio between cellulose microfibrils and
 // the wall matrix, so beta ~ 4 is the literature-scale value.
 //
+// MEASURED CAVEAT: in the pavement model this term does essentially nothing.
+// beta does not affect the mean growth rate, so beta = 0 is growth-matched to
+// the full model by construction, and over 48 h it costs 0.9% of the neck
+// count (5.58 -> 5.53) and 0.07% of lobeyness; with the growth-inhibition
+// channel also off it costs exactly nothing (2.95 necks either way). The
+// whole pattern comes from WallGrowth::StrainWallInhibited's gamma.
+//
+// That is not a defect, it is what an overdamped model at force balance must
+// do. Elastic stiffness can only influence a trajectory through drag lag; if
+// the tissue relaxes within a growth step, the equilibrium shape depends on
+// force *ratios* and rescaling one spring constant merely rescales a
+// transient nobody observes. This tissue's boundary is kinematically clamped
+// by GrowthForce::BoundaryDilation, so it has no soft long-wavelength mode
+// and no lag at all. The same test on the apical-hook model, which does have
+// a soft whole-arm rotation mode carrying full per-vertex drag, leaves a
+// small but non-zero residual (3.4 of 80 degrees).
+//
+// Keep the term -- it is physically real and will matter in any variant with
+// a compliant boundary -- but do not read a fitted beta here as evidence
+// about cellulose stiffness.
+//
 // Everything else follows the legacy spring idiom exactly: the coefficient
 // K_eff (1/L_rest - 1/d), zeroed only when both d and L_rest vanish, scaled by
 // frac_adh when the wall is stretched, applied as (x_a - x_b) * coeff.
