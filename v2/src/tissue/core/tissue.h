@@ -148,6 +148,11 @@ public:
   // --- simulation hooks (called by solvers) -----------------------------------
   void derivs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
               Matrix &cellDerivs, Matrix &wallDerivs, Matrix &vertexDerivs);
+  // Cell columns that reactions drive as positions (center-triangulation
+  // vertices), which solvers separating mechanics from growth must relax
+  // rather than integrate on the growth step.
+  std::vector<size_t> positionalCellVariables() const;
+
   void derivsWithAbs(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
                      Matrix &cellDerivs, Matrix &wallDerivs, Matrix &vertexDerivs,
                      Matrix &sdydtCell, Matrix &sdydtWall, Matrix &sdydtVertex);

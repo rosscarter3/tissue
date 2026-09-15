@@ -38,6 +38,8 @@ std::unique_ptr<BaseSolver> BaseSolver::getSolver(Tissue *T,
   *in >> idValue;
   if (idValue == "RK5Adaptive")
     return std::make_unique<RK5Adaptive>(T, *in);
+  if (idValue == "QuasiStatic")
+    return std::make_unique<QuasiStatic>(T, *in);
   if (idValue == "RK4")
     return std::make_unique<RK4>(T, *in);
   if (idValue == "Euler")
@@ -45,6 +47,7 @@ std::unique_ptr<BaseSolver> BaseSolver::getSolver(Tissue *T,
   if (idValue == "HeunIto")
     return std::make_unique<HeunIto>(T, *in);
   std::cerr << "BaseSolver::getSolver() - Unknown solver: " << idValue
+            << " (known: RK5Adaptive, QuasiStatic, RK4, Euler, HeunIto)" 
             << std::endl;
   std::exit(EXIT_FAILURE);
 }

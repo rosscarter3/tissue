@@ -43,6 +43,7 @@ open -a ParaView-5.10.0 hook.pvsm
 | `make_init.py` | geometry + initial auxin/pH/wall fields → `hook.init` |
 | `hook.model` | the ten reactions (mechanics, material, growth, chemistry) |
 | `solver.rk5`, `solver_eq.rk5`, `solver_vtk.rk5` | production / equilibration / animation settings |
+| `solver_quasistatic.rk5` | experimental: equilibrium-solving solver (see below) |
 | `pipeline.py` | dark equilibration → parallel light + dark + VTK runs |
 | `run_perturbations.py` | one parameter change per treatment, run in parallel |
 | `analyze.py` | hook angle, arc fold change, MT angle, auxin, pH |
@@ -307,13 +308,43 @@ What does **not** help at this scale:
 - **Larger `h_max`** (0.02 → 0.1): no change, error control already chooses
   smaller steps.
 
-Remaining opportunity: a **quasi-static solver** (Newton or FIRE minimisation
-of the elastic energy between growth steps, as the paper's Python model
-used). Explicit integration costs steps proportional to Y/growth-rate, which
-is exactly the ratio that must be large for the quasi-static approximation to
-hold — so the cost is structural, not a constant factor. That would also
-remove the need to scale Y and P together for mobility, and would let the
-mesh be refined without a step-size penalty.
+### The quasi-static solver, and what it revealed
+
+`QuasiStatic` (v2 solver, `solver_quasistatic.rk5`) does what this section
+used to propose: it steps growth and then solves mechanical equilibrium with
+FIRE relaxation instead of integrating toward it. Explicit integration is
+bounded by the *stiffest* elastic mode (mean `h` here is 2e-5 h) while the
+process being modelled runs on the *softest* one, a ratio near 1e5.
+
+It works, and it is about 2x faster than `RK5Adaptive` on this model — but it
+does **not** reproduce the trajectory, and that is the interesting part:
+
+| t (h) | 0 | 0.5 | 1.0 | 1.5 | 2.0 |
+|---|---|---|---|---|---|
+| RK5Adaptive | 159.2 | 170.5 | 159.9 | 139.1 | 121.5 |
+| QuasiStatic | 159.0 | 149.0 | 69.2 | 15.6 | 6.3 |
+
+Halving the growth step and tightening the force tolerance tenfold moves the
+QuasiStatic column by under 3°, so this is not discretisation error. The two
+solvers are answering different questions: with per-vertex drag, the shell
+lags far behind force balance, and **the opening kinetics this model was
+tuned to reproduce are substantially that lag rather than growth kinetics.**
+Under true equilibrium the same `k_growth` opens the hook roughly six times
+too fast.
+
+That matters beyond performance. It is a second symptom of the mechanics
+being mis-scaled (the first being the fibre load share above), and it points
+the same way: `k_growth` needs recalibrating against equilibrium mechanics,
+after which wall stiffness would actually influence the opening rate — which
+is the precondition for the oryzalin and isoxaben predictions to work at all.
+Until that recalibration is done, `solver.rk5` (RK5Adaptive) remains the one
+the published numbers here come from.
+
+Note that uniformly scaling Y, Y_fiber and P buys nothing under QuasiStatic
+(62 s scaled vs 74 s at biological stiffness for the same 2 h): FIRE converges
+in O(sqrt(condition number)) iterations and uniform scaling leaves the
+condition number unchanged. What it buys is that the scaling is no longer
+*needed*, since equilibrium does not depend on it.
 
 
 ## Known limitations

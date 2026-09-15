@@ -70,6 +70,13 @@ public:
   }
 
   // Optional state update between solver steps (h = step just taken).
+  // Cell variables this reaction drives as positional degrees of freedom
+  // rather than as concentrations - a center-triangulation vertex stored in
+  // the cell row, for instance, whose "derivative" is a force. Solvers that
+  // separate mechanics from growth must not integrate these on the growth
+  // step; the default (none) is right for every ordinary reaction.
+  virtual void positionalCellVariables(std::vector<size_t> &) const {}
+
   virtual void update(Tissue &, Matrix & /*cellData*/, Matrix & /*wallData*/,
                       Matrix & /*vertexData*/, double /*h*/) {}
 

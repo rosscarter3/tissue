@@ -37,7 +37,14 @@ public:
                    const std::function<void(size_t, size_t, size_t)> &fn);
 
   // Default work-item threshold below which parallelFor runs serially.
-  static constexpr size_t defaultGrain = 1024;
+  // Elements below which a parallel region is not worth its synchronization.
+  // A region costs a mutex + condition-variable broadcast and a join (tens of
+  // microseconds); the per-element work in these kernels is tens of
+  // nanoseconds, so the crossover is tens of thousands of elements, not
+  // hundreds. Measured on the 514-cell/1040-wall hook shell, a 1024 grain put
+  // the wall loops just over the threshold and cost 28% of total runtime in
+  // kernel time. Matches the solvers' kGrain.
+  static const size_t defaultGrain;
 
   ~ThreadPool();
 

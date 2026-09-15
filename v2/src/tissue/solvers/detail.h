@@ -16,7 +16,9 @@
 
 namespace tissue::detail {
 
-inline constexpr size_t kGrain = 8192; // elements below which loops run serial
+// Elements below which loops run serial; shares the pool's measured
+// crossover so one knob (TISSUE_GRAIN) tunes every parallel region.
+inline const size_t kGrain = ThreadPool::defaultGrain;
 
 // y := x + a*d
 inline void assignAxpy(Matrix &y, const Matrix &x, const Matrix &d, double a) {

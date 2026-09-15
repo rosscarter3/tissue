@@ -191,7 +191,11 @@ void RK5Adaptive::simulate() {
                    vertexDerivs_);
         print();
       }
-      std::cerr << "Simulation done." << std::endl;
+      std::cerr << "Simulation done. steps: " << numOk_ << " accepted, "
+                << numBad_ << " clipped-to-print, " << numReject_
+                << " rejected; mean h = "
+                << (endTime_ - startTime_) / std::max(1u, numOk_ + numBad_)
+                << std::endl;
       return;
     }
     h = hNext;
@@ -216,6 +220,7 @@ void RK5Adaptive::rkqs(double hTry, double &hDid, double &hNext) {
     errMax /= eps_;
     if (errMax <= 1.0)
       break;
+    ++numReject_;
     double hTemp = SAFETY * h * std::pow(errMax, PSHRNK);
     if (h >= 0.0)
       h = hTemp > 0.1 * h ? hTemp : 0.1 * h;

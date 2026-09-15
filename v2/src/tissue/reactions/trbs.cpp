@@ -9,8 +9,8 @@
 // vertices.
 //
 // An optional third index level enables the cell stress state to be computed
-// and stored (per cell: [stress anisotropy a = 1 - s2/s1, principal stress
-// direction (x,y,z), s1]), the input to the dynamic anisotropic material of
+// and stored (per cell: [principal stress direction (x,y,z), anisotropy
+// a = 1 - s2/s1, s1]), the input to the dynamic anisotropic material of
 // Walia, Carter et al. (2024) Eq. 3 (see WallMechanics::FiberSpring).
 // It is evaluated in update(), i.e. between solver steps rather than inside
 // every derivative evaluation: CMT reorientation is a slow (~hour) process,
@@ -53,7 +53,9 @@ public:
           "VertexFromTRBScenterTriangulation: wall length index in level 0; "
           "start of center-triangulation cell variables in level 1; optional "
           "level 2 = start index for storing the cell stress state "
-          "[anisotropy, dir x, dir y, dir z, sigma1] (5 cell variables).");
+          "[dir x, dir y, dir z, anisotropy, sigma1] (5 cell variables). "
+          "Storing at index 0 puts the direction on VTK's native cell-vector "
+          "slot and the anisotropy on its length slot.");
     std::vector<std::string> ids{"Y_mod", "P_ratio"};
     if (p.size() == 3)
       ids.push_back("stress_interval");
@@ -77,6 +79,16 @@ public:
     if (numVariableIndexLevel() == 3)
       evaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
                false, true);
+  }
+
+
+  // The center-triangulation vertex lives in the cell row; its "derivative"
+  // is a force, so it relaxes with the vertices rather than growing.
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(1, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
   }
 
   void update(Tissue &T, Matrix &cellData, Matrix &wallData,
@@ -407,9 +419,9 @@ private:
                 a = 0.0;
               if (a > 1.0)
                 a = 1.0;
-              cellData[c][stressIndex] = a;
               for (size_t d = 0; d < 3; ++d)
-                cellData[c][stressIndex + 1 + d] = eig[d][order[0]];
+                cellData[c][stressIndex + d] = eig[d][order[0]];
+              cellData[c][stressIndex + 3] = a;
               cellData[c][stressIndex + 4] = s1;
             }
           }
@@ -429,6 +441,14 @@ class Pressure3DCenterTriangulation : public Reaction {
 public:
   Pressure3DCenterTriangulation(const ParameterList &p, const IndexLevels &i) {
     configure("Pressure3D::CenterTriangulation", p, i, 1, {1}, {"P_force"});
+  }
+  // The center vertex is a position, not a concentration; see the same
+  // override on VertexFromTRBScenterTriangulation.
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(0, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
   }
   void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
               Matrix &cellDerivs, Matrix &, Matrix &vertexDerivs) override {
@@ -512,7 +532,7 @@ public:
     configure("WallMechanics::FiberSpring", p, i, 3, {1, 1},
               {"Y_fiber", "K_hill", "n_hill"});
     // level 0: wall resting length index; level 1: cell stress-state start
-    // index ([a, dir x, dir y, dir z, s1], written by the TRBS reaction).
+    // index ([dir x, dir y, dir z, a, s1], written by the TRBS reaction).
   }
   void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
               Matrix &vertexData, Matrix &, Matrix &,
@@ -562,9 +582,8 @@ public:
               if (Tissue::isBackground(cIdx))
                 continue;
               const double g = gFactor_[cIdx];
-              double nvec[3] = {cellData[cIdx][sIndex + 1],
-                                cellData[cIdx][sIndex + 2],
-                                cellData[cIdx][sIndex + 3]};
+              double nvec[3] = {cellData[cIdx][sIndex], cellData[cIdx][sIndex + 1],
+                                cellData[cIdx][sIndex + 2]};
               double nn = std::sqrt(nvec[0] * nvec[0] + nvec[1] * nvec[1] +
                                     nvec[2] * nvec[2]);
               double cos2 = 0.0;

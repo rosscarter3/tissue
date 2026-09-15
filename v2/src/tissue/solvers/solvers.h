@@ -17,6 +17,8 @@
 
 #include <istream>
 
+#include <vector>
+
 #include "tissue/solvers/base_solver.h"
 
 namespace tissue {
@@ -28,6 +30,33 @@ public:
 
 private:
   double h_ = 0.0;
+};
+
+// Growth stepping with mechanical equilibrium solved (FIRE) rather than
+// integrated; see quasi_static.cpp for why.
+class QuasiStatic : public BaseSolver {
+public:
+  QuasiStatic(Tissue *T, std::istream &in);
+  void simulate() override;
+
+private:
+  size_t relax();
+  double maxForce() const;
+  void calibrateStep();
+  static void addScaled(Matrix &y, const Matrix &k, double h);
+  static void combineHeun(Matrix &y, const Matrix &y0, const Matrix &k1,
+                          const Matrix &k2, double h);
+  void restorePositional(Matrix &y, const Matrix &y0) const;
+
+  double hGrowth_ = 0.0;
+  double forceTol_ = 1e-3;
+  int maxRelax_ = 2000;
+  double dt0_ = 0.0, dtMax_ = 0.0, scaleHint_ = 1.0;
+  unsigned int relaxNotConverged_ = 0;
+  Matrix velocity_;
+  Matrix cellStart_, wallStart_, cellK1_, wallK1_;
+  std::vector<size_t> posIndex_;   // flat cellData indices that are positions
+  std::vector<double> posVel_;     // their FIRE velocities
 };
 
 class RK4 : public BaseSolver {

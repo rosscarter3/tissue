@@ -29,6 +29,9 @@ public:
   bool empty() const { return rows() == 0; }
 
   size_t rowSize(size_t r) const { return offsets_[r + 1] - offsets_[r]; }
+  // Index of row r's first element within flat(); lets callers precompute
+  // flat indices for scattered columns.
+  size_t rowBegin(size_t r) const { return offsets_[r]; }
 
   // Row length of row 0; only meaningful for row-uniform tables (vertex and
   // wall data always are; cell data is unless a CT reaction resized rows).
