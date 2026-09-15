@@ -82,8 +82,14 @@ measured:
 
 | | ceiling set by the geometry | measured (t = 8 h) | reached in simulation |
 |---|---|---|---|
-| outer flank | 1.05× | 1.055× | 1.11× |
-| inner flank | 2.17× | 2.149× | 2.10× (2.16× by t = 10 h) |
+| outer flank (**fitted**) | 1.05× | 1.055× | 1.11× |
+| inner flank (**predicted**) | 2.17× | 2.149× | 2.10× (2.16× by t = 10 h) |
+
+Which row is which matters. `MATURE_FACTOR` is chosen to put the outer ceiling
+at the measured 1.055×, so that row is a fit of one parameter to one number.
+The inner ceiling is then whatever the geometry gives — 2.17× against 2.149×
+measured — with nothing further to adjust. That is the actual content of the
+"shared mature length" claim: one fit buys one independent prediction.
 
 The first column is a property of the initial file, not a result: it is what
 the generated rest lengths allow, printed by `make_init.py`. Only the third
@@ -161,7 +167,13 @@ Dark-equilibrated start, light at t = 0, angles in degrees
 | 10 | 12.5 | 34.5 | 2.16 | – | 1.11 | – | 89 | 80 |
 
 **Hook-angle RMSE 11.9°** over 0–10 h, tracking within ~4° through the first
-6 h. The model over-opens late: real hooks stall near 35–45° once the
+6 h — but read that as fit quality, not as a prediction: `k_growth` was tuned
+so that opening runs on the measured timescale, and several other parameters
+(turgor, the two Hill thresholds, the auxin decay rate) were set by hand
+against the same curve. What is *not* fitted to it, and so carries the
+evidential weight, is everything in the remaining columns: the fold changes,
+the microtubule reorientation, and the shape of the curve away from the
+timescale it was tuned on. The model over-opens late: real hooks stall near 35–45° once the
 cotyledons separate, which this model has no representation of (the paper's
 own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
 experimental). The dark control never opens — but that is a consistency
