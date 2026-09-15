@@ -987,12 +987,21 @@ TISSUE_REGISTER_REACTION(GrowthForceBoundaryDilation,
 // correct h^3 -- but the size of the effect is 8x per halving, not 2x.)
 //
 // That is not academic. Refining this model's wall discretisation from 0.6 to
-// 0.3 um moved lobeyness from 1.155 to 1.083 and the neck count from 7.43 to
-// 9.71 per cell (+30.7%): weaker effective bending, shorter selected
-// wavelength, more and shallower lobes. The lobe spacing was partly a
-// property of the mesh. (Since lambda ~ B^(1/4), an eightfold bending change
-// predicts 8^(1/4) = 1.68x more necks; the measured 1.31x is smaller, so the
-// wavelength is not set by bending alone here.)
+// 0.3 um, on an identical initial outline, moves lobeyness from 1.295 to
+// 1.127 (-12.9%) and the neck count from 5.29 to 10.14 per cell (+91.9%):
+// weaker effective bending, shorter selected wavelength, nearly twice as many
+// lobes. The lobe spacing was largely a property of the mesh. Since
+// lambda ~ B^(1/4), an eightfold bending change predicts 8^(1/4) = 1.68x more
+// necks, against 1.92x measured -- the same order, so bending plausibly is
+// what sets the wavelength here.
+//
+// "On an identical initial outline" is load-bearing. The first version of
+// this study seeded the initial perturbation with a per-vertex random draw of
+// fixed amplitude, whose SLOPE therefore scales as 1/h: refining the mesh
+// silently roughened the starting condition (total initial wall length
+// 1.000 -> 1.019 -> 1.091 over a 0.6/0.3/0.15 um series), making it a
+// two-variable comparison. It reported +30.7% where the single-variable
+// answer is +91.9%, i.e. the confound was hiding two thirds of the effect.
 //
 // A real bending energy for a chain is
 //
@@ -1014,7 +1023,18 @@ TISSUE_REGISTER_REACTION(GrowthForceBoundaryDilation,
 // and is a material property, unlike k_bend which had to be retuned for every
 // discretisation.
 //
-// BendingChain is left alone: the apical-hook model is calibrated against it.
+// Measured, same 0.6 -> 0.3 um refinement on an identical initial outline:
+// lobeyness drift -2.5% against BendingChain's -12.9%, neck-count drift
+// +12.2% against +91.9%. Roughly 5x better on lobeyness and 7.5x on the neck
+// count, which is the wavelength observable and the one that matters.
+//
+// NOT converged, though -- 12.2% over a single halving is much better than
+// 92% and is still not convergence. The residual could be the neck-tip
+// self-intersection (this model has no self-avoidance), the curvature
+// estimator, or simply needing h = 0.15.
+//
+// BendingChain is left alone: other models may be calibrated against it, and
+// B = k_bend * h^3 / 4 converts a calibrated k to the equivalent modulus.
 class WallMechanicsBending : public Reaction {
 public:
   WallMechanicsBending(const ParameterList &p, const IndexLevels &i) {
