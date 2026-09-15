@@ -107,10 +107,17 @@ loops cannot change results, and the one reduction — the scatter — is
 separately guarded, see below). The spread is real and worth knowing: lock
 contention gets much worse when the machine is otherwise busy, so the fix
 helps least on an idle machine (2 h run: 262 s -> 170 s CPU, 1.5x) and most
-when several conditions run in parallel, which is the normal case
-(0.5 h run with four other jobs resident: 110 s -> 42 s CPU, 2.6x, with
-system time falling from 57 s to 1.3 s). Neutral at 40k cells. Override with
-`TISSUE_GRAIN` to re-measure the crossover elsewhere.
+when several conditions run in parallel, which is the normal case. Two
+back-to-back A/B pairs of a 0.5 h run with four other jobs resident:
+
+| grain | CPU (user + sys) | real |
+|---|---|---|
+| 1024 | 110.3 s (53.2 + 57.1) / 114.2 s (50.3 + 63.9) | 103.9 s / 85.3 s |
+| 65536 | 41.8 s (40.5 + 1.3) / 40.1 s (39.2 + 0.8) | 48.2 s / 45.2 s |
+
+i.e. 2.7x less CPU and 2.0x less wall clock, with system time down ~50x.
+Neutral at 40k cells. Override with `TISSUE_GRAIN` to re-measure the
+crossover elsewhere.
 
 The deterministic scatter (private per-partition copies of the target table,
 reduced in partition order) carries a cost of O(threads x |target|) that does
