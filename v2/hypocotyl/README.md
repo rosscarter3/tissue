@@ -587,6 +587,65 @@ measured); the two need a joint refit. The core's stiffness and rate are
 hand-set, not measured. And this has been run to 4 h, not 12.
 
 
+### The anisotropy feedback is self-limiting
+
+The recalibration section predicted that a stiffer wall would let the core
+switch the outer flank at a rate low enough to leave its extension near the
+measured 1.055x - stress scaling with load while strain scales with
+load/stiffness. That prediction was tested and **it fails**, in a way that is
+more interesting than if it had worked.
+
+Recalibrated shell (fibre at the paper's 57% load share, Y_f = 65700,
+P = 36.2, k_growth = 13) with the growing core at three rates, to t ~ 6 h:
+
+| core rate | outer switch | outer-flank anisotropy |
+|---|---|---|
+| 0.005/h | none | 0.10-0.20 |
+| 0.010/h | none | 0.10-0.20 |
+| 0.020/h | none | 0.10-0.20 |
+
+The strain half of the prediction held - outer extension at t = 2 h fell from
+1.078x to 1.044x against 1.067x measured. The stress half did not: the outer
+flank never reaches the crossover, because its anisotropy is **suppressed**.
+Compared at matched times against the shipped shell:
+
+| t (h) | Y_f = 1350: inner / outer | Y_f = 65700: inner / outer |
+|---|---|---|
+| 0.5 | 0.510 / 0.328 | 0.499 / **0.152** |
+| 1.0 | 0.443 / 0.284 | 0.516 / **0.195** |
+| 2.0 | 0.477 / 0.336 | 0.509 / **0.187** |
+| 3.0 | 0.499 / 0.380 | 0.430 / **0.144** |
+
+**Why: Eq. 3 is a negative feedback once stress is emergent.** It stiffens the
+wall along the maximal-stress direction; a stiffer direction carries its load
+at lower strain; the principal strains equalise; the anisotropy that drove the
+redistribution falls. The loop only closes when the fibre carries enough of the
+load to matter - at a 2.7% share there is nothing to close it with, at 57%
+there is.
+
+This feedback **cannot exist in the analytic model**, where calc_hoop_stress
+and calc_long_stress depend only on pressure, geometry and time, and the
+stiffnesses computed from the anisotropy feed forward into growth without ever
+altering the stress. There the anisotropy is an input to the material law; here
+it is also an output of it.
+
+And the damping is **selective**, which is what makes it consequential: the
+inner flank is unaffected (0.43-0.52 either way) while the outer flank is
+halved. The inner flank sits where g(a) is near saturation, so redistribution
+is near its limit whatever the fibre share; the outer flank sits on the steep
+part of the Hill curve, where the feedback bites hardest - and it is the outer
+flank whose switch the mechanism exists to explain.
+
+**What this constrains.** Reproducing a sharp outer-flank switch in a
+mechanically self-consistent model requires either a smaller fibre contribution
+than the nominal Y_m : Y_f = 75 : 100, or a CMT response that saturates or
+carries hysteresis so that reorientation is not undone by the stress relief it
+causes. Both are testable. This is a constraint on the *mechanism's
+parameters*, not evidence against the mechanism: the switch, its inner/outer
+ordering and the isoxaben compensation all reproduce here at a lower fibre
+share.
+
+
 ### Isoxaben: a retraction, and what the test actually shows
 
 An earlier version of this README claimed isoxaben could not be reproduced by
