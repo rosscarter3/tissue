@@ -137,7 +137,7 @@ gather over the vertex incidence lists has no such term and is the scalable
 alternative.
 
 Independent runs (conditions, parameter sweeps) parallelize perfectly as
-separate processes, which is what the hypocotyl pipeline does.
+separate processes.
 
 **Transcendentals in the TRBS kernel.** Profiling the hook shell after the
 grain fix put about a quarter of the force kernel in `tan` and `acos`. The

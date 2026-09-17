@@ -48,7 +48,8 @@ checkout, which is what made the validation below possible.
 | Automated tests | none | 5 / 5 in 0.63 s |
 
 The line-count gap is not all deletion: v2 implements the reaction set the
-shipped tutorials and the hypocotyl work need, not the full v1 catalogue (§7).
+shipped tutorials need, not the full v1 catalogue (§7); the rest is being
+ported in validated batches, tracked in tools/port/STATUS.md.
 
 ## 3. Compatibility, and how it was checked
 
@@ -155,8 +156,9 @@ further 5–20×.
   `WallGrowth::AcidGrowth`, `Pressure2D::AreaPotential`,
   `VertexNoUpdateFromIndex`.
 
-These support a cell-resolved apical hook model (`hypocotyl/`, see its own
-README for the full validation). The 514-cell shell opens 159° → 13° over 10 h
+These support a cell-resolved apical hook model, which now lives in its own
+repository (rosscarter3/apical-hook-model; see its README for the full
+validation). The 514-cell shell opens 159° → 13° over 10 h
 under light against a maintained dark control, with a hook-angle RMSE of 11.9°
 against the paper's measurements and inner/outer tissue extension of 2.16× /
 1.11× (measured 2.15× / 1.06×). It independently reproduces the paper's
