@@ -176,7 +176,10 @@ public:
   void updateDirection(double, Matrix &, Matrix &, Matrix &, Matrix &,
                        Matrix &, Matrix &) {}
 
-  void checkCompartmentChange(Matrix &cellData, Matrix &wallData,
+  // Applies division/removal rules; returns true if the topology changed, so
+  // callers can re-validate connectivity only when there is something to
+  // validate.
+  bool checkCompartmentChange(Matrix &cellData, Matrix &wallData,
                               Matrix &vertexData, Matrix &cellDerivs,
                               Matrix &wallDerivs, Matrix &vertexDerivs);
 

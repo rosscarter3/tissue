@@ -70,14 +70,15 @@ spring mechanics, Apple M1, all numbers re-measured 2026-09-14):
 
 | job | legacy | v2 | speedup |
 |---|---|---|---|
-| Euler, 1000 fixed steps (identical work) | 18.4 s | 5.2 s | **3.6x** |
+| Euler, 1000 fixed steps (identical work) | 18.4 s | 0.61 s | **30x** |
 | RK5Adaptive t=0..5, eps=1e-5 | 104.7 s (2501 steps) | 0.24 s (13 steps) | **~430x** |
 | RK5Adaptive t=0..50, eps=1e-8 | killed after 865 s, unfinished | 1.2-1.4 s | >600x |
 | meristem tutorial (divisions, ~400 cells) | 4.7 s | 1.5 s | ~3x |
 
 Two separable effects. **Raw throughput** is ~1.8x per derivative evaluation
-(flat memory layout, fused kernels) and 3.6x per Euler step once the
-redundant duplicate evaluation legacy performs each step is removed.
+(flat memory layout, fused kernels), and 30x per Euler step at 40k cells once
+the redundant duplicate evaluation legacy performs each step is removed and the
+per-step connectivity sweep is gated (below).
 **Step count** is where the large factors come from: on any model with wall
 dynamics the legacy RK5 wall-derivative bug (below) corrupts the embedded
 error estimate, forcing 2501 steps where the correct scheme needs 13 — a
@@ -147,6 +148,18 @@ all exact, and one `sqrt` in place of each transcendental. Back-to-back on a
 one place v2 departs from the legacy TRBS arithmetic; the departure is in
 v2's favour, since the legacy form loses precision in the acos/tan round trip
 near the clamp.
+
+**The per-step connectivity sweep.** `checkConnectivity` is an O(cells + walls)
+consistency check that ran after every accepted step. Topology can only change
+when a division or removal rule fires, so for any model without compartment
+changes - most mechanical models, the hook shell and the 40k-cell benchmark
+included - it re-validated an unchanged mesh forever. It is now gated on
+`checkCompartmentChange` reporting an actual change, so dividing models are
+still checked on every step where they divide, which is where the bugs are.
+Init files are still validated once at load.
+
+On the 40k-cell benchmark that sweep *was* the benchmark: **3.72 s -> 0.61 s,
+6.1x, bit-identical output.** On the 514-cell hook it is worth 3%.
 
 ## Deliberate fixes over legacy (documented divergences)
 

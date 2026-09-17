@@ -88,9 +88,14 @@ void BaseSolver::postStep(double h) {
   T_->updateDirection(h, cellData_, wallData_, vertexData_, cellDerivs_,
                       wallDerivs_, vertexDerivs_);
   T_->updateReactions(cellData_, wallData_, vertexData_, h);
-  T_->checkCompartmentChange(cellData_, wallData_, vertexData_, cellDerivs_,
-                             wallDerivs_, vertexDerivs_);
-  T_->checkConnectivity(1);
+  // Connectivity is only worth re-checking when the topology has actually
+  // changed. For a model with no compartment changes - most mechanical models,
+  // including the hook shell - it cannot, and profiling put this O(cells+walls)
+  // sweep at 3.5% of runtime doing nothing. Division and removal still get
+  // checked on every step where they fire, which is where the bugs are.
+  if (T_->checkCompartmentChange(cellData_, wallData_, vertexData_, cellDerivs_,
+                                 wallDerivs_, vertexDerivs_))
+    T_->checkConnectivity(1);
 }
 
 void BaseSolver::initPrintSchedule(double tiny) {

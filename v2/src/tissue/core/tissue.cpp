@@ -238,10 +238,11 @@ void Tissue::updateReactions(Matrix &cellData, Matrix &wallData,
 
 // --- compartment change sweep --------------------------------------------------
 
-void Tissue::checkCompartmentChange(Matrix &cellData, Matrix &wallData,
+bool Tissue::checkCompartmentChange(Matrix &cellData, Matrix &wallData,
                                     Matrix &vertexData, Matrix &cellDerivs,
                                     Matrix &wallDerivs, Matrix &vertexDerivs) {
   unsigned int guardCounter = 0;
+  bool changed = false;
   for (size_t l = 0; l < numCompartmentChange(); ++l) {
     for (size_t i = 0; i < numCell(); ++i) {
       if (++guardCounter > 1000000) {
@@ -254,6 +255,7 @@ void Tissue::checkCompartmentChange(Matrix &cellData, Matrix &wallData,
                     wallDerivs, vertexDerivs)) {
         rule.update(*this, i, cellData, wallData, vertexData, cellDerivs,
                     wallDerivs, vertexDerivs);
+        changed = true;
         if (rule.numChange() == 1) {
           // Division: locally re-sort mother, daughter, and their neighbors.
           // Cells with a single real neighbor are sorted in a second pass so
@@ -288,6 +290,7 @@ void Tissue::checkCompartmentChange(Matrix &cellData, Matrix &wallData,
       }
     }
   }
+  return changed;
 }
 
 // --- sorting -------------------------------------------------------------------
