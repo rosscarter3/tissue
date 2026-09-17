@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**96 names registered here; 234 classes outstanding.**
+**102 names registered here; 228 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -27,7 +27,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
-| `legacy/massAction.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
 | `legacy/bending.cc` | 4 |
@@ -271,15 +270,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `HillGeneralOne_TwoInputs` — `HillGeneralOne_TwoInputs`
 - `HillGeneralThree` — `HillGeneralThree`
 - `HillGeneralTwo` — `HillGeneralTwo`
-
-### `legacy/massAction.cc` (6)
-
-- `MassAction::GeneralEnzymatic` — `MassAction::GeneralEnzymatic`
-- `MassAction::GeneralWall` — `MassAction::GeneralWall`
-- `MassAction::HillSimple` — `MassAction::HillSimple`
-- `MassAction::OneToTwo` — `MassAction::OneToTwo`
-- `MassAction::OneToTwoWall` — `MassAction::OneToTwoWall`
-- `MassAction::TwoToOneWall` — `MassAction::TwoToOneWall`
 
 ### `legacy/calculate.cc` (5)
 

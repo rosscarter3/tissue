@@ -54,3 +54,18 @@ sparse list with the number flag set.
 
 `Creation::Sinus` keeps legacy's `6.28` rather than `2*pi` - the period that
 implies is what existing models were tuned against.
+
+### `legacy/massAction.cc` - 6 classes, 2026-09-17
+
+`MassAction::OneToTwo`, `OneToTwoWall`, `TwoToOneWall`, `GeneralWall`,
+`HillSimple`, `GeneralEnzymatic`. Legacy registers no no-colon aliases for
+these.
+
+All six match to 0.000e+00 over 904 values - the three cell reactions under
+`RK5Adaptive`, the three wall reactions under `Euler` for the reason above.
+
+The wall variants treat wall variables as *paired*: each listed index `k` also
+drives `k+1` with its own rate, which is how legacy represents the two sides of
+a wall. `GeneralWall` and `GeneralEnzymatic` keep legacy's `rate > 0` gate, so
+a zero or negative rate leaves the compartment untouched rather than running
+the reaction backwards.
