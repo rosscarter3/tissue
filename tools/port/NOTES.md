@@ -381,3 +381,27 @@ index.
 Still outstanding in this file: the microtubule (MT) spring variants, which
 need a per-cell fibre direction and the angle between it and each wall, plus
 `VertexFromExternalSpring*`, `cellcellRepulsion` and `vertexFromSubstrate`.
+
+### `legacy/mechanicalSpring.cc`: the two MT springs, 2026-09-17
+
+`VertexFromWallSpringMT` and `VertexFromWallSpringMTConcentrationHill`, both
+0.000e+00 against legacy on the two-cell fixture and the 267-cell mesh.
+
+These are the fibre-reinforcement rule: a wall running along a cell's
+microtubule direction is soft, one running across it is stiff, through
+`K = K_min + K_max (2 - cos^2 t1 - cos^2 t2)`. They read the direction from
+*cell variables* - components at a given index followed by a flag that must
+exceed 0.5 - not from the legacy direction machinery, so nothing unported is
+needed. `mtCosSq()` is shared between them.
+
+Two legacy quirks kept, both in the ConcentrationHill variant. Its fallback
+for a cell with no direction is 0.5 rather than the 1.0 the plain MT variant
+uses. And the concentration factor is computed *inside the same guard* as the
+direction, so a cell whose direction flag is unset contributes a Hill factor
+of 0 - its concentration is ignored entirely rather than softening the wall.
+That couples two things that look independent, and I first transcribed it as
+independent, which showed up immediately as a 7e-3 mismatch. Unlike the
+cell1/cell2 asymmetries in membraneCycling.cc there is no invariance the rule
+must satisfy here, so it is reproduced rather than "fixed". The harness tests
+both a direction index where both fixture cells are flagged and one where only
+one is, since that is the path the coupling changes.

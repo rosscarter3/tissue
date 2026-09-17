@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**169 names registered here; 180 classes outstanding.**
+**171 names registered here; 178 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -19,7 +19,7 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/adhocReaction.cc` | 40 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
-| `legacy/mechanicalSpring.cc` | 15 |
+| `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
@@ -157,15 +157,13 @@ Method and the log of validated batches are in `NOTES.md`.
 - `TargetAreaFromPressure` — `TargetAreaFromPressure`
 - `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
 
-### `legacy/mechanicalSpring.cc` (15)
+### `legacy/mechanicalSpring.cc` (13)
 
 - `VertexFromDoubleWallSpring` — `VertexFromDoubleWallSpring`
 - `VertexFromDoubleWallSpringMTConcentrationHill` — `VertexFromDoubleWallSpringMTConcentrationHill`
 - `VertexFromExternalSpring` — `VertexFromExternalSpring`
 - `VertexFromExternalSpringFromPerpVertex` — `VertexFromExternalSpringFromPerpVertex`
 - `VertexFromExternalSpringFromPerpVertexDynamic` — `VertexFromExternalSpringFromPerpVertexDynamic`
-- `VertexFromWallSpringMT` — `VertexFromWallSpringMT`
-- `VertexFromWallSpringMTConcentrationHill` — `VertexFromWallSpringMTConcentrationHill`
 - `VertexFromWallSpringMTHistory` — `VertexFromWallSpringMTHistory`
 - `VertexFromWallSpringMTSpatial` — `VertexFromWallSpringMTSpatial`
 - `VertexFromWallSpringMTnew` — `VertexFromWallSpringMTnew`

@@ -57,6 +57,48 @@ mk "VertexFromWallBoundarySpring 2 1 1
 printf "%-52s " "  ... 267 cells"
 run meristemT.init
 
+# Fibre (microtubule) direction read from cell variables: components at the
+# given index, then a flag. Index 2 has the flag set in both fixture cells,
+# index 5 in only one - the unoriented path matters, and differs between these
+# two reactions.
+printf "%-52s " "VertexFromWallSpringMT (both cells oriented)"
+mk "VertexFromWallSpringMT 3 1 2
+0.2
+0.6
+0.8
+0 2"; run
+printf "%-52s " "  ... one cell unoriented"
+mk "VertexFromWallSpringMT 3 1 2
+0.2
+0.6
+0.8
+0 5"; run
+printf "%-52s " "  ... 267 cells"
+run meristemT.init
+
+printf "%-52s " "VertexFromWallSpringMTConcentrationHill"
+mk "VertexFromWallSpringMTConcentrationHill 6 2 2 1
+1.0
+0.7
+0.4
+0.5
+2.0
+0.8
+0 5
+1"; run
+printf "%-52s " "  ... 267 cells"
+run meristemT.init
+printf "%-52s " "  ... both cells oriented"
+mk "VertexFromWallSpringMTConcentrationHill 6 2 2 1
+1.0
+0.7
+0.4
+0.5
+2.0
+0.8
+0 2
+1"; run
+
 echo
 echo "Force-save forms (MISMATCH at t=0 only; see NOTES.md):"
 printf "%-52s " "WallMechanics::Spring + K_force2 + save"

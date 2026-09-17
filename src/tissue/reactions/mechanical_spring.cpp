@@ -342,6 +342,147 @@ private:
 TISSUE_REGISTER_REACTION(VertexFromWallBoundarySpring,
                          "VertexFromWallBoundarySpring")
 
+// cos^2 of the angle between wall w and the fibre (microtubule) direction
+// stored in cell c's variables, which are laid out as the vector components
+// followed by a flag: the direction counts only when that flag exceeds 0.5.
+// `fallback` is returned for a background neighbour or an unset flag, and
+// legacy picks a different fallback in different variants - 1.0 here, 0.5
+// there - so it is a parameter rather than baked in.
+inline double mtCosSq(const Tissue &T, const Matrix &cellData,
+                      const Matrix &vertexData, size_t w, size_t c,
+                      size_t directionIndex, double fallback) {
+  const size_t dimension = vertexData.cols();
+  if (Tissue::isBackground(c) ||
+      cellData[c][directionIndex + dimension] <= 0.5)
+    return fallback;
+  const size_t v1 = T.wall(w).vertex1;
+  const size_t v2 = T.wall(w).vertex2;
+  double dot = 0.0, cNorm = 0.0, distance = 0.0;
+  for (size_t d = 0; d < dimension; ++d) {
+    const double nW = vertexData[v2][d] - vertexData[v1][d];
+    const double nC = cellData[c][directionIndex + d];
+    distance += nW * nW;
+    cNorm += nC * nC;
+    dot += nC * nW;
+  }
+  const double cosTheta = dot / (std::sqrt(cNorm) * std::sqrt(distance));
+  return cosTheta * cosTheta;
+}
+
+// Fibre-reinforced wall spring: a wall running *along* a cell's microtubule
+// direction is soft and one running across it is stiff, with
+//     K = K_min + K_max (2 - cos^2 theta_1 - cos^2 theta_2)
+// summed over the wall's two cells. This is the cell-variable form of the
+// anisotropy - the direction is read from cell variables, not from the legacy
+// direction machinery - so it needs nothing that is unported.
+class VertexFromWallSpringMT : public Reaction {
+public:
+  VertexFromWallSpringMT(const ParameterList &p, const IndexLevels &i) {
+    if (i.empty() || i.size() > 2 || i[0].size() != 2 ||
+        (i.size() == 2 && i[1].size() != 1))
+      throw std::runtime_error(
+          "VertexFromWallSpringMT: wall length index and cell MT direction "
+          "start index in level 0; optional wall index to save the force in "
+          "level 1.");
+    configure("VertexFromWallSpringMT", p, i, 3,
+              i.size() == 2 ? std::vector<size_t>{2, 1}
+                            : std::vector<size_t>{2},
+              {"K_force^min", "K_force^max", "frac_adh"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &,
+              Matrix &vertexDerivs) override {
+    const size_t directionIndex = variableIndex(0, 1);
+    const bool save = numVariableIndexLevel() > 1;
+    wallSpringLoop(
+        T, wallData, vertexData, vertexDerivs, coeff_, variableIndex(0, 0),
+        parameter(2), save, save ? variableIndex(1, 0) : 0,
+        /*zeroInactiveForce=*/false, [](size_t) { return true; },
+        [&](size_t w) {
+          const double c1 = mtCosSq(T, cellData, vertexData, w,
+                                    T.wall(w).cell1, directionIndex, 1.0);
+          const double c2 = mtCosSq(T, cellData, vertexData, w,
+                                    T.wall(w).cell2, directionIndex, 1.0);
+          return parameter(0) + parameter(1) * (2.0 - c1 - c2);
+        });
+  }
+
+private:
+  std::vector<double> coeff_;
+};
+TISSUE_REGISTER_REACTION(VertexFromWallSpringMT, "VertexFromWallSpringMT")
+
+// Fibre reinforcement and a concentration-dependent softening combined
+// multiplicatively, each mixed against 1 by its own fraction parameter:
+//     K = K_0 [(1-f_MT) + f_MT (2 - cos^2 t1 - cos^2 t2)/2]
+//             [(1-f_c)  + f_c  (h(c1) + h(c2))/2]
+// with h an inhibitory Hill function.
+//
+// Two legacy quirks, both kept. The MT fallback for a cell with no direction
+// is 0.5 here rather than the 1.0 VertexFromWallSpringMT uses, so an
+// unoriented cell contributes the mean instead of the fully-soft value. And
+// the concentration factor is computed *inside the same guard* as the
+// direction, so a cell whose direction flag is unset contributes h = 0 -
+// its concentration is ignored entirely rather than softening the wall. That
+// couples two things that look independent, but nothing in the rule forces
+// them apart the way the cell1/cell2 symmetry did in membraneCycling.cc, so
+// it is reproduced rather than "fixed".
+class VertexFromWallSpringMTConcentrationHill : public Reaction {
+public:
+  VertexFromWallSpringMTConcentrationHill(const ParameterList &p,
+                                          const IndexLevels &i) {
+    if (i.size() < 2 || i.size() > 3 || i[0].size() != 2 ||
+        i[1].size() != 1 || (i.size() == 3 && i[2].size() != 1))
+      throw std::runtime_error(
+          "VertexFromWallSpringMTConcentrationHill: wall length index and "
+          "cell MT direction start index in level 0; cell concentration index "
+          "in level 1; optional wall index to save the force in level 2.");
+    configure("VertexFromWallSpringMTConcentrationHill", p, i, 6,
+              i.size() == 3 ? std::vector<size_t>{2, 1, 1}
+                            : std::vector<size_t>{2, 1},
+              {"K_0", "frac_MT", "frac_conc", "K_Hill", "n_Hill", "frac_adh"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &,
+              Matrix &vertexDerivs) override {
+    const size_t directionIndex = variableIndex(0, 1);
+    const size_t concIndex = variableIndex(1, 0);
+    const double kPow = std::pow(parameter(3), parameter(4));
+    const bool save = numVariableIndexLevel() > 2;
+    const size_t dimension = vertexData.cols();
+    // Oriented cells contribute cos^2 and their Hill factor; unoriented ones
+    // contribute 0.5 and nothing, which is legacy's coupling (see above).
+    auto oriented = [&](size_t c) {
+      return !Tissue::isBackground(c) &&
+             cellData[c][directionIndex + dimension] > 0.5;
+    };
+    wallSpringLoop(
+        T, wallData, vertexData, vertexDerivs, coeff_, variableIndex(0, 0),
+        parameter(5), save, save ? variableIndex(2, 0) : 0,
+        /*zeroInactiveForce=*/false, [](size_t) { return true; },
+        [&](size_t w) {
+          double mtSum = 0.0, concSum = 0.0;
+          for (size_t c : {T.wall(w).cell1, T.wall(w).cell2}) {
+            if (!oriented(c)) {
+              mtSum += 0.5;
+              continue;
+            }
+            mtSum += mtCosSq(T, cellData, vertexData, w, c, directionIndex, 0.5);
+            concSum +=
+                kPow / (kPow + std::pow(cellData[c][concIndex], parameter(4)));
+          }
+          return parameter(0) *
+                 ((1.0 - parameter(1)) + parameter(1) * 0.5 * (2.0 - mtSum)) *
+                 ((1.0 - parameter(2)) + parameter(2) * 0.5 * concSum);
+        });
+  }
+
+private:
+  std::vector<double> coeff_;
+};
+TISSUE_REGISTER_REACTION(VertexFromWallSpringMTConcentrationHill,
+                         "VertexFromWallSpringMTConcentrationHill")
+
 // Spring between each cell's center-triangulation center (stored in cell
 // variables) and its vertices.
 class CTEdgeSpring : public Reaction {
