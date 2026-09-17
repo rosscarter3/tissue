@@ -28,14 +28,99 @@
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
+#include <string>
 
 #include "tissue/core/tissue.h"
 #include "tissue/parallel/scatter.h"
 #include "tissue/parallel/thread_pool.h"
 #include "tissue/reactions/reaction.h"
+#include "tissue/reactions/trbs_core.h"
 
 namespace tissue {
 namespace {
+
+// Shared body of the center-triangulated TRBS reactions. Legacy repeats this
+// loop verbatim in each variant; the only thing they actually vary is where
+// Young's modulus comes from, so that arrives as a per-cell callback.
+//
+// Forces go to the cell centre (a cell variable, since the centre is not a
+// mesh vertex) and to the two cycle vertices. When storeStress is set the
+// cell's area-averaged Cauchy stress is diagonalized and written as
+// [dir x, dir y, dir z, anisotropy, sigma1].
+template <class YoungFn>
+void ctTrbsEvaluate(Tissue &T, Matrix &cellData, Matrix &wallData,
+                    Matrix &vertexData, Matrix &cellDerivs,
+                    Matrix &vertexDerivs, size_t wallLengthIndex,
+                    size_t comIndex, double poisson, YoungFn youngOf,
+                    bool wantForces, bool storeStress, size_t stressIndex,
+                    const char *who) {
+  if (vertexData.cols() != 3)
+    throw std::runtime_error(std::string(who) + " requires a 3D tissue.");
+  const size_t lengthInternalIndex = comIndex + 3;
+
+  parallelScatter1(
+      T.numCell(), vertexDerivs, [&](size_t b, size_t e, Matrix &vOut) {
+        for (size_t c = b; c < e; ++c) {
+          const CellTopo &cell = T.cell(c);
+          const size_t n = cell.numWall();
+          if (cell.numVertex() != n)
+            throw std::runtime_error(
+                std::string(who) +
+                ": needs the same number of vertices and walls per cell.");
+          const double young = youngOf(c);
+          const double lambda = young * poisson / (1 - poisson * poisson);
+          const double mio = young / (1 + poisson);
+          double stressCellGlobal[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+          double totalRestingArea = 0.0;
+          for (size_t k = 0; k < n; ++k) {
+            const size_t k1 = (k + 1) % n;
+            const size_t v2 = cell.vertices[k];
+            const size_t v3 = cell.vertices[k1];
+
+            // Triangle nodes: 0 = cell centre, 1 = vertex(k), 2 = vertex(k+1).
+            trbs::Element el;
+            for (size_t d = 0; d < 3; ++d) {
+              el.pos[0][d] = cellData[c][comIndex + d];
+              el.pos[1][d] = vertexData[v2][d];
+              el.pos[2][d] = vertexData[v3][d];
+            }
+            el.rest[0] = cellData[c][lengthInternalIndex + k];
+            el.rest[1] = wallData[cell.walls[k]][wallLengthIndex];
+            el.rest[2] = cellData[c][lengthInternalIndex + k1];
+            el.cur[0] = trbs::nodeDistance(el, 0, 1);
+            el.cur[1] = trbs::nodeDistance(el, 1, 2);
+            el.cur[2] = trbs::nodeDistance(el, 0, 2);
+            trbs::completeElement(el);
+
+            if (wantForces) {
+              double f[3][3];
+              trbs::elementForces(
+                  el, trbs::stiffnessFrom(el, lambda + mio, mio), f);
+              for (size_t d = 0; d < 3; ++d) {
+                cellDerivs[c][comIndex + d] += f[0][d];
+                vOut[v2][d] += f[1][d];
+                vOut[v3][d] += f[2][d];
+              }
+            }
+            if (storeStress) {
+              trbs::addCauchyStress(el, lambda, mio, stressCellGlobal);
+              totalRestingArea += el.restArea;
+            }
+          }
+
+          if (storeStress && totalRestingArea > 0.0) {
+            for (int r = 0; r < 3; ++r)
+              for (int t = 0; t < 3; ++t)
+                stressCellGlobal[r][t] /= totalRestingArea;
+            const trbs::Principal pr = trbs::principalOf(stressCellGlobal);
+            for (size_t d = 0; d < 3; ++d)
+              cellData[c][stressIndex + d] = pr.dir[d];
+            cellData[c][stressIndex + 3] = pr.anisotropy;
+            cellData[c][stressIndex + 4] = pr.s1;
+          }
+        }
+      });
+}
 
 class VertexFromTRBScenterTriangulation : public Reaction {
 public:
@@ -118,326 +203,144 @@ private:
   void evaluate(Tissue &T, Matrix &cellData, Matrix &wallData,
                 Matrix &vertexData, Matrix &cellDerivs, Matrix &vertexDerivs,
                 bool wantForces, bool wantStress) {
-    if (vertexData.cols() != 3)
-      throw std::runtime_error(
-          "VertexFromTRBScenterTriangulation requires a 3D tissue.");
-    const size_t wallLengthIndex = variableIndex(0, 0);
-    const size_t comIndex = variableIndex(1, 0);
-    const size_t lengthInternalIndex = comIndex + 3;
     const double young = parameter(0);
-    const double poisson = parameter(1);
-    const double lambda = young * poisson / (1 - poisson * poisson);
-    const double mio = young / (1 + poisson);
-    const bool storeStress = wantStress && numVariableIndexLevel() == 3;
-    const size_t stressIndex = storeStress ? variableIndex(2, 0) : 0;
-
-    parallelScatter1(
-        T.numCell(), vertexDerivs, [&](size_t b, size_t e, Matrix &vOut) {
-          for (size_t c = b; c < e; ++c) {
-            const CellTopo &cell = T.cell(c);
-            const size_t n = cell.numWall();
-            double stressCellGlobal[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-            double totalRestingArea = 0.0;
-            for (size_t k = 0; k < n; ++k) {
-              const size_t k1 = (k + 1) % n;
-              const size_t v2 = cell.vertices[k];
-              const size_t v3 = cell.vertices[k1];
-              const size_t w2 = cell.walls[k];
-
-              // Triangle nodes: 0 = center (com), 1 = vertex(k), 2 = vertex(k+1)
-              double pos[3][3];
-              for (size_t d = 0; d < 3; ++d) {
-                pos[0][d] = cellData[c][comIndex + d];
-                pos[1][d] = vertexData[v2][d];
-                pos[2][d] = vertexData[v3][d];
-              }
-              double restingLength[3] = {
-                  cellData[c][lengthInternalIndex + k],
-                  wallData[w2][wallLengthIndex],
-                  cellData[c][lengthInternalIndex + k1]};
-              auto dist = [&](int a2, int b2) {
-                double s = 0;
-                for (size_t d = 0; d < 3; ++d) {
-                  double diff = pos[a2][d] - pos[b2][d];
-                  s += diff * diff;
-                }
-                return std::sqrt(s);
-              };
-              double length[3] = {dist(0, 1), dist(1, 2), dist(0, 2)};
-
-              // Resting area: numerically stable Heron (edges sorted),
-              // guarded against degenerate/inverted trial configurations so a
-              // bad adaptive-solver trial step is rejected by error control
-              // instead of poisoning the state with NaNs.
-              double lhe[3] = {restingLength[0], restingLength[1],
-                               restingLength[2]};
-              std::sort(lhe, lhe + 3);
-              const double aHe = lhe[2], bHe = lhe[1], cHe = lhe[0];
-              const double heron = ((bHe + cHe) + aHe) * (-(aHe - bHe) + cHe) *
-                                   ((aHe - bHe) + cHe) * ((bHe - cHe) + aHe);
-              const double restingArea =
-                  0.25 * std::sqrt(std::max(heron, 1e-12));
-
-              // Resting angles enter only as cotangents and as the sine and
-              // cosine of one angle, and the law of cosines hands us the cosine
-              // directly - so the acos/tan round trip the legacy code performs
-              // is avoidable. With c = cos(theta),
-              //     cot(acos(c)) = c / sqrt(1 - c^2)
-              //     cos(acos(c)) = c,  sin(acos(c)) = sqrt(1 - c^2)
-              // all exact. Profiling put a quarter of this kernel in tan and
-              // acos; the algebraic forms cost one sqrt each. The clamp keeps
-              // 1 - c^2 above ~2e-9, so the divisor cannot vanish.
-              auto cosOf = [&](double la, double lb, double opposite) {
-                const double c = (la * la + lb * lb - opposite * opposite) /
-                                 (2.0 * la * lb);
-                return std::max(-1.0 + 1e-9, std::min(1.0 - 1e-9, c));
-              };
-              auto cotOf = [&](double la, double lb, double opposite) {
-                const double c = cosOf(la, lb, opposite);
-                return c / std::sqrt(1.0 - c * c);
-              };
-              const double temp = 1.0 / (restingArea * 16.0);
-              const double cot0 =
-                  cotOf(restingLength[0], restingLength[2], restingLength[1]);
-              const double cot1 =
-                  cotOf(restingLength[0], restingLength[1], restingLength[2]);
-              const double cot2 =
-                  cotOf(restingLength[1], restingLength[2], restingLength[0]);
-              const double tensile[3] = {
-                  (2 * cot2 * cot2 * (lambda + mio) + mio) * temp,
-                  (2 * cot0 * cot0 * (lambda + mio) + mio) * temp,
-                  (2 * cot1 * cot1 * (lambda + mio) + mio) * temp};
-              const double angular[3] = {
-                  (2 * cot1 * cot2 * (lambda + mio) - mio) * temp,
-                  (2 * cot0 * cot2 * (lambda + mio) - mio) * temp,
-                  (2 * cot0 * cot1 * (lambda + mio) - mio) * temp};
-
-              // Biquadratic strains.
-              const double delta[3] = {
-                  length[0] * length[0] - restingLength[0] * restingLength[0],
-                  length[1] * length[1] - restingLength[1] * restingLength[1],
-                  length[2] * length[2] - restingLength[2] * restingLength[2]};
-
-              // Forces (exact legacy expressions, mechanicalTRBS.cc:1089-1169).
-              const double f0c =
-                  tensile[0] * delta[0] + angular[1] * delta[1] +
-                  angular[0] * delta[2];
-              const double f0v =
-                  tensile[2] * delta[2] + angular[2] * delta[1] +
-                  angular[0] * delta[0];
-              const double f1c =
-                  tensile[0] * delta[0] + angular[0] * delta[2] +
-                  angular[1] * delta[1];
-              const double f1v =
-                  tensile[1] * delta[1] + angular[2] * delta[2] +
-                  angular[1] * delta[0];
-              const double f2c =
-                  tensile[2] * delta[2] + angular[0] * delta[0] +
-                  angular[2] * delta[1];
-              const double f2v =
-                  tensile[1] * delta[1] + angular[1] * delta[0] +
-                  angular[2] * delta[2];
-              if (wantForces) {
-                for (size_t d = 0; d < 3; ++d) {
-                  const double forceCom = f0c * (pos[1][d] - pos[0][d]) +
-                                          f0v * (pos[2][d] - pos[0][d]);
-                  const double forceV2 = f1c * (pos[0][d] - pos[1][d]) +
-                                         f1v * (pos[2][d] - pos[1][d]);
-                  const double forceV3 = f2c * (pos[0][d] - pos[2][d]) +
-                                         f2v * (pos[1][d] - pos[2][d]);
-                  cellDerivs[c][comIndex + d] += forceCom;
-                  vOut[v2][d] += forceV2;
-                  vOut[v3][d] += forceV3;
-                }
-              }
-
-              if (storeStress) {
-                // Per-triangle Cauchy stress in the element plane, rotated to
-                // the global frame (legacy mechanicalTRBS.cc:843-1055).
-                const double trE = (delta[1] * cot0 + delta[2] * cot1 +
-                                    delta[0] * cot2) /
-                                   (4.0 * restingArea);
-                const double cCur = cosOf(length[0], length[1], length[2]);
-                const double Qa = cCur * length[0];
-                const double Qc = std::sqrt(1.0 - cCur * cCur) * length[0];
-                const double Qb = length[1];
-                const double cRest =
-                    cosOf(restingLength[0], restingLength[1], restingLength[2]);
-                const double Pa = cRest * restingLength[0];
-                const double Pc = std::sqrt(1.0 - cRest * cRest) * restingLength[0];
-                const double Pb = restingLength[1];
-                const double shapeResting[3][2] = {
-                    {0.0, 1.0 / Pc},
-                    {-1.0 / Pb, (Pa - Pb) / (Pb * Pc)},
-                    {1.0 / Pb, -Pa / (Pb * Pc)}};
-                const double posLocal[3][2] = {{Qa, Qc}, {0, 0}, {Qb, 0}};
-                double F[2][2] = {{0, 0}, {0, 0}};
-                for (int ii = 0; ii < 3; ++ii) {
-                  F[0][0] += posLocal[ii][0] * shapeResting[ii][0];
-                  F[1][0] += posLocal[ii][1] * shapeResting[ii][0];
-                  F[0][1] += posLocal[ii][0] * shapeResting[ii][1];
-                  F[1][1] += posLocal[ii][1] * shapeResting[ii][1];
-                }
-                double Bc[2][2]; // left Cauchy-Green B = F F^T
-                Bc[0][0] = F[0][0] * F[0][0] + F[0][1] * F[0][1];
-                Bc[1][0] = F[1][0] * F[0][0] + F[1][1] * F[0][1];
-                Bc[0][1] = F[0][0] * F[1][0] + F[0][1] * F[1][1];
-                Bc[1][1] = F[1][0] * F[1][0] + F[1][1] * F[1][1];
-                double B2[2][2];
-                B2[0][0] = Bc[0][0] * Bc[0][0] + Bc[0][1] * Bc[1][0];
-                B2[1][0] = Bc[1][0] * Bc[0][0] + Bc[1][1] * Bc[1][0];
-                B2[0][1] = Bc[0][0] * Bc[0][1] + Bc[0][1] * Bc[1][1];
-                B2[1][1] = Bc[1][0] * Bc[0][1] + Bc[1][1] * Bc[1][1];
-                const double curArea = 0.25 * std::sqrt(std::max(
-                    (length[0] + length[1] + length[2]) *
-                        (-length[0] + length[1] + length[2]) *
-                        (length[0] - length[1] + length[2]) *
-                        (length[0] + length[1] - length[2]),
-                    1e-12));
-                double S[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-                const double fac = curArea / restingArea;
-                S[0][0] = fac * ((lambda * trE - mio / 2) * Bc[0][0] +
-                                 (mio / 2) * B2[0][0]);
-                S[1][0] = fac * ((lambda * trE - mio / 2) * Bc[1][0] +
-                                 (mio / 2) * B2[1][0]);
-                S[0][1] = fac * ((lambda * trE - mio / 2) * Bc[0][1] +
-                                 (mio / 2) * B2[0][1]);
-                S[1][1] = fac * ((lambda * trE - mio / 2) * Bc[1][1] +
-                                 (mio / 2) * B2[1][1]);
-                // Rotation local->global from the triangle's frame.
-                double X[3], Bv[3], Z[3], Yv[3];
-                double tA = 0, tB = 0;
-                for (size_t d = 0; d < 3; ++d) {
-                  X[d] = pos[2][d] - pos[1][d];
-                  Bv[d] = pos[0][d] - pos[1][d];
-                  tA += X[d] * X[d];
-                  tB += Bv[d] * Bv[d];
-                }
-                tA = std::sqrt(tA);
-                tB = std::sqrt(tB);
-                for (size_t d = 0; d < 3; ++d) {
-                  X[d] /= tA;
-                  Bv[d] /= tB;
-                }
-                Z[0] = X[1] * Bv[2] - X[2] * Bv[1];
-                Z[1] = X[2] * Bv[0] - X[0] * Bv[2];
-                Z[2] = X[0] * Bv[1] - X[1] * Bv[0];
-                double zn = std::sqrt(Z[0] * Z[0] + Z[1] * Z[1] + Z[2] * Z[2]);
-                for (size_t d = 0; d < 3; ++d)
-                  Z[d] /= zn;
-                Yv[0] = Z[1] * X[2] - Z[2] * X[1];
-                Yv[1] = Z[2] * X[0] - Z[0] * X[2];
-                Yv[2] = Z[0] * X[1] - Z[1] * X[0];
-                double R[3][3];
-                for (size_t d = 0; d < 3; ++d) {
-                  R[d][0] = X[d];
-                  R[d][1] = Yv[d];
-                  R[d][2] = Z[d];
-                }
-                // S_global = R S R^T, accumulated area-weighted.
-                for (int r = 0; r < 3; ++r)
-                  for (int t = 0; t < 3; ++t) {
-                    double v = 0.0;
-                    for (int u = 0; u < 3; ++u)
-                      for (int w = 0; w < 3; ++w)
-                        v += R[r][u] * S[u][w] * R[t][w];
-                    stressCellGlobal[r][t] += restingArea * v;
-                  }
-                totalRestingArea += restingArea;
-              }
-            }
-
-            if (storeStress && totalRestingArea > 0.0) {
-              for (int r = 0; r < 3; ++r)
-                for (int t = 0; t < 3; ++t)
-                  stressCellGlobal[r][t] /= totalRestingArea;
-              // Jacobi diagonalization (legacy mechanicalTRBS.cc:1269-1334).
-              double eig[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-              double pivot = 1.0;
-              const double pi = 3.1415;
-              int iterations = 0;
-              // A symmetric 3x3 needs only a handful of Jacobi sweeps; the
-              // cap bounds the cost when an eigenvalue pair is degenerate.
-              while (pivot > 0.00001 && ++iterations < 20) {
-                int I = 1, J = 0;
-                pivot = std::fabs(stressCellGlobal[1][0]);
-                if (std::fabs(stressCellGlobal[2][0]) > pivot) {
-                  pivot = std::fabs(stressCellGlobal[2][0]);
-                  I = 2;
-                  J = 0;
-                }
-                if (std::fabs(stressCellGlobal[2][1]) > pivot) {
-                  pivot = std::fabs(stressCellGlobal[2][1]);
-                  I = 2;
-                  J = 1;
-                }
-                double rotAngle;
-                if (std::fabs(stressCellGlobal[I][I] - stressCellGlobal[J][J]) <
-                    0.00001)
-                  rotAngle = pi / 4;
-                else
-                  rotAngle = 0.5 * std::atan((2 * stressCellGlobal[I][J]) /
-                                             (stressCellGlobal[J][J] -
-                                              stressCellGlobal[I][I]));
-                const double Si = std::sin(rotAngle);
-                const double Co = std::cos(rotAngle);
-                double rot[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-                rot[I][I] = Co;
-                rot[J][J] = Co;
-                rot[I][J] = Si;
-                rot[J][I] = -Si;
-                double tmp[3][3];
-                for (int r = 0; r < 3; ++r)
-                  for (int t = 0; t < 3; ++t) {
-                    tmp[r][t] = 0.0;
-                    for (int w = 0; w < 3; ++w)
-                      tmp[r][t] += stressCellGlobal[r][w] * rot[w][t];
-                  }
-                for (int r = 0; r < 3; ++r)
-                  for (int t = 0; t < 3; ++t) {
-                    stressCellGlobal[r][t] = 0.0;
-                    for (int w = 0; w < 3; ++w)
-                      stressCellGlobal[r][t] += rot[w][r] * tmp[w][t];
-                  }
-                for (int r = 0; r < 3; ++r)
-                  for (int t = 0; t < 3; ++t)
-                    tmp[r][t] = eig[r][t];
-                for (int r = 0; r < 3; ++r)
-                  for (int t = 0; t < 3; ++t) {
-                    eig[r][t] = 0.0;
-                    for (int w = 0; w < 3; ++w)
-                      eig[r][t] += tmp[r][w] * rot[w][t];
-                  }
-              }
-              // In-plane principal pair: two largest eigenvalues (the shell
-              // normal eigenvalue is ~0 in a membrane under tension).
-              int order[3] = {0, 1, 2};
-              double ev[3] = {stressCellGlobal[0][0], stressCellGlobal[1][1],
-                              stressCellGlobal[2][2]};
-              for (int r = 0; r < 3; ++r)
-                for (int t = r + 1; t < 3; ++t)
-                  if (ev[order[t]] > ev[order[r]])
-                    std::swap(order[r], order[t]);
-              const double s1 = ev[order[0]];
-              const double s2 = ev[order[1]];
-              double a = 0.0;
-              if (std::fabs(s1) > 1e-12)
-                a = 1.0 - std::min(s1, s2) / std::max(s1, s2);
-              if (a < 0.0)
-                a = 0.0;
-              if (a > 1.0)
-                a = 1.0;
-              for (size_t d = 0; d < 3; ++d)
-                cellData[c][stressIndex + d] = eig[d][order[0]];
-              cellData[c][stressIndex + 3] = a;
-              cellData[c][stressIndex + 4] = s1;
-            }
-          }
-        });
+    ctTrbsEvaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
+                   variableIndex(0, 0), variableIndex(1, 0), parameter(1),
+                   [&](size_t) { return young; }, wantForces,
+                   wantStress && numVariableIndexLevel() == 3,
+                   numVariableIndexLevel() == 3 ? variableIndex(2, 0) : 0,
+                   "VertexFromTRBScenterTriangulation");
   }
 };
 TISSUE_REGISTER_REACTION(VertexFromTRBScenterTriangulation,
                          "VertexFromTRBScenterTriangulation")
+
+// Same material, but Young's modulus is set per cell by an *inhibitory* Hill
+// function of a cell concentration:
+//     Y = Y_min + Y_max K^n / (K^n + c^n)
+// so the species softens the wall as it accumulates. Legacy ships this as a
+// 250-line copy of the reaction above with that one line changed.
+class VertexFromTRBScenterTriangulationConcentrationHill : public Reaction {
+public:
+  VertexFromTRBScenterTriangulationConcentrationHill(const ParameterList &p,
+                                                     const IndexLevels &i) {
+    const bool ok = (i.size() == 2 || i.size() == 3) && i[0].size() == 2 &&
+                    i[1].size() == 1 && (i.size() == 2 || i[2].size() == 1);
+    if (!ok)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationConcentrationHill: wall length "
+          "and concentration indices in level 0; start of the "
+          "center-triangulation cell variables in level 1; optional level 2 = "
+          "start index for storing the cell stress state (5 cell variables).");
+    configure("VertexFromTRBScenterTriangulationConcentrationHill", p, i, 5,
+              i.size() == 3 ? std::vector<size_t>{2, 1, 1}
+                            : std::vector<size_t>{2, 1},
+              {"Y_mod_min", "Y_mod_max", "P_ratio", "K_hill", "n_hill"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &cellDerivs, Matrix &,
+              Matrix &vertexDerivs) override {
+    evaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs, true,
+             false);
+  }
+  void initiate(Tissue &T, Matrix &cellData, Matrix &wallData,
+                Matrix &vertexData, Matrix &cellDerivs, Matrix &,
+                Matrix &vertexDerivs) override {
+    if (numVariableIndexLevel() == 3)
+      evaluate(T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
+               false, true);
+  }
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(1, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
+  }
+  void update(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, double) override {
+    if (numVariableIndexLevel() != 3)
+      return;
+    if (!scratchCell_.sameShape(cellData))
+      scratchCell_.reshapeLike(cellData);
+    if (!scratchVertex_.sameShape(vertexData))
+      scratchVertex_.reshapeLike(vertexData);
+    evaluate(T, cellData, wallData, vertexData, scratchCell_, scratchVertex_,
+             false, true);
+  }
+
+private:
+  Matrix scratchCell_, scratchVertex_;
+
+  void evaluate(Tissue &T, Matrix &cellData, Matrix &wallData,
+                Matrix &vertexData, Matrix &cellDerivs, Matrix &vertexDerivs,
+                bool wantForces, bool wantStress) {
+    const size_t concIndex = variableIndex(0, 1);
+    const double kPow = std::pow(parameter(3), parameter(4));
+    ctTrbsEvaluate(
+        T, cellData, wallData, vertexData, cellDerivs, vertexDerivs,
+        variableIndex(0, 0), variableIndex(1, 0), parameter(2),
+        [&](size_t c) {
+          return parameter(0) +
+                 parameter(1) * kPow /
+                     (kPow + std::pow(cellData[c][concIndex], parameter(4)));
+        },
+        wantForces, wantStress && numVariableIndexLevel() == 3,
+        numVariableIndexLevel() == 3 ? variableIndex(2, 0) : 0,
+        "VertexFromTRBScenterTriangulationConcentrationHill");
+  }
+};
+TISSUE_REGISTER_REACTION(VertexFromTRBScenterTriangulationConcentrationHill,
+                         "VertexFromTRBScenterTriangulationConcentrationHill")
+
+// The same elasticity without center triangulation: the cell *is* one
+// triangle, its three walls are the three edges, and there is no centre node.
+// Only defined for triangular cells, as in legacy.
+class VertexFromTRBS : public Reaction {
+public:
+  VertexFromTRBS(const ParameterList &p, const IndexLevels &i) {
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "VertexFromTRBS: one index, the wall resting-length index.");
+    configure("VertexFromTRBS", p, i, 2, {1}, {"Y_mod", "P_ratio"});
+  }
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error("VertexFromTRBS requires a 3D tissue.");
+    const size_t wallLengthIndex = variableIndex(0, 0);
+    const double young = parameter(0), poisson = parameter(1);
+    const double lambda = young * poisson / (1 - poisson * poisson);
+    const double mio = young / (1 + poisson);
+    parallelScatter1(
+        T.numCell(), vertexDerivs, [&](size_t b, size_t e, Matrix &vOut) {
+          for (size_t c = b; c < e; ++c) {
+            const CellTopo &cell = T.cell(c);
+            if (cell.numWall() != 3)
+              throw std::runtime_error(
+                  "VertexFromTRBS: only defined for triangular cells.");
+            trbs::Element el;
+            for (int node = 0; node < 3; ++node)
+              for (size_t d = 0; d < 3; ++d)
+                el.pos[node][d] = vertexData[cell.vertices[node]][d];
+            // Wall k joins vertex k and vertex k+1, which is exactly the
+            // element's edge order (0-1, 1-2, then 0-2 for the closing wall).
+            for (int k = 0; k < 3; ++k)
+              el.rest[k] = wallData[cell.walls[k]][wallLengthIndex];
+            el.cur[0] = trbs::nodeDistance(el, 0, 1);
+            el.cur[1] = trbs::nodeDistance(el, 1, 2);
+            el.cur[2] = trbs::nodeDistance(el, 0, 2);
+            trbs::completeElement(el);
+            double f[3][3];
+            trbs::elementForces(el, trbs::stiffnessFrom(el, lambda + mio, mio),
+                                f);
+            for (int node = 0; node < 3; ++node)
+              for (size_t d = 0; d < 3; ++d)
+                vOut[cell.vertices[node]][d] += f[node][d];
+          }
+        });
+  }
+};
+TISSUE_REGISTER_REACTION(VertexFromTRBS, "VertexFromTRBS")
 
 // Turgor pressure on a closed center-triangulated shell: per CT triangle
 // (center, vertex k, vertex k+1) the force P * A * n_hat is distributed

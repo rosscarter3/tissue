@@ -252,3 +252,65 @@ k_off but leaves both monotonically inhibited, so it is preserved.
 template instantiations are registered through a `using` alias. Several of
 these reactions differ only in a boundary flag or a linear/non-linear switch,
 and are one template each.
+
+### TRBS: shared kernel, then `VertexFromTRBS` + ConcentrationHill, 2026-09-17
+
+`legacy/mechanicalTRBS.cc` is 14.5k lines, and most of that is the same
+~200-line triangle routine pasted seven times with a handful of lines changed
+each. Porting the remaining variants one at a time would have imported that
+duplication wholesale, so the kernel came out first:
+`src/tissue/reactions/trbs_core.h` (318 lines) holds the element geometry,
+the stiffness from the Lame pair, the node forces, the per-triangle Cauchy
+stress and its rotation to the global frame, the Jacobi diagonalization, and
+the principal-pair extraction.
+
+The already-ported `VertexFromTRBScenterTriangulation` was rewritten onto it
+first and re-checked: still 0.000e+00 against legacy over 946 values, so the
+extraction is behaviour preserving to the bit. Its per-cell loop then came out
+as `ctTrbsEvaluate()`, taking Young's modulus as a per-cell callback, which is
+the only thing the center-triangulated variants actually vary.
+
+Two new reactions on that base, both 0.000e+00 against legacy:
+
+- `VertexFromTRBScenterTriangulationConcentrationHill` - the same material
+  with `Y = Y_min + Y_max K^n/(K^n + c^n)`, i.e. a species that softens the
+  wall as it accumulates. Legacy ships it as a 250-line copy of the base
+  reaction with that one line different; here it is the callback and 40 lines
+  of interface. Matches under both `Euler` and `RK5Adaptive`.
+- `VertexFromTRBS` - the same elasticity with no center triangulation: the
+  cell is one triangle and its three walls are the edges. Needed a triangular
+  3D fixture (`tests/port/tri3D.init`), since every mesh shipped with the
+  tutorials is quadrilateral. Exact under `Euler`; 3e-16 under `RK5Adaptive`,
+  which is the last-bit cost of this port computing cotangents algebraically
+  instead of through legacy's `acos`/`tan` round trip, and of the sorted Heron
+  formula for the resting area.
+
+Both accept an optional third index level to store the cell stress state,
+matching the extension already on the base reaction; legacy has no equivalent.
+
+One behaviour change while the principal-pair code was being extracted, and it
+is not cosmetic. The rule picked the two *largest* eigenvalues as the in-plane
+pair, on the argument that a membrane carries no load through its normal so
+the normal eigenvalue is ~0. That holds in tension. In compression all three
+in-plane values are negative, the ~0 normal sorts to the top, and the reaction
+reported the shell normal as the principal stress direction with zero
+anisotropy and zero sigma1 - wrong, and silently so. Ranking by |eigenvalue|
+instead is identical in tension and correct in compression. Measured on a
+center-triangulated sheet:
+
+    tension      before dir=(0,1,0) a=0.675896 s1=0.189098
+                 after  dir=(0,1,0) a=0.675896 s1=0.189098   (unchanged)
+    compression  before dir=(0,0,1) a=0        s1=0
+                 after  dir=(0,1,0) a=0.653949 s1=-0.210907
+
+The anisotropy is now `1 - |s2|/|s1|` so it stays in [0,1] when both principal
+values are negative, and sigma1 keeps its sign. Nothing calibrated in tension
+moves.
+
+Still outstanding in `mechanicalTRBS.cc`: the five anisotropic (MT) variants,
+about 5700 live lines between them. They add a fibre direction and a
+transversely isotropic material, plus a `parameter(4)` switch over seven
+anisotropy modes and some ad-hoc branches keyed on hard-coded cell variable
+indices. The kernel above already takes the coefficient pair the transversely
+isotropic form needs (`lambdaT + 2 mioT`, `2 mioT`), so the material part is
+in place.

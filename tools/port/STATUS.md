@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**155 names registered here; 188 classes outstanding.**
+**157 names registered here; 186 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -21,10 +21,10 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
 | `legacy/boolean.cc` | 11 |
-| `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
 | `legacy/growth.cc` | 6 |
+| `legacy/mechanicalTRBS.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
 | `legacy/growthForce.cc` | 4 |
@@ -193,17 +193,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Boolean::OrGateCount` — `Boolean::OrGateCount`, `OrGateCount`
 - `Boolean::OrSpecialGateCount` — `Boolean::OrSpecialGateCount`, `OrSpecialGateCount`
 
-### `legacy/mechanicalTRBS.cc` (8)
-
-- `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBS` — `VertexFromTRBS`
-- `VertexFromTRBSMT` — `VertexFromTRBSMT`
-- `VertexFromTRBScenterTriangulationConcentrationHill` — `VertexFromTRBScenterTriangulationConcentrationHill`
-- `VertexFromTRBScenterTriangulationConcentrationHillMT` — `VertexFromTRBScenterTriangulationConcentrationHillMT`
-- `VertexFromTRBScenterTriangulationMT` — `VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
-- `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
-
 ### `legacy/directionReaction.cc` (6)
 
 - `ContinousMTDirection` — `ContinousMTDirection`
@@ -230,6 +219,15 @@ Method and the log of validated batches are in `NOTES.md`.
 - `WallGrowth::CenterTriangulation::Stress` — `CenterTriangulation::WallGrowth::Stress`, `WallGrowth::CenterTriangulation::Stress`, `WallGrowthStresscenterTriangulation`
 - `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`, `WallGrowth::CenterTriangulation::StressConcentrationHill`
 - `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`, `WallGrowth::CenterTriangulation::VectorTRBS`
+
+### `legacy/mechanicalTRBS.cc` (6)
+
+- `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
+- `VertexFromTRBSMT` — `VertexFromTRBSMT`
+- `VertexFromTRBScenterTriangulationConcentrationHillMT` — `VertexFromTRBScenterTriangulationConcentrationHillMT`
+- `VertexFromTRBScenterTriangulationMT` — `VertexFromTRBScenterTriangulationMT`
+- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
+- `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
 
 ### `legacy/calculate.cc` (5)
 
