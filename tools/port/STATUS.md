@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**111 names registered here; 223 classes outstanding.**
+**125 names registered here; 211 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -29,17 +29,11 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/growth.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
-| `legacy/bending.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
 | `legacy/membraneCyclingAll.cc` | 3 |
-| `legacy/pressure2D.cc` | 3 |
 | `legacy/degradation.cc` | 2 |
-| `legacy/sisterVertex.cc` | 2 |
-| `legacy/cellTime.cc` | 1 |
-| `legacy/dilution.cc` | 1 |
 | `legacy/hypocotyl3D.cc` | 1 |
-| `legacy/turgorGrowth.cc` | 1 |
 
 ## Outstanding, by source
 
@@ -282,13 +276,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Pressure3D::CenterTriangulation::Linear` — `VertexFromCellPlaneLinearCenterTriangulation`
 - `Pressure3D::Linear` — `VertexFromCellPlaneLinear`
 
-### `legacy/bending.cc` (4)
-
-- `Bending::Angle` — `Bending::Angle`
-- `Bending::AngleInitiate` — `Bending::AngleInitiate`
-- `Bending::AngleRelax` — `Bending::AngleRelax`
-- `Bending::NeighborCenter` — `Bending::NeighborCenter`
-
 ### `legacy/growthForce.cc` (4)
 
 - `GrowthForce::CenterTriangulation::ForceToCell` — `centerTriangulation::GrowthForce::ForceToCell`
@@ -309,35 +296,12 @@ Method and the log of validated batches are in `NOTES.md`.
 - `MembraneCyclingAll::LocalWallFeedbackNonLinear` — `MembraneCyclingAll::LocalWallFeedbackNonLinear`
 - `MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition` — `MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition`
 
-### `legacy/pressure2D.cc` (3)
-
-- `Pressure2D::AreaPotentialTargetArea` — `Pressure2D::AreaPotentialTargetArea`
-- `Pressure2D::AreaPotentialTri` — `Pressure2D::AreaPotentialTri`
-- `Pressure2D::AreaPotentialTriSpatialThreshold` — `Pressure2D::AreaPotentialTriSpatialThreshold`
-
 ### `legacy/degradation.cc` (2)
 
 - `FiberModel::Hill` — `FiberModel::Hill`
 - `Hill` — `Hill`
 
-### `legacy/sisterVertex.cc` (2)
-
-- `SisterVertex::InitiateFromFile` — `SisterVertex::InitiateFromFile`
-- `SisterVertex::SpringCellConc` — `SisterVertex::SpringCellConc`
-
-### `legacy/cellTime.cc` (1)
-
-- `CellTimeDerivative` — `CellTimeDerivative`
-
-### `legacy/dilution.cc` (1)
-
-- `Dilution::FromVertexDerivs` — `DilutionFromVertexDerivs`
-
 ### `legacy/hypocotyl3D.cc` (1)
 
 - `Hypocotyl3D::limitZdis` — `Hypocotyl3D::limitZdis`
-
-### `legacy/turgorGrowth.cc` (1)
-
-- `TurgorGrowth::WaterVolume` — `WaterVolumeFromTurgor`
 

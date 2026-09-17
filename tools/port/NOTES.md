@@ -87,3 +87,62 @@ that asymmetry is legacy behaviour and is preserved.
 
 Still outstanding in this file: the six `CenterTriangulation` variants and
 `Hypocotyl3D::StrainTRBS`, which need the TRBS strain machinery.
+
+### Six small files, finished off - 12 classes, 2026-09-17
+
+`legacy/pressure2D.cc` (3), `legacy/bending.cc` (4), `legacy/sisterVertex.cc`
+(2), `legacy/turgorGrowth.cc` (1), `legacy/cellTime.cc` (1),
+`legacy/dilution.cc` (1). Each of these six legacy files is now empty of
+outstanding classes.
+
+Seven of the twelve match legacy to 0.000e+00: `CellTimeDerivative`,
+`Dilution::FromVertexDerivs`, `TurgorGrowth::WaterVolume`
+(`WaterVolumeFromTurgor`, both flag settings),
+`Pressure2D::{AreaPotentialTri,AreaPotentialTriSpatialThreshold,AreaPotentialTargetArea}`
+and `Bending::{AngleInitiate,AngleRelax}` - the last two over 123376 values on
+the 267-cell `meristem.init` as well as the two-cell fixture.
+
+Two of these needed a model with more than one interior cell to be a real
+test: `AreaPotentialTri`'s internal-cells-only flag and
+`AreaPotentialTriSpatialThreshold`'s apex gate are both no-ops on a two-cell
+mesh where every cell touches the background. Both were rerun on
+`meristem.init` (267 cells, 573 vertices) and match exactly there.
+
+Some reactions need a non-trivial setup or the comparison passes vacuously.
+`Bending::Angle` on a square mesh has theta == theta_0 at every corner and so
+produces no force at all - it "matched" legacy before it was tested against a
+rest angle that differs from the current one. `Pressure2D::AreaPotentialTargetArea`
+likewise needs the target area to be driven away from the actual area, so it
+was paired with `Creation::Zero` (inflating), `Degradation::One` (contracting)
+and the no-contraction flag in turn.
+
+Three diverge from legacy on purpose - README items 8, 9 and 10, each a
+wrong-index bug in the legacy source:
+
+- `Bending::NeighborCenter` wrote force to `vertexDerivs[k]`, the cell-local
+  wall counter used as a global vertex index.
+- `Bending::Angle` added the central-vertex term to `jm` twice instead of once
+  to `j`, so the three per-turn contributions did not sum to zero.
+- `SisterVertex::SpringCellConc` tested `cell1` twice in its activity gate.
+
+The first two are validated instead against an independent Python
+reimplementation of the force law, `tests/port/bending_refcheck.py`: it applies
+one explicit Euler step and checks the simulator lands in the same place
+(0.000e+00 for both), and separately asserts that `Bending::Angle`'s three
+contributions sum to zero, which is the property the legacy bug destroys.
+`SisterVertex::SpringCellConc` is compared against legacy directly and matches
+exactly on every input the gate bug does not reach (including pair breaking
+under `BreakLength`); reversing the order of a sister pair whose two cells
+differ is what exposes it.
+
+Two legacy warts in `bending.cc` are kept rather than fixed, and documented in
+the source: pi written as `3.14159`, and `Bending::Angle`'s clamp of
+`cos(theta)` to +/-0.999, which leaves a straight chain with a residual
+0.045 rad of bending strain. Both are load-bearing - the rest angle written by
+`AngleInitiate` is compared against the angle computed by `Angle`, so the two
+must use the same constant, and init files carry rest angles saved from legacy
+runs.
+
+`SisterVertex::InitiateFromFile` reads a file named literally `sister` from the
+working directory. That is hard-coded in legacy and kept, so existing model
+directories still work.

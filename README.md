@@ -192,18 +192,49 @@ differ from legacy for affected models — in v2's favor:
 6. File parsing validates sizes/headers and reports errors; the legacy binary
    was built with `-DNDEBUG` so all of its `assert` "validation" was compiled
    out and malformed files silently misparsed.
+7. **`Pressure2D::AreaPotential` orientation**: legacy's force direction
+   depended on the arbitrary orientation the sorting pass happened to pick for
+   each cell, so `P > 0` deflated cells sorted clockwise. v2 orients the force
+   by the signed area, so positive pressure always inflates.
+8. **`Bending::NeighborCenter` wrong vertex** (`bending.cc:72`): legacy
+   accumulates into `vertexDerivs[k]`, where `k` is the cell-local wall
+   counter, not the global vertex index — so every cell pushed on vertices
+   `0..numWall-1` of the whole tissue regardless of which vertices the angle
+   belonged to. v2 writes to the intended vertex.
+9. **`Bending::Angle` wrong vertex** (`bending.cc:158`): legacy adds the
+   central-vertex term to `vertexDerivs[jm]` a second time instead of to
+   `vertexDerivs[j]`. The turning vertex therefore felt no force, its
+   predecessor felt two, and the three contributions did not sum to zero, so
+   the reaction injected net momentum. v2 writes to `j`; the forces are then
+   exactly `-dE/dx` for `E = (k/2)(theta - theta_0)^2`.
+10. **`SisterVertex::SpringCellConc` gate** (`sisterVertex.cc:297`): legacy's
+    activity test reads `cellData[cell1] > 0 || cellData[cell1] > 0`, checking
+    the first cell twice, so a pair was inert whenever the first vertex's cell
+    was zero however strongly the second expressed — making the force depend on
+    the order the pair was listed in. v2 tests `cell2` in the second clause, as
+    legacy's own comment says it intends.
+
+Items 8-10 mean those three reactions cannot be compared bit-for-bit against
+legacy, and should not be. `Bending::Angle` and `Bending::NeighborCenter` are
+instead checked against an independent reimplementation of the force law in
+`tests/port/bending_refcheck.py`; `SisterVertex::SpringCellConc` is compared
+against legacy on the inputs the gate bug does not reach, and deliberately
+differs on the others.
+
+One legacy wart is **kept** rather than fixed: `Bending::{Angle,AngleInitiate,
+AngleRelax}` write pi as the literal `3.14159`, and `Bending::Angle` clamps
+`cos(theta)` to +/-0.999 so that a straight chain is not a stress-free state
+(the residual is 0.045 rad). Both are load-bearing for models calibrated
+against legacy and for rest angles stored in existing init files, so they are
+documented in `src/tissue/reactions/bending.cpp` rather than changed.
 
 ## What is ported so far
 
-Reactions: `Creation::{Zero,One,Two,Three,SpatialSphere}`,
-`Degradation::{One,Two,N}`, `MassAction::{TwoToOne,General}`,
-`DiffusionSimple`, `MoveVertexRadially`,
-`WallGrowth::{Constant,Stress,Strain}`,
-`WallGrowth::CenterTriangulation::Constant`, `WallMechanics::Spring`,
-`CenterTriangulation::{Initiate,EdgeSpring}`, `CenterCOM`,
-`CenterCOMcenterTriangulation`, `InitiateWallLength`, `Initiation::Random`,
-`SisterVertex::{InitiateFromDistance,CombineDerivatives,Spring}` — plus their
-legacy aliases.
+Reactions: see `tools/port/STATUS.md`, which is generated from the sources by
+`tools/port/inventory.py` and lists every legacy reaction still outstanding,
+grouped by the legacy file that implements it. `tools/port/NOTES.md` records
+how each batch was validated. Every reaction the shipped tutorials use is
+ported, so everything in `examples/` runs.
 
 Compartment changes: `Division::VolumeRandomDirection`,
 `Division::ShortestPath2D`, `RemovalOutsideRadius`.
