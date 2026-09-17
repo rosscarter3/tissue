@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**70 names registered here; 247 classes outstanding.**
+**82 names registered here; 241 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -22,7 +22,6 @@ all run.
 | `legacy/growth.cc` | 11 |
 | `legacy/membraneCycling.cc` | 9 |
 | `legacy/transport.cc` | 9 |
-| `legacy/degradation.cc` | 8 |
 | `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/creation.cc` | 7 |
 | `legacy/directionReaction.cc` | 6 |
@@ -35,6 +34,7 @@ all run.
 | `legacy/initiation.cc` | 4 |
 | `legacy/membraneCyclingAll.cc` | 3 |
 | `legacy/pressure2D.cc` | 3 |
+| `legacy/degradation.cc` | 2 |
 | `legacy/sisterVertex.cc` | 2 |
 | `legacy/cellTime.cc` | 1 |
 | `legacy/dilution.cc` | 1 |
@@ -242,17 +242,6 @@ all run.
 - `InfluxActiveTransportCell` — `InfluxActiveTransportCell`
 - `MembraneDiffusionSimple` — `MembraneDiffusionSimple`
 
-### `legacy/degradation.cc` (8)
-
-- `Degradation::Hill` — `DegradationHill`
-- `Degradation::HillN` — `DegradationHillN`
-- `Degradation::OneBoundary` — `DegradationOneBoundary`
-- `Degradation::OneFromList` — `DegradationOneFromList`
-- `Degradation::OneWall` — `DegradationOneWall`
-- `Degradation::TwoGeometric` — `DegradationTwoGeometric`
-- `FiberModel::Hill` — `FiberModel::Hill`
-- `Hill` — `Hill`
-
 ### `legacy/mechanicalTRBS.cc` (8)
 
 - `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
@@ -350,6 +339,11 @@ all run.
 - `Pressure2D::AreaPotentialTri` — `Pressure2D::AreaPotentialTri`
 - `Pressure2D::AreaPotentialTriSpatialThreshold` — `Pressure2D::AreaPotentialTriSpatialThreshold`
 
+### `legacy/degradation.cc` (2)
+
+- `FiberModel::Hill` — `FiberModel::Hill`
+- `Hill` — `Hill`
+
 ### `legacy/sisterVertex.cc` (2)
 
 - `SisterVertex::InitiateFromFile` — `SisterVertex::InitiateFromFile`
@@ -372,20 +366,17 @@ all run.
 - `TurgorGrowth::WaterVolume` — `WaterVolumeFromTurgor`
 
 
-## Method
+## Validated batches
 
-Ported reactions are checked against the behaviour they replace, not merely
-compiled:
+### `legacy/degradation.cc` — 6 classes, 2026-09-17
 
-```sh
-python3 tools/port/compare.py MODEL INIT SOLVER [--tol=1e-9]
-```
+`Degradation::Hill`, `HillN`, `TwoGeometric`, `OneWall`, `OneBoundary`,
+`OneFromList`, each with its no-colon legacy alias.
 
-drives both `bin/simulator` (legacy) and `build/simulator` over the same input
-and diffs the numbers. It forces print flag 0 so models that natively emit VTK
-or gnuplot still produce something comparable.
-
-Two classes of expected mismatch, both documented in the README under
-*Deliberate fixes over legacy*: models with wall dynamics under `RK5Adaptive`
-(legacy mis-integrates them) and anything seeded differently. Everything else
-should match to machine precision.
+Checked one at a time against `bin/simulator` on `tests/port/degradation.model`
+over the two-cell tutorial init. Five match to 0.000e+00 over 904 values under
+`RK5Adaptive`. `OneWall` is the exception and does not indicate a porting
+error: it is the only one of the six acting on *wall* variables, and legacy's
+RK5 mis-integrates those (the stage-3-into-stage-2 defect in the README). Under
+`Euler`, where legacy has no such defect, it matches to 0.000e+00 as well - so
+this batch also reproduces that documented bug independently.
