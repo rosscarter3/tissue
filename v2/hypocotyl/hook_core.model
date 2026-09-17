@@ -1,0 +1,95 @@
+# Apical hook opening, biologically parameterised
+# Walia A., Carter R., Wightman R., Meyerowitz E.M., Jonsson H., Jones A.M.
+# (2024) Dev Cell 59:3245-3258
+#
+# The epidermis is a closed, turgid, centre-triangulated TRBS shell. Growth is
+# Lockhart wall yielding, gated by the TWO chemical signals the paper measures
+# and finds are "depleted upon illumination": auxin (represses extension) and
+# wall alkalinity (acidification permits it). Neither gate sets the
+# inner/outer differential - acidification happens on both flanks, and the
+# inner flank carries MORE auxin yet grows more. The differential instead
+# comes from each cell's remaining elongation capacity: all hook epidermal
+# cells mature to the same length, and outer-flank cells are born near it.
+#
+# Wall material is dynamically anisotropic (Eq. 3): the fibre stiffness
+# redistributes onto the maximal principal stress direction, which is the
+# model's prediction of CMT orientation.
+#
+# units: um, hours.  Cell vars: 0-2 stress dir, 3 anisotropy, 4 sigma1,
+#                               5 auxin, 6 acid, 7 type, 8 theta
+11 0 0
+
+CenterTriangulation::Initiate 0 1 1
+9       # CT data appended after the 9 cell variables
+
+VertexFromTRBScenterTriangulation 3 3 1 1 1
+20000.0 # Y_mod: isotropic matrix modulus (pectin/hemicellulose).
+        #   Y, Y_fiber and P are scaled together so the elastic
+        #   strains are unchanged but mechanical relaxation is fast
+        #   compared with growth (overdamped vertex drag otherwise
+        #   lets the walls grow without the organ unrolling).
+0.3     # P_ratio
+0.02    # stress-state refresh interval (h)
+0       # wall length index
+9       # CT start index
+0       # store stress state at 0 -> dir on VTK cell-vector, aniso on its length
+
+WallMechanics::FiberSpring 3 2 1 1
+1350.0  # Y_fiber: CMT-guided cellulose, redistributed by Eq. 3
+0.7     # K_hill (paper: k = 0.7)
+1.2     # n_hill (paper: n = 1.2)
+0       # wall length index
+0       # cell stress-state start index
+
+Pressure3D::CenterTriangulation 1 1 1
+17.5    # P_force (turgor per unit shell area)
+9       # CT start index
+
+WallGrowth::AcidGrowth 6 5 1 1 1 1 1
+9.0    # @GROWTH k_growth (per unit strain per h)
+0.005   # strain_threshold (Lockhart yield strain)
+0.55    # K_auxin: auxin level at half-repression
+6       # n_auxin
+0.45    # K_acid: acidification at half-activation
+3       # n_acid
+0       # wall length index
+5       # cell auxin index
+6       # cell acid index
+1       # wall growFlag (axial walls only)
+3       # wall Lmax index (mature cell length)
+
+CenterTriangulation::WallGrowth::StrainSaturationHill 6 2 1 1
+9.0    # @GROWTH_CT k_growth: internal edges follow the surface
+0.005   # strain_threshold
+30.0    # L_max for internal edges
+0.55    # K_Hill (auxin)
+4       # n_Hill
+0       # hill_flag: repressing
+9       # CT start index
+5       # cell auxin index
+
+Degradation::One 1 1 1
+0.5     # @AUXIN_DECAY k_d: light-triggered auxin depletion (t=0 = light);
+        #   tau = 2 h, so the gates release over the first ~2 h and the
+        #   hook barely moves before then, as measured
+5       # cell auxin index
+
+Creation::Zero 1 1 1
+2.0     # @ACID_DRIVE acidification; with the relaxation below gives
+        #   acid = 1 (measured: both flanks acidify within 30 min of light)
+6       # cell acid index
+
+Degradation::One 1 1 1
+2.0     # @ACID_RELAX relaxation rate (sets tau with the drive above)
+6       # cell acid index
+
+VertexNoUpdateFromIndex 0 1 16
+# Clamp the apical end-cap ring (ring 32, cotyledon end): the hook unrolls
+# about the apex and the basal shank swings out into the straight axis.
+512 513 514 515 516 517 518 519 520 521 522 523 524 525 526 527
+InnerTissue::GrowingCore 2 1 1
+0.025   # @CORE sub-epidermal core elongation rate (per h); the paper's
+        #   subepidermal longitudinal force sL. Raising it accelerates both
+        #   hook opening and the anisotropy switch (their Fig 4F).
+1e4     # penalty stiffness: the core resists compression, cannot pull
+1       # wall variable flagging the axial walls the core bears against

@@ -587,6 +587,65 @@ measured); the two need a joint refit. The core's stiffness and rate are
 hand-set, not measured. And this has been run to 4 h, not 12.
 
 
+## Figures and animation of the switch
+
+`plot_mt_switch.py` and `animate_switch.py` read a run of `hook_core.model`
+(the growing-core configuration) and produce:
+
+| output | what it shows |
+|---|---|
+| `figures/fig7_mt_switch.png` | the switch, the signed anisotropy, the kinetics, and polar histograms |
+| `figures/hook_switch.gif` | the organ, every cell coloured by its predicted CMT angle |
+| `figures/hook_cmt_axes.gif` | ParaView render: anisotropy with CMT axis glyphs |
+
+```sh
+python3 pipeline.py                               # equilibrate
+../build/simulator hook_core.model hook_eq.init solver_core.rk5 \
+    -centerTri_init > run_core.out                # 12 h production run
+python3 plot_mt_switch.py run_core.out 12
+python3 animate_switch.py run_core.out 12
+/Applications/ParaView-5.10.0.app/Contents/bin/pvpython \
+    paraview_core.py 12 vtk_core --movie          # needs -vtk_output vtk_core
+```
+
+Panel B uses the paper's own signed convention from `hook_part.py` — positive
+when hoop dominates, negative when longitudinal does — so the switch is a zero
+crossing and the panel is directly comparable with their Fig 4E.
+
+**The configuration** is `k_growth = 9` with core rate `g = 0.025/h` and
+penalty stiffness `1e4`, under `QuasiStatic`. It gives:
+
+- **outer flank switches at 8.1 h, inner flank never does** within 12 h
+- **hook-angle RMSE 9.9°** over 0–10 h, against 11.9° for the shipped
+  `RK5Adaptive` model — so the mechanically honest configuration now fits the
+  opening kinetics *better* than the drag-lagged one it replaces
+- inner-flank extension 2.07× at t = 8 h against 2.149× measured
+
+**The core rate is a genuine trade-off, and it is the model's remaining
+weakness.** Scanning it at fixed `k_growth`:
+
+| core rate | outer switch | outer extension at 8 h | RMSE 0–10 h |
+|---|---|---|---|
+| 0.015/h | never | 1.092× | 17.2° |
+| **0.025/h** | **8.1 h** | **1.125×** | **9.9°** |
+| 0.05/h | 3.5 h | 1.223× | 18.4° |
+
+(measured outer extension at 8 h: 1.055×.) A faster core switches the outer
+flank sooner but over-stretches it, and its uniform elongation erodes the
+inner/outer differential that straightens the organ, so the late kinetics
+degrade. A slower core respects the measured extension but never builds enough
+longitudinal stress to switch at all.
+
+**The fix follows from the same argument that motivated the recalibration.**
+Stress scales with the applied load; strain scales with load over stiffness.
+The outer flank needs high longitudinal *stress* while extending very little —
+which a stiffer wall delivers. The recalibrated shell (Y_f = 65700, 2.2×
+stiffer overall, fibre at the paper's 57% load share) should therefore switch
+at a core rate low enough to leave the outer extension near 1.055×. That
+combination has not been run: it needs another joint refit of `k_growth`,
+since both the stiffness and the core change the opening rate.
+
+
 ## Figures
 
 `plot_compare.py` writes six figures to `figures/`, each overlaying the
