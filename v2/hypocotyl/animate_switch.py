@@ -76,18 +76,23 @@ def main(path="run_core.out", t_end=12.0):
     times = [t_end * i / n_print for i in range(n)]
     print(f"{n} frames from {path}")
 
-    cmap = LinearSegmentedColormap.from_list(
-        "cmt", ["#c2521c", "#e0a050", "#dddddd", "#4aa39e", "#10605c"])
+    # Diverging about 45 deg, with the transition compressed, so a cell that
+    # has switched reads unambiguously orange rather than shading into it.
+    cmap = LinearSegmentedColormap.from_list("cmt", [
+        (0.00, "#e2551a"), (0.40, "#e2551a"), (0.46, "#f0a35a"),
+        (0.50, "#e8e8e8"), (0.54, "#69b3ae"), (0.60, "#128b84"),
+        (1.00, "#0c5f5a")])
 
     # Global bounds across the whole run so the organ does not jump between
     # frames, with the box aspect matched to the data so it fills the figure.
     allv = np.vstack([f[0] for f in frames])
-    lo = allv.min(axis=0) - 12.0
-    hi = allv.max(axis=0) + 12.0
+    lo = allv.min(axis=0) - 4.0
+    hi = allv.max(axis=0) + 4.0
     ext = hi - lo
 
-    fig = plt.figure(figsize=(7.6, 7.2), facecolor="#111114")
-    ax = fig.add_subplot(111, projection="3d", facecolor="#111114")
+    fig = plt.figure(figsize=(8.4, 6.4), facecolor="#111114")
+    ax = fig.add_axes([-0.06, -0.10, 1.12, 1.16], projection="3d",
+                      facecolor="#111114")
 
     def draw(k):
         ax.clear()
@@ -108,7 +113,7 @@ def main(path="run_core.out", t_end=12.0):
         ax.set_axis_off()
         ax.view_init(elev=14, azim=-72)
         ax.set_title(f"{times[k]:4.1f} h after illumination",
-                     color="white", fontsize=15, pad=-6)
+                     color="white", fontsize=16, pad=-30)
         inner = np.nanmean([ang[i * NC + j] for i in range(AB.N_BASAL + 6,
                             AB.N_BASAL + AB.N_HOOK - 6) for j in (0, NC - 1)])
         outer = np.nanmean([ang[i * NC + j] for i in range(AB.N_BASAL + 6,
