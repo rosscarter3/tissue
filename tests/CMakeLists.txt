@@ -1,8 +1,8 @@
 # Regression tests: run every tutorial model with the v2 simulator.
 # Numerical comparison against the legacy simulator is done manually (see
-# v2/README.md); these tests assert the runs complete successfully.
+# README.md); these tests assert the runs complete successfully.
 
-set(TUTORIALS ${CMAKE_CURRENT_SOURCE_DIR}/../../examples/tutorials)
+set(TUTORIALS ${CMAKE_CURRENT_SOURCE_DIR}/../examples/tutorials)
 
 function(tissue_tutorial_test name model init solver)
   add_test(NAME ${name}

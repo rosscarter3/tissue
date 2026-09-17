@@ -11,7 +11,7 @@ only the model parameter each treatment acts on, and nothing else.
   low light  weaker stimulus -> slower auxin depletion and weaker acidification
 """
 import os, re, subprocess, sys
-SIM = '/Users/ross/projects/tissue/v2/build/simulator'
+SIM = '/Users/ross/projects/tissue/build/simulator'
 BASE = open('hook.model').read()
 
 def zero(m, tag, value='0.0'):

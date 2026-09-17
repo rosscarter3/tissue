@@ -34,3 +34,7 @@ src/tags
 .vscode/settings.json
 *.info
 *.gcno
+
+# CMake build tree of the rewrite (was v2/build before the rewrite moved to the
+# repository root)
+/build/

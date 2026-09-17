@@ -4,7 +4,7 @@
 
 Experimental values come from the authors' published analysis package
 (zenodo.org/records/13379829); simulation values are read from print-flag-0
-output of v2/build/simulator. Figures are written to ./figures/.
+output of build/simulator. Figures are written to ./figures/.
 """
 import math, os, sys
 import matplotlib

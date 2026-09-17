@@ -23,7 +23,9 @@ over, but the observable semantics were reproduced deliberately — the cyclic
 wall/vertex sorting, the cell-division surgery, swap-with-last removal
 ordering, and the `ran3` generator down to its default seed.
 
-`v2/` sits alongside the untouched original; both build and run from the same
+The rewrite is now the repository root; the original sources are preserved
+under `legacy/` as the reference for the continuing reaction port. Both build
+and run from the same
 checkout, which is what made the validation below possible.
 
 ## 2. Architecture
@@ -153,7 +155,7 @@ further 5–20×.
   `WallGrowth::AcidGrowth`, `Pressure2D::AreaPotential`,
   `VertexNoUpdateFromIndex`.
 
-These support a cell-resolved apical hook model (`v2/hypocotyl/`, see its own
+These support a cell-resolved apical hook model (`hypocotyl/`, see its own
 README for the full validation). The 514-cell shell opens 159° → 13° over 10 h
 under light against a maintained dark control, with a hook-angle RMSE of 11.9°
 against the paper's measurements and inner/outer tissue extension of 2.16× /

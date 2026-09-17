@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Equilibrate the biological hook shell in the dark, then run light and dark."""
 import os, subprocess, sys
-SIM = '/Users/ross/projects/tissue/v2/build/simulator'
+SIM = '/Users/ross/projects/tissue/build/simulator'
 BASE = 'hook.model'
 
 import re
