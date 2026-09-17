@@ -11,6 +11,8 @@ here, so a missing alias still shows as outstanding.
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
+Method and the log of validated batches are in `NOTES.md`.
+
 | legacy source | outstanding |
 |---|---|
 | `legacy/network.cc` | 41 |
@@ -365,18 +367,3 @@ all run.
 
 - `TurgorGrowth::WaterVolume` — `WaterVolumeFromTurgor`
 
-
-## Validated batches
-
-### `legacy/degradation.cc` — 6 classes, 2026-09-17
-
-`Degradation::Hill`, `HillN`, `TwoGeometric`, `OneWall`, `OneBoundary`,
-`OneFromList`, each with its no-colon legacy alias.
-
-Checked one at a time against `bin/simulator` on `tests/port/degradation.model`
-over the two-cell tutorial init. Five match to 0.000e+00 over 904 values under
-`RK5Adaptive`. `OneWall` is the exception and does not indicate a porting
-error: it is the only one of the six acting on *wall* variables, and legacy's
-RK5 mis-integrates those (the stage-3-into-stage-2 defect in the README). Under
-`Euler`, where legacy has no such defect, it matches to 0.000e+00 as well - so
-this batch also reproduces that documented bug independently.

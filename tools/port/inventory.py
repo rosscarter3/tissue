@@ -83,6 +83,7 @@ def render():
            f"**{len(done)} names registered here; {total} classes outstanding.**",
            "Every reaction used by the shipped tutorials is ported, so `examples/`",
            "all run.", "",
+           "Method and the log of validated batches are in `NOTES.md`.", "",
            "| legacy source | outstanding |", "|---|---|"]
     order = sorted(todo.items(), key=lambda kv: (-len(kv[1]), kv[0]))
     for f, cs in order:
