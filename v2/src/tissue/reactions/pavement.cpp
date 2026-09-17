@@ -383,7 +383,7 @@ TISSUE_REGISTER_REACTION(WallMechanicsSpringModulated,
 // rising from 0.892 to 0.915 over 24 h with no lobing whatsoever. Lobes
 // require the anticlinal outline to extend faster than sqrt(area), which is
 // precisely the periclinal/anticlinal growth-rate mismatch documented by
-// Armour et al. (2015) Plant Physiol 167:1039. With an independent synthesis
+// Armour et al. (2015) Plant Cell 27:2484. With an independent synthesis
 // rate the outline carries more length than a smooth curve of that area can
 // hold; the excess goes slack and, against the wall's bending stiffness,
 // buckles at a selected wavelength.
@@ -763,8 +763,8 @@ TISSUE_REGISTER_REACTION(CmtTransverseReinforcement,
 // resting area.
 //
 // Lobing then follows from a growth-rate mismatch that is directly
-// documented: Armour, Barton, Overall & Wasteneys (2015) Plant Physiol 167:
-// 1039, "Differential growth in periclinal and anticlinal walls during lobe
+// documented: Armour, Barton, Law & Overall (2015) Plant Cell 27:2484-2500,
+// "Differential growth in periclinal and anticlinal walls during lobe
 // formation in Arabidopsis cotyledon pavement cells". When the anticlinal
 // outline extends faster than sqrt(A0), the outline carries more length than
 // a smooth curve of that area can hold; the excess goes slack, and with wall
@@ -1086,6 +1086,237 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(WallMechanicsBending, "WallMechanics::Bending")
+
+
+// ---------------------------------------------------------------------------
+// WallMechanics::SelfAvoidance
+//
+// Steric exclusion between wall segments. A vertex model has no notion that
+// matter cannot occupy the same place twice: nothing stops one stretch of
+// wall passing through another, and in this model the deepest necks do
+// exactly that. Measured before this reaction existed: 1.7-2.0 crossing pairs
+// per cell out of ~107 outline segments, appearing from frame 3 of 24 onward
+// in every lobing run. The crossings are local and small (~0.1 um overlaps),
+// but they sit precisely at the necks, which is the feature the whole model
+// is about, and a self-intersecting outline is not a cell.
+//
+// Force: any two non-adjacent segments closer than d_min repel along the line
+// between their closest points,
+//
+//   F = k_repel (d_min - d) n,     n = (P - Q) / |P - Q|
+//
+// distributed to each segment's two vertices by the barycentric position of
+// its closest point, so the force is momentum conserving and applies no net
+// torque about the contact. It is one-sided: segments further apart than
+// d_min feel nothing, so the reaction is inert until walls actually approach
+// and cannot perturb the shape the rest of the model produces.
+//
+// d_min should be read as the closest approach two anticlinal walls can make,
+// i.e. roughly the sum of their half-thicknesses plus whatever cytoplasm must
+// remain between them.
+//
+// Cost. Brute force is O(numWall^2) -- 7 million pairs per derivative
+// evaluation on a 3746-wall tissue, evaluated several times per solver step,
+// which is not affordable. Candidate pairs are therefore found once per
+// update() with a uniform grid over segment bounding boxes and cached; the
+// derivative pass only walks that list. The grid is rebuilt every
+// refresh_interval of simulated time, and the candidate margin is widened by
+// the distance walls could travel in that interval, so a pair cannot approach
+// contact between rebuilds without having been listed.
+class WallMechanicsSelfAvoidance : public Reaction {
+public:
+  WallMechanicsSelfAvoidance(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 3 && p.size() != 4)
+      throw std::runtime_error(
+          "WallMechanics::SelfAvoidance: uses three or four parameters "
+          "(k_repel, d_min, refresh_interval, [margin, default 2*d_min]).");
+    if (p[1] <= 0.0)
+      throw std::runtime_error(
+          "WallMechanics::SelfAvoidance: d_min (parameter 2) must be "
+          "positive.");
+    std::vector<std::string> ids{"k_repel", "d_min", "refresh_interval"};
+    if (p.size() == 4)
+      ids.push_back("margin");
+    configure("WallMechanics::SelfAvoidance", p, i, p.size(), {},
+              std::move(ids));
+  }
+
+  void initiate(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+                Matrix &, Matrix &) override {
+    rebuild(T, vertexData);
+    elapsed_ = 0.0;
+  }
+
+  void update(Tissue &T, Matrix &, Matrix &, Matrix &vertexData,
+              double h) override {
+    elapsed_ += h;
+    if (elapsed_ < parameter(2))
+      return;
+    elapsed_ = 0.0;
+    rebuild(T, vertexData);
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 2)
+      throw std::runtime_error(
+          "WallMechanics::SelfAvoidance requires a 2D tissue.");
+    const double k = parameter(0);
+    const double dMin = parameter(1);
+    for (const auto &pr : pairs_) {
+      const Wall &wa = T.wall(pr.first);
+      const Wall &wb = T.wall(pr.second);
+      const size_t a1 = wa.vertex1, a2 = wa.vertex2;
+      const size_t b1 = wb.vertex1, b2 = wb.vertex2;
+      double sc, tc, nx, ny;
+      const double d = segmentDistance(vertexData, a1, a2, b1, b2, sc, tc,
+                                       nx, ny);
+      if (d >= dMin || d <= 0.0)
+        continue;
+      const double f = k * (dMin - d);
+      const double fx = f * nx, fy = f * ny;
+      vertexDerivs[a1][0] += (1.0 - sc) * fx;
+      vertexDerivs[a1][1] += (1.0 - sc) * fy;
+      vertexDerivs[a2][0] += sc * fx;
+      vertexDerivs[a2][1] += sc * fy;
+      vertexDerivs[b1][0] -= (1.0 - tc) * fx;
+      vertexDerivs[b1][1] -= (1.0 - tc) * fy;
+      vertexDerivs[b2][0] -= tc * fx;
+      vertexDerivs[b2][1] -= tc * fy;
+    }
+  }
+
+  // Number of candidate pairs currently cached (diagnostic).
+  size_t numPairs() const { return pairs_.size(); }
+
+private:
+  // Closest approach between segments a1-a2 and b1-b2, with the barycentric
+  // positions of the closest points and the unit vector from the b-point to
+  // the a-point. Standard clamped-parameter construction.
+  static double segmentDistance(const Matrix &x, size_t a1, size_t a2,
+                                size_t b1, size_t b2, double &sc, double &tc,
+                                double &nx, double &ny) {
+    const double ux = x[a2][0] - x[a1][0], uy = x[a2][1] - x[a1][1];
+    const double vx = x[b2][0] - x[b1][0], vy = x[b2][1] - x[b1][1];
+    const double wx = x[a1][0] - x[b1][0], wy = x[a1][1] - x[b1][1];
+    const double a = ux * ux + uy * uy;
+    const double b = ux * vx + uy * vy;
+    const double c = vx * vx + vy * vy;
+    const double d = ux * wx + uy * wy;
+    const double e = vx * wx + vy * wy;
+    const double den = a * c - b * b;
+    if (den > 1e-12) {
+      sc = (b * e - c * d) / den;
+      tc = (a * e - b * d) / den;
+    } else { // near-parallel: pin one parameter and solve the other
+      sc = 0.0;
+      tc = c > 0.0 ? e / c : 0.0;
+    }
+    sc = sc < 0.0 ? 0.0 : (sc > 1.0 ? 1.0 : sc);
+    tc = c > 0.0 ? (e + b * sc) / c : 0.0;
+    tc = tc < 0.0 ? 0.0 : (tc > 1.0 ? 1.0 : tc);
+    sc = a > 0.0 ? (b * tc - d) / a : 0.0;
+    sc = sc < 0.0 ? 0.0 : (sc > 1.0 ? 1.0 : sc);
+    const double px = x[a1][0] + sc * ux, py = x[a1][1] + sc * uy;
+    const double qx = x[b1][0] + tc * vx, qy = x[b1][1] + tc * vy;
+    double dx = px - qx, dy = py - qy;
+    const double dist = std::sqrt(dx * dx + dy * dy);
+    if (dist > 0.0) {
+      nx = dx / dist;
+      ny = dy / dist;
+    } else {
+      nx = 0.0;
+      ny = 0.0;
+    }
+    return dist;
+  }
+
+  void rebuild(Tissue &T, Matrix &vertexData) {
+    pairs_.clear();
+    if (vertexData.cols() != 2)
+      return;
+    const size_t n = T.numWall();
+    const double margin =
+        numParameter() == 4 ? parameter(3) : 2.0 * parameter(1);
+    const double reach = parameter(1) + margin;
+
+    // Uniform grid sized to the search reach, over segment bounding boxes.
+    double lo[2] = {1e30, 1e30}, hi[2] = {-1e30, -1e30};
+    for (size_t v = 0; v < T.numVertex(); ++v)
+      for (size_t d = 0; d < 2; ++d) {
+        lo[d] = std::min(lo[d], vertexData[v][d]);
+        hi[d] = std::max(hi[d], vertexData[v][d]);
+      }
+    const double cell = reach > 0.0 ? reach : 1.0;
+    const size_t nx =
+        std::max<size_t>(1, static_cast<size_t>((hi[0] - lo[0]) / cell) + 1);
+    const size_t ny =
+        std::max<size_t>(1, static_cast<size_t>((hi[1] - lo[1]) / cell) + 1);
+    std::vector<std::vector<size_t>> grid(nx * ny);
+
+    auto cellsOf = [&](size_t w, size_t &i0, size_t &i1, size_t &j0,
+                       size_t &j1) {
+      const Wall &wall = T.wall(w);
+      const double x1 = vertexData[wall.vertex1][0];
+      const double y1 = vertexData[wall.vertex1][1];
+      const double x2 = vertexData[wall.vertex2][0];
+      const double y2 = vertexData[wall.vertex2][1];
+      const double xa = std::min(x1, x2) - reach, xb = std::max(x1, x2) + reach;
+      const double ya = std::min(y1, y2) - reach, yb = std::max(y1, y2) + reach;
+      auto clampIdx = [](double v, size_t m) {
+        long idx = static_cast<long>(v);
+        if (idx < 0)
+          idx = 0;
+        if (idx >= static_cast<long>(m))
+          idx = static_cast<long>(m) - 1;
+        return static_cast<size_t>(idx);
+      };
+      i0 = clampIdx((xa - lo[0]) / cell, nx);
+      i1 = clampIdx((xb - lo[0]) / cell, nx);
+      j0 = clampIdx((ya - lo[1]) / cell, ny);
+      j1 = clampIdx((yb - lo[1]) / cell, ny);
+    };
+
+    for (size_t w = 0; w < n; ++w) {
+      size_t i0, i1, j0, j1;
+      cellsOf(w, i0, i1, j0, j1);
+      for (size_t i = i0; i <= i1; ++i)
+        for (size_t j = j0; j <= j1; ++j)
+          grid[i * ny + j].push_back(w);
+    }
+
+    std::vector<char> seen(n, 0);
+    std::vector<size_t> touched;
+    for (size_t w = 0; w < n; ++w) {
+      size_t i0, i1, j0, j1;
+      cellsOf(w, i0, i1, j0, j1);
+      const Wall &wa = T.wall(w);
+      touched.clear();
+      for (size_t i = i0; i <= i1; ++i)
+        for (size_t j = j0; j <= j1; ++j)
+          for (size_t o : grid[i * ny + j]) {
+            if (o <= w || seen[o])
+              continue;
+            seen[o] = 1;
+            touched.push_back(o);
+            const Wall &wb = T.wall(o);
+            // Segments sharing a vertex are neighbours along a wall chain and
+            // are always in contact by construction.
+            if (wa.vertex1 == wb.vertex1 || wa.vertex1 == wb.vertex2 ||
+                wa.vertex2 == wb.vertex1 || wa.vertex2 == wb.vertex2)
+              continue;
+            pairs_.emplace_back(w, o);
+          }
+      for (size_t o : touched)
+        seen[o] = 0;
+    }
+  }
+
+  std::vector<std::pair<size_t, size_t>> pairs_;
+  double elapsed_ = 0.0;
+};
+TISSUE_REGISTER_REACTION(WallMechanicsSelfAvoidance,
+                         "WallMechanics::SelfAvoidance")
 
 } // namespace
 } // namespace tissue
