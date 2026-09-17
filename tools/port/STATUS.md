@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**102 names registered here; 228 classes outstanding.**
+**111 names registered here; 223 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -21,12 +21,12 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/mechanical.cc` | 17 |
 | `legacy/force.cc` | 15 |
 | `legacy/boolean.cc` | 11 |
-| `legacy/growth.cc` | 11 |
 | `legacy/membraneCycling.cc` | 9 |
 | `legacy/transport.cc` | 9 |
 | `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
+| `legacy/growth.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
 | `legacy/bending.cc` | 4 |
@@ -204,20 +204,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Boolean::OrGateCount` — `OrGateCount`
 - `Boolean::OrSpecialGateCount` — `OrSpecialGateCount`
 
-### `legacy/growth.cc` (11)
-
-- `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`
-- `WallGrowth::CenterTriangulation::Stress` — `WallGrowthStresscenterTriangulation`
-- `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`
-- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`
-- `WallGrowth::ConstantStressEpidermalAsymmetric` — `WallGrowthConstantStressEpidermalAsymmetric`
-- `WallGrowth::Force` — `WallGrowth::Force`
-- `WallGrowth::StressConcentrationHill` — `WallGrowthStressConcentrationHill`
-- `WallGrowth::StressSpatial` — `WallGrowthStressSpatial`
-- `WallGrowth::StressSpatialSingle` — `WallGrowthStressSpatialSingle`
-
 ### `legacy/membraneCycling.cc` (9)
 
 - `MembraneCycling::CellFluxExocytosis` — `MembraneCycling::CellFluxExocytosis`
@@ -270,6 +256,15 @@ Method and the log of validated batches are in `NOTES.md`.
 - `HillGeneralOne_TwoInputs` — `HillGeneralOne_TwoInputs`
 - `HillGeneralThree` — `HillGeneralThree`
 - `HillGeneralTwo` — `HillGeneralTwo`
+
+### `legacy/growth.cc` (6)
+
+- `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`
+- `WallGrowth::CenterTriangulation::Stress` — `WallGrowthStresscenterTriangulation`
+- `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`
+- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`
 
 ### `legacy/calculate.cc` (5)
 

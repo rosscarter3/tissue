@@ -69,3 +69,21 @@ drives `k+1` with its own rate, which is how legacy represents the two sides of
 a wall. `GeneralWall` and `GeneralEnzymatic` keep legacy's `rate > 0` gate, so
 a zero or negative rate leaves the compartment untouched rather than running
 the reaction backwards.
+
+### `legacy/growth.cc` - 5 classes, 2026-09-17
+
+`WallGrowth::StressSpatial`, `StressSpatialSingle`, `StressConcentrationHill`,
+`ConstantStressEpidermalAsymmetric`, `Force`, with their no-colon aliases
+(`WallGrowth::Force` has none in legacy).
+
+All five match to 0.000e+00 over 904 values, compared under `Euler` since they
+write wall lengths.
+
+The stress term - summed wall variables, or the extension (d-L)/L when the
+strain flag is set - was identical in four of the five and is now one helper.
+`StressConcentrationHill` lets both neighbouring cells contribute to its Hill
+factor, so the factor runs to 2 on an interior wall and 1 at the boundary;
+that asymmetry is legacy behaviour and is preserved.
+
+Still outstanding in this file: the six `CenterTriangulation` variants and
+`Hypocotyl3D::StrainTRBS`, which need the TRBS strain machinery.
