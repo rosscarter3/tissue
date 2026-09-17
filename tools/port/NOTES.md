@@ -678,3 +678,38 @@ the whole run otherwise takes under a second. This port finishes immediately
 because every Jacobi is capped at 50 sweeps (README item 14). The same trap
 exists in `VertexFromTRLScenterTriangulationMT`, where a negative modulus also
 makes `sqrt(Y_L Y_T)` return NaN. Nothing in legacy checks the sign.
+
+### `VertexFromTRBScenterTriangulationMTOpt`, 2026-09-17
+
+Named for a simulated-annealing search over the anisotropy directions that was
+never finished. What is left is an **energy probe that applies no force**:
+`derivs` writes nothing to any derivative array, `update` is a single
+`std::cout` of four energies, the accept/reject step is commented out, and the
+three annealing parameters (initial temperature and the two annealing rates)
+are never read.
+
+Its Monte Carlo proposal is inert too, which is the only reason it can be
+compared against legacy at all. Vertex positions and cell centres are
+perturbed by `posStep * (rand() - 0.5)` with `posStep` hard-coded to **zero**,
+and the anisotropy direction *is* randomized into the shadow state but the
+energy then reads the unperturbed direction straight out of `cellData`. So the
+energy is always the energy of the current state and the reaction is
+deterministic, despite re-seeding libc `rand()` from the wall clock on every
+derivative evaluation. Two legacy runs confirm it: identical output, with and
+without strain present.
+
+That being so, the port implements the effective behaviour and describes the
+dead scaffolding rather than transcribing it. The evidence that the two are
+the same thing is the comparison: 0.000e+00 over 828 values for both material
+flags, energies included, since those go to stdout and `compare.py` reads
+them. And the property that matters for anyone using it - that adding it to a
+model changes nothing - is checked directly: the tissue state is identical
+with and without the reaction.
+
+Two further legacy details reproduced: the pressure term is a tetrahedron
+volume measured against a hard-coded apex at (0, 0, -70), and it is *assigned*
+rather than accumulated inside the element loop, so only the last element of
+each cell contributes to it.
+
+`legacy/mechanicalTRBS.cc` is now empty of outstanding classes: 14.5k lines,
+twelve reactions, all ported and all checked against legacy.

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 
@@ -1781,6 +1782,161 @@ private:
 };
 TISSUE_REGISTER_REACTION(VertexFromTRLScenterTriangulationMT,
                          "VertexFromTRLScenterTriangulationMT")
+
+
+// An energy probe, despite the name. Legacy set this up as a simulated
+// annealing search over the anisotropy directions, and the search was never
+// finished: what remains perturbs a shadow copy of the state, evaluates its
+// energy, prints four numbers, and discards everything.
+//
+// It applies no force. `derivs` writes nothing to cellDerivs, wallDerivs or
+// vertexDerivs; `update` is a single `std::cout`; the accept/reject step is
+// commented out; and the three annealing parameters (initial temperature and
+// the two annealing rates) are never read.
+//
+// The proposal is inert too, which is why this can be compared against legacy
+// at all. Vertex positions and cell centres are perturbed by
+// `posStep * (rand() - 0.5)` with `posStep` hard-coded to zero, and the
+// anisotropy direction *is* randomized but the energy then reads the
+// unperturbed direction out of cellData instead. So the energy is always the
+// energy of the current state, and the reaction is deterministic. That is
+// what is implemented here - the dead Monte Carlo scaffolding is described
+// rather than transcribed, and the bit-exact match against legacy is the
+// evidence that the two are the same thing.
+//
+// The pressure term is a tetrahedron volume measured against a hard-coded
+// apex at (0, 0, -70), and legacy *assigns* rather than accumulates it inside
+// the element loop, so only the last element of each cell contributes. Both
+// are reproduced.
+class VertexFromTRBScenterTriangulationMTOpt : public Reaction {
+public:
+  VertexFromTRBScenterTriangulationMTOpt(const ParameterList &p,
+                                         const IndexLevels &i) {
+    if (p.size() != 11)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationMTOpt: uses 11 parameters "
+          "(Y_matrix, Y_fibre, poisson_L, poisson_T, pressure, aniso flag, "
+          "aniso step, direction step, initial temperature, temperature "
+          "annealing rate, step annealing rate). The last three are not read "
+          "- the annealing search they belong to was never finished.");
+    const bool ok = (i.size() == 2 || i.size() == 4) && i[0].size() == 9 &&
+                    i[1].size() == 1;
+    if (!ok)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationMTOpt: level 0 holds 9 cell "
+          "variable indices, level 1 the start of the center-triangulation "
+          "cell variables.");
+    if (p[2] < 0 || p[2] >= 0.5 || p[3] < 0 || p[3] >= 0.5)
+      throw std::runtime_error("VertexFromTRBScenterTriangulationMTOpt: "
+                               "Poisson ratios must satisfy 0 <= p < 0.5.");
+    std::vector<size_t> shape;
+    for (const auto &lvl : i)
+      shape.push_back(lvl.size());
+    configure("VertexFromTRBScenterTriangulationMTOpt", p, i, 11, shape,
+              {"Y_mod_M", "Y_mod_F", "P_ratio_L", "P_ratio_T", "pressure",
+               "aniso_flag", "aniso_step", "direction_step", "initial_temp",
+               "temp_annealing_rate", "step_annealing_rate"});
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &, Matrix &) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationMTOpt requires a 3D tissue.");
+    const size_t wallLengthIndex = variableIndex(0, 0);
+    const size_t mtIndex = variableIndex(0, 1);
+    const size_t comIndex = variableIndex(1, 0);
+    const size_t lengthInternalIndex = comIndex + 3;
+    const double pressure = parameter(4);
+    const double base[3] = {0.0, 0.0, -70.0}; // hard-coded pressure apex
+
+    double totalEnergy = 0, isoTotal = 0, anisoTotal = 0, pressureTotal = 0;
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      const CellTopo &cell = T.cell(c);
+      const size_t n = cell.numWall();
+      if (cell.numVertex() != n)
+        throw std::runtime_error("VertexFromTRBScenterTriangulationMTOpt: "
+                                 "needs the same number of vertices and "
+                                 "walls.");
+      Moduli mod{1.0, 1.0};
+      if (parameter(5) == 1) {
+        mod.youngL = cellData[c][variableIndex(0, kYoungL)];
+        mod.youngT = 2 * parameter(0) + parameter(1) - mod.youngL;
+      } else if (parameter(5) == 0) {
+        mod.youngL = parameter(0) + parameter(1);
+        mod.youngT = parameter(0);
+      }
+      // Plane stress only; this variant has no plane-strain flag.
+      const Lame lame = lameOf(mod, parameter(2), parameter(3), true);
+      const double dLambda = lame.lambdaL - lame.lambdaT;
+      const double dMio = lame.mioL - lame.mioT;
+      const double dir[3] = {cellData[c][mtIndex], cellData[c][mtIndex + 1],
+                             cellData[c][mtIndex + 2]};
+
+      double energyIso = 0, energyAniso = 0, pressureEnergy = 0;
+      for (size_t k = 0; k < n; ++k) {
+        const size_t k1 = (k + 1) % n;
+        trbs::Element el;
+        for (size_t d = 0; d < 3; ++d) {
+          el.pos[0][d] = cellData[c][comIndex + d];
+          el.pos[1][d] = vertexData[cell.vertices[k]][d];
+          el.pos[2][d] = vertexData[cell.vertices[k1]][d];
+        }
+        el.rest[0] = cellData[c][lengthInternalIndex + k];
+        el.rest[1] = wallData[cell.walls[k]][wallLengthIndex];
+        el.rest[2] = cellData[c][lengthInternalIndex + k1];
+        el.cur[0] = trbs::nodeDistance(el, 0, 1);
+        el.cur[1] = trbs::nodeDistance(el, 1, 2);
+        el.cur[2] = trbs::nodeDistance(el, 0, 2);
+        trbs::completeElement(el);
+
+        // Signed tetrahedron volume against the fixed apex. Assigned, not
+        // accumulated, so only the last element of the cell survives.
+        double v[3][3];
+        for (int node = 0; node < 3; ++node)
+          for (int d = 0; d < 3; ++d)
+            v[node][d] = el.pos[node][d] - base[d];
+        const double volume =
+            (v[0][0] * (v[1][1] * v[2][2] - v[1][2] * v[2][1]) +
+             v[0][1] * (v[1][2] * v[2][0] - v[1][0] * v[2][2]) +
+             v[0][2] * (v[1][0] * v[2][1] - v[1][1] * v[2][0])) /
+            6;
+        pressureEnergy = -pressure * std::fabs(volume);
+
+        const trbs::LocalFrame lf = trbs::localFrameOf(el);
+        const trbs::BarycentricFibre fib =
+            trbs::barycentricFibre(lf, dir, 0.0001);
+        trbs::AnisoTerms an = trbs::anisotropyInvariantsFrom(lf, fib.aRest);
+        const double trE = (el.delta[1] * el.cot[0] + el.delta[2] * el.cot[1] +
+                            el.delta[0] * el.cot[2]) /
+                           (4.0 * el.restArea);
+        energyIso +=
+            ((lame.lambdaT / 2) * trE * trE + lame.mioT * an.I2) * el.restArea;
+        energyAniso +=
+            ((dLambda / 2) * an.I4 * trE + dMio * an.I5) * el.restArea;
+      }
+      totalEnergy += energyIso + energyAniso + pressureEnergy;
+      isoTotal += energyIso;
+      anisoTotal += energyAniso;
+      pressureTotal += pressureEnergy;
+    }
+    totalEnergy_ = totalEnergy;
+    isoEnergy_ = isoTotal;
+    anisoEnergy_ = anisoTotal;
+    pressureEnergy_ = pressureTotal;
+  }
+
+  void update(Tissue &, Matrix &, Matrix &, Matrix &, double) override {
+    std::cout << totalEnergy_ << "  " << isoEnergy_ << "  " << anisoEnergy_
+              << "  " << pressureEnergy_ << std::endl;
+  }
+
+private:
+  double totalEnergy_ = 0, isoEnergy_ = 0, anisoEnergy_ = 0,
+         pressureEnergy_ = 0;
+};
+TISSUE_REGISTER_REACTION(VertexFromTRBScenterTriangulationMTOpt,
+                         "VertexFromTRBScenterTriangulationMTOpt")
 
 } // namespace
 } // namespace tissue

@@ -364,7 +364,8 @@ struct BarycentricFibre {
 };
 
 inline BarycentricFibre barycentricFibre(const LocalFrame &lf,
-                                         const double dirGlobal[3]) {
+                                         const double dirGlobal[3],
+                                         double degenerateBelow = 0.001) {
   const double Pa = lf.P[0], Pb = lf.P[1], Pc = lf.P[2];
   const double Qa = lf.Q[0], Qb = lf.Q[1], Qc = lf.Q[2];
   double aLocal[3];
@@ -385,7 +386,7 @@ inline BarycentricFibre barycentricFibre(const LocalFrame &lf,
   out.aRest[1] = aRestPoint[1] - Pc / 3;
   out.measure = std::sqrt(out.aRest[0] * out.aRest[0] +
                           out.aRest[1] * out.aRest[1]);
-  if (out.measure < 0.001) { // degenerate: pick a direction at random
+  if (out.measure < degenerateBelow) { // degenerate: pick one at random
     const double angle = random::Rnd() * 2.0 * 3.14159265;
     out.aRest[0] = std::cos(angle);
     out.aRest[1] = std::sin(angle);

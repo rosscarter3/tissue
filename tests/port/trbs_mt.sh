@@ -317,3 +317,52 @@ printf "  %-42s " "MF flag -1 (layer material)"; hyp -1 0.0 0.5 10.0; runh twoSq
 echo "  (parameters 2 and 3 are layer scalings under MF -1, not Poisson"
 echo "   ratios, so legacy skips its range check there and so does this.)"
 printf "  %-42s " "MF -1, neighbour 0.4 (MISMATCH expected)"; hyp -1 0.4 0.5 10.0; runh twoSquare3D_HYP.init
+
+echo
+echo "VertexFromTRBScenterTriangulationMTOpt (an energy probe - it applies"
+echo "no force; the annealing search it is named for was never finished):"
+cat > _opt.model <<'M'
+3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.2
+1
+60
+
+VertexFromTRBScenterTriangulationMTOpt 11 2 9 1
+1.0
+2.0
+0.3
+0.2
+0.5
+0
+0.1
+0.1
+1.0
+0.99
+0.99
+0 1 4 5 6 7 8 9 10
+60
+M
+printf 'Euler\n0 0.2\n0 3\n0.01\n' > _opt.rk5
+printf "  %-42s " "aniso flag 0 (energies on stdout)"
+python3 $T/tools/port/compare.py _opt.model twoSquare3D_MT.init _opt.rk5 --tol=1e-9 2>&1 | tail -1
+python3 - <<'PYEOF'
+open("_opt1.model","w").write(open("_opt.model").read().replace("0.5\n0\n0.1\n","0.5\n1\n0.1\n",1))
+PYEOF
+printf "  %-42s " "aniso flag 1"
+python3 $T/tools/port/compare.py _opt1.model twoSquare3D_MT.init _opt.rk5 --tol=1e-9 2>&1 | tail -1
+# It must leave the simulation untouched.
+python3 - <<'PYEOF'
+s = open("_opt.model").read()
+head = s.split("VertexFromTRBScenterTriangulationMTOpt")[0].rstrip()
+open("_opt_none.model","w").write(head.replace("3 0 0","2 0 0",1)+"\n")
+PYEOF
+$T/build/simulator _opt.model twoSquare3D_MT.init _opt.rk5 2>/dev/null \
+  | grep -vE "^-?[0-9.e+-]+  [0-9.e+-]" > _with.txt
+$T/build/simulator _opt_none.model twoSquare3D_MT.init _opt.rk5 2>/dev/null > _without.txt
+printf "  %-42s " "leaves the tissue untouched"
+diff -q _with.txt _without.txt >/dev/null && echo "yes" || echo "NO"

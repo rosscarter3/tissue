@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**176 names registered here; 173 classes outstanding.**
+**177 names registered here; 172 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -30,7 +30,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/initiation.cc` | 4 |
 | `legacy/degradation.cc` | 2 |
 | `legacy/hypocotyl3D.cc` | 1 |
-| `legacy/mechanicalTRBS.cc` | 1 |
 
 ## Outstanding, by source
 
@@ -250,8 +249,4 @@ Method and the log of validated batches are in `NOTES.md`.
 ### `legacy/hypocotyl3D.cc` (1)
 
 - `Hypocotyl3D::limitZdis` — `Hypocotyl3D::limitZdis`
-
-### `legacy/mechanicalTRBS.cc` (1)
-
-- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
 
