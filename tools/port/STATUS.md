@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**162 names registered here; 184 classes outstanding.**
+**169 names registered here; 180 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -17,9 +17,9 @@ Method and the log of validated batches are in `NOTES.md`.
 |---|---|
 | `legacy/network.cc` | 41 |
 | `legacy/adhocReaction.cc` | 40 |
-| `legacy/mechanicalSpring.cc` | 19 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
+| `legacy/mechanicalSpring.cc` | 15 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
@@ -121,28 +121,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `restrictVertexRadially` — `restrictVertexRadially`
 - `scaleTemplate` — `scaleTemplate`
 
-### `legacy/mechanicalSpring.cc` (19)
-
-- `VertexFromDoubleWallSpring` — `VertexFromDoubleWallSpring`
-- `VertexFromDoubleWallSpringMTConcentrationHill` — `VertexFromDoubleWallSpringMTConcentrationHill`
-- `VertexFromExternalSpring` — `VertexFromExternalSpring`
-- `VertexFromExternalSpringFromPerpVertex` — `VertexFromExternalSpringFromPerpVertex`
-- `VertexFromExternalSpringFromPerpVertexDynamic` — `VertexFromExternalSpringFromPerpVertexDynamic`
-- `VertexFromWallBoundarySpring` — `VertexFromWallBoundarySpring`
-- `VertexFromWallSpringMT` — `VertexFromWallSpringMT`
-- `VertexFromWallSpringMTConcentrationHill` — `VertexFromWallSpringMTConcentrationHill`
-- `VertexFromWallSpringMTHistory` — `VertexFromWallSpringMTHistory`
-- `VertexFromWallSpringMTSpatial` — `VertexFromWallSpringMTSpatial`
-- `VertexFromWallSpringMTnew` — `VertexFromWallSpringMTnew`
-- `VertexFromWallSpringSpatial` — `VertexFromWallSpringSpatial`
-- `WallMechanics::SpringConcentrationHill` — `VertexFromWallSpringConcentrationHill`, `WallMechanics::SpringConcentrationHill`
-- `WallMechanics::SpringEpidermal` — `VertexFromEpidermalWallSpring`, `WallMechanics::SpringEpidermal`
-- `WallMechanics::SpringEpidermalCell` — `VertexFromEpidermalCellWallSpring`, `WallMechanics::SpringEpidermalCell`
-- `WallMechanics::SpringInternalExternalThreshold` — `SpringInternalExternalThreshold`, `WallMechanics::SpringInternalExternalThreshold`
-- `WallMechanics::ViscoElastic` — `WallMechanics::ViscoElastic`
-- `cellcellRepulsion` — `cellcellRepulsion`
-- `vertexFromSubstrate` — `vertexFromSubstrate`
-
 ### `legacy/force.cc` (15)
 
 - `Force::Axial` — `Force::Axial`
@@ -178,6 +156,24 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Pressure3D::Triangular` — `Pressure3D::Triangular`, `VertexFromCellPlaneTriangular`
 - `TargetAreaFromPressure` — `TargetAreaFromPressure`
 - `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
+
+### `legacy/mechanicalSpring.cc` (15)
+
+- `VertexFromDoubleWallSpring` — `VertexFromDoubleWallSpring`
+- `VertexFromDoubleWallSpringMTConcentrationHill` — `VertexFromDoubleWallSpringMTConcentrationHill`
+- `VertexFromExternalSpring` — `VertexFromExternalSpring`
+- `VertexFromExternalSpringFromPerpVertex` — `VertexFromExternalSpringFromPerpVertex`
+- `VertexFromExternalSpringFromPerpVertexDynamic` — `VertexFromExternalSpringFromPerpVertexDynamic`
+- `VertexFromWallSpringMT` — `VertexFromWallSpringMT`
+- `VertexFromWallSpringMTConcentrationHill` — `VertexFromWallSpringMTConcentrationHill`
+- `VertexFromWallSpringMTHistory` — `VertexFromWallSpringMTHistory`
+- `VertexFromWallSpringMTSpatial` — `VertexFromWallSpringMTSpatial`
+- `VertexFromWallSpringMTnew` — `VertexFromWallSpringMTnew`
+- `VertexFromWallSpringSpatial` — `VertexFromWallSpringSpatial`
+- `WallMechanics::SpringInternalExternalThreshold` — `SpringInternalExternalThreshold`, `WallMechanics::SpringInternalExternalThreshold`
+- `WallMechanics::ViscoElastic` — `WallMechanics::ViscoElastic`
+- `cellcellRepulsion` — `cellcellRepulsion`
+- `vertexFromSubstrate` — `vertexFromSubstrate`
 
 ### `legacy/boolean.cc` (11)
 

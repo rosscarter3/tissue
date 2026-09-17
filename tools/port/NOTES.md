@@ -333,3 +333,51 @@ producing no growth while filling stderr.
 
 `tests/port/trbs.sh` drives all of the above plus the TRBS elasticity, and
 `tests/port/tri3D.init` is the triangular 3D fixture `VertexFromTRBS` needs.
+
+### `legacy/mechanicalSpring.cc`: shared driver + 4 variants, 2026-09-17
+
+Same treatment as the TRBS kernel, for the same reason: every reaction in
+`mechanicalSpring.cc` is one loop with two things changed - which walls act,
+and how stiff each one is. The coefficient idiom `K (1/L - 1/d)`, zeroed only
+when both `d` and `L` are non-positive, scaled by `frac_adh` once stretched,
+is identical in all nineteen. That loop is now `wallSpringLoop()`, taking an
+`active(w)` gate and a `stiffness(w)` callback and keeping both execution
+paths the existing `WallMechanics::Spring` had (serial in legacy's exact
+accumulation order for small tissues, a two-pass gather for large ones).
+
+`WallMechanics::Spring` was moved onto it first and re-checked against legacy
+before anything was added. Four variants follow, all 0.000e+00 against legacy
+on the two-cell fixture and on the 267-cell mesh:
+
+- `WallMechanics::SpringEpidermal` - boundary walls only.
+- `WallMechanics::SpringEpidermalCell` - every wall of a cell that touches the
+  background, not just the boundary wall itself.
+- `WallMechanics::SpringConcentrationHill` - stiffness from an inhibitory Hill
+  function summed over the wall's two cells. A boundary wall gets one
+  contribution rather than two, so its stiffness runs to `K_min + K_max`
+  instead of `K_min + 2 K_max`; that asymmetry is legacy's and is preserved.
+- `VertexFromWallBoundarySpring` - `Spring` restricted to boundary walls.
+  Unlike `SpringEpidermal` it leaves the saved force on interior walls
+  untouched instead of zeroing it, which is also legacy's behaviour.
+
+Any form that saves the force into a wall variable differs from legacy **at
+t=0 only**, and this is the third place the same cause has turned up: the save
+is a write to `wallData` from inside `derivs`, so it is not side-effect free
+and it sees legacy's extra pre-print derivative evaluation (README item 5).
+Measured on `WallMechanics::Spring` with a save index, one Euler step:
+
+    legacy  t=0  0           t=0.04  -0.000789479
+    v2      t=0  0.808275    t=0.04  -0.000789479
+
+Legacy's 0 at t=0 is the force it computed before the first print, which is
+genuinely zero there because the mesh starts at rest; v2's value is the
+untouched initial contents of that wall variable. Every later print agrees
+exactly. Worth noting that this was *pre-existing* - it was not introduced by
+the refactor, and was confirmed by rebuilding the previous commit and getting
+the identical 8.083e-01 discrepancy - it had simply never been exercised,
+because the earlier check of `WallMechanics::Spring` never passed a save
+index.
+
+Still outstanding in this file: the microtubule (MT) spring variants, which
+need a per-cell fibre direction and the angle between it and each wall, plus
+`VertexFromExternalSpring*`, `cellcellRepulsion` and `vertexFromSubstrate`.
