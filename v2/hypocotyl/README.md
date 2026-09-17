@@ -281,16 +281,21 @@ RK5Adaptive, about 4.5% of the opening either way:
 | Y_f = 0 | 110.2 | 65.3 | 13.6 |
 
 The explanation is simply how little of the force balance the fibre carries:
-Y_m = 20000 against Y_f = 1350, so the fibre is ~6% of wall stiffness, and a
-strain-gated growth law turns a 6% stiffness change into a few-percent growth
-change. A four-point dose-response under `QuasiStatic` confirms the gain is
+the fibre carries **2.67%** of it. That figure is measured, not inferred from
+the parameters: relaxing the same geometry with and without the fibre and
+comparing mean wall strain gives `K_f/K_m = eps(Y_f=0)/eps(Y_f) - 1`, which
+needs no assumption that the two force laws share units. (Dividing the raw
+parameters, Y_f/(Y_m+Y_f) = 6.3%, overstates it 2.4-fold — they are not
+comparable, since the fibre term carries an extra `area/(2d)` width factor.)
+A strain-gated growth law then turns a 2.7% stiffness change into a
+few-percent growth change. A four-point dose-response under `QuasiStatic` confirms the gain is
 linear in the fibre's share, measured at peak sensitivity (t = 1 h):
 
 | Y_f | share of stiffness | effect (deg) | linear prediction | ratio |
 |---|---|---|---|---|
-| 1350 | 6.3% | 0.000 | – | – |
-| 675 | 3.3% | 1.965 | 2.007 | 0.98 |
-| 337.5 | 1.7% | 2.977 | 3.010 | 0.99 |
+| 1350 | 2.67% | 0.000 | – | – |
+| 675 | 1.35% | 1.965 | 2.007 | 0.98 |
+| 337.5 | 0.68% | 2.977 | 3.010 | 0.99 |
 | 0 | 0% | 4.013 | 4.013 | 1.00 |
 
 within 2% of proportional throughout. (These are re-runs with the relaxation
