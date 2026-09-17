@@ -178,23 +178,31 @@ private:
               const double restingArea =
                   0.25 * std::sqrt(std::max(heron, 1e-12));
 
-              // Resting angles (law of cosines) and stiffnesses.
-              auto angleOf = [&](double la, double lb, double opposite) {
-                double arg = (la * la + lb * lb - opposite * opposite) /
-                             (2.0 * la * lb);
-                arg = std::max(-1.0 + 1e-9, std::min(1.0 - 1e-9, arg));
-                return std::acos(arg);
+              // Resting angles enter only as cotangents and as the sine and
+              // cosine of one angle, and the law of cosines hands us the cosine
+              // directly - so the acos/tan round trip the legacy code performs
+              // is avoidable. With c = cos(theta),
+              //     cot(acos(c)) = c / sqrt(1 - c^2)
+              //     cos(acos(c)) = c,  sin(acos(c)) = sqrt(1 - c^2)
+              // all exact. Profiling put a quarter of this kernel in tan and
+              // acos; the algebraic forms cost one sqrt each. The clamp keeps
+              // 1 - c^2 above ~2e-9, so the divisor cannot vanish.
+              auto cosOf = [&](double la, double lb, double opposite) {
+                const double c = (la * la + lb * lb - opposite * opposite) /
+                                 (2.0 * la * lb);
+                return std::max(-1.0 + 1e-9, std::min(1.0 - 1e-9, c));
               };
-              const double angle0 =
-                  angleOf(restingLength[0], restingLength[2], restingLength[1]);
-              const double angle1 =
-                  angleOf(restingLength[0], restingLength[1], restingLength[2]);
-              const double angle2 =
-                  angleOf(restingLength[1], restingLength[2], restingLength[0]);
+              auto cotOf = [&](double la, double lb, double opposite) {
+                const double c = cosOf(la, lb, opposite);
+                return c / std::sqrt(1.0 - c * c);
+              };
               const double temp = 1.0 / (restingArea * 16.0);
-              const double cot0 = 1.0 / std::tan(angle0);
-              const double cot1 = 1.0 / std::tan(angle1);
-              const double cot2 = 1.0 / std::tan(angle2);
+              const double cot0 =
+                  cotOf(restingLength[0], restingLength[2], restingLength[1]);
+              const double cot1 =
+                  cotOf(restingLength[0], restingLength[1], restingLength[2]);
+              const double cot2 =
+                  cotOf(restingLength[1], restingLength[2], restingLength[0]);
               const double tensile[3] = {
                   (2 * cot2 * cot2 * (lambda + mio) + mio) * temp,
                   (2 * cot0 * cot0 * (lambda + mio) + mio) * temp,
@@ -249,14 +257,14 @@ private:
                 const double trE = (delta[1] * cot0 + delta[2] * cot1 +
                                     delta[0] * cot2) /
                                    (4.0 * restingArea);
-                const double curAngle1 = angleOf(length[0], length[1], length[2]);
-                const double Qa = std::cos(curAngle1) * length[0];
-                const double Qc = std::sin(curAngle1) * length[0];
+                const double cCur = cosOf(length[0], length[1], length[2]);
+                const double Qa = cCur * length[0];
+                const double Qc = std::sqrt(1.0 - cCur * cCur) * length[0];
                 const double Qb = length[1];
-                const double restAngle1 =
-                    angleOf(restingLength[0], restingLength[1], restingLength[2]);
-                const double Pa = std::cos(restAngle1) * restingLength[0];
-                const double Pc = std::sin(restAngle1) * restingLength[0];
+                const double cRest =
+                    cosOf(restingLength[0], restingLength[1], restingLength[2]);
+                const double Pa = cRest * restingLength[0];
+                const double Pc = std::sqrt(1.0 - cRest * cRest) * restingLength[0];
                 const double Pb = restingLength[1];
                 const double shapeResting[3][2] = {
                     {0.0, 1.0 / Pc},

@@ -133,6 +133,21 @@ alternative.
 Independent runs (conditions, parameter sweeps) parallelize perfectly as
 separate processes, which is what the hypocotyl pipeline does.
 
+**Transcendentals in the TRBS kernel.** Profiling the hook shell after the
+grain fix put about a quarter of the force kernel in `tan` and `acos`. The
+resting angles there enter only as cotangents, and as the sine and cosine of
+one angle, while the law of cosines supplies the cosine directly - so the
+round trip through an angle is avoidable:
+
+    cot(acos(c)) = c / sqrt(1 - c^2),   cos(acos(c)) = c,   sin(acos(c)) = sqrt(1 - c^2)
+
+all exact, and one `sqrt` in place of each transcendental. Back-to-back on a
+0.5 h hook run: **37.2 s -> 26.2 s, 1.42x**, with the trajectory agreeing to
+3.3e-6 degrees - round-off, as an algebraic identity should give. This is the
+one place v2 departs from the legacy TRBS arithmetic; the departure is in
+v2's favour, since the legacy form loses precision in the acos/tan round trip
+near the clamp.
+
 ## Deliberate fixes over legacy (documented divergences)
 
 These legacy defects were **fixed**, not replicated. Results can therefore
