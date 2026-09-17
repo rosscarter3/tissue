@@ -13,7 +13,10 @@ Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
 the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner-flank
 tissue-length fold change (2.16x against 2.149x measured; the outer flank
 overshoots, 1.11x against 1.055x), the inner/outer microtubule reorientation
-asymmetry, and the direction of the auxin- and pH-dependent perturbations
+asymmetry (**but see the recalibration section — that one turns out to be an
+artefact of the solver's drag lag, not a property of the growing
+equilibrium**), and the direction of the auxin- and pH-dependent
+perturbations
 (though those act on the growth gate directly, so their direction is
 guaranteed by construction and only their magnitude is a test — see below).
 It does **not** reproduce the microtubule and cellulose perturbations — the
@@ -211,7 +214,11 @@ shape-neutral at equilibrium but sets the drag lag that partly determines the
 opening rate under `RK5Adaptive`. What is *not* fitted to this curve, and so
 carries the evidential weight, is everything else: the inner-flank fold
 change, the microtubule reorientation, the anisotropy magnitudes, and the
-perturbation responses. The model over-opens late: real hooks stall near 35–45° once the
+perturbation responses. (Not being fitted is necessary for a result to count
+as evidence, not sufficient — the microtubule reorientation is unfitted and
+still turned out to be a solver artefact.)
+
+The model over-opens late: real hooks stall near 35–45° once the
 cotyledons separate, which this model has no representation of (the paper's
 own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
 experimental). The dark control never opens — but that is a consistency
@@ -226,7 +233,11 @@ i.e. the maximal principal stress direction (90° = circumferential/transverse,
 0° = longitudinal). The inner flank holds 89–90° circumferential throughout
 while the outer flank switches to longitudinal within the first hour and
 rotates back as the organ straightens — the inner/outer switch asymmetry of
-Figs 3E–F and 4E, emergent rather than imposed.
+Figs 3E–F and 4E, emergent rather than imposed. **This result does not
+survive removal of the drag lag**: at force balance the outer flank stays
+circumferential throughout, so the switch is a transient of the relaxation
+rather than a property of the growing equilibrium. See *Recalibrating to the
+paper's stiffness ratio* for the matched-hook-angle control.
 
 **Perturbations** (`run_perturbations.py`), each a single parameter change.
 Hook angle in degrees; WT light is 79.2° at 4 h and 12.5° at 10 h. The two
@@ -346,9 +357,10 @@ consequence.
 
 What this means for the results above:
 
-- The **stress anisotropy and CMT reorientation are a faithful readout** —
-  the inner/outer switch asymmetry in `fig4` and `fig5` is a real prediction
-  of the stress solver, and it matches Figs 3E–F and 4E.
+- The **stress anisotropy is a faithful readout** of whatever stress state
+  the solver is in — but the CMT switch it produces in `fig4` and `fig5` is a
+  readout of the *lagged* state, and disappears at force balance. It is not
+  the independent confirmation of Figs 3E–F it was presented as.
 - But anisotropy is **not a driver** of opening in this model. The
   differential growth comes entirely from the geometric `Lmax` differential
   and the auxin/pH gates. That is why oryzalin and isoxaben do nothing, and
@@ -368,6 +380,93 @@ change: Y_m, Y_f, turgor, the growth rate and the mobility scaling (see
 numerical lesson 1) all trade against each other, and the current fit
 (RMSE 11.9°) was tuned against the existing balance. It is the single most
 valuable next step for this model.
+
+
+## Recalibrating to the paper's stiffness ratio
+
+The section above says the fix is to move Y_m : Y_f toward the paper's
+75 : 100 and refit. That was done. It works for one of the two failed
+perturbation classes, cannot work for the other, and costs a result that had
+been reported as a success. All three outcomes are worth having.
+
+**The recipe.** Measuring the fibre share directly (above) gives
+K_f/K_m = 0.0274 at Y_f = 1350, and the response is linear in Y_f, so the
+paper's 57% share needs **Y_f = 65700**. Raising it that far stiffens the
+shell, which would change the growth drive as well as its distribution, so
+turgor is raised to **P = 36.2** to put mean wall strain back on its original
+value (0.0304 against 0.0306, within 0.7%). Only the matrix:fibre *split* then
+differs from the shipped model. `k_growth` refits to **13** under `QuasiStatic`
+(scanned over 8/13/20 against the measured curve; at t = 1 h the model gives
+155.8 deg against 155.6 measured, and at t = 1.5 h, 143.7 against ~144.5).
+
+The quasi-static solver is not optional here. The fibre loads the *stiffest*
+mode disproportionately: lambda_max rises from 1.5e5 to 1.4e6, a factor of 9,
+where mean stiffness rises only 2.2x. Explicit integration costs h ~ 1/lambda
+and so becomes 9x more expensive, while FIRE costs dt ~ 1/sqrt(lambda), 3x.
+
+**What it fixes: oryzalin.** Depolymerising microtubules is modelled by
+K_hill -> 50, which makes the fibre isotropic at unchanged magnitude. With the
+fibre carrying 57% rather than 2.7%, that redistribution finally has something
+to redistribute. Opening measured from each run's own frame 0 (QuasiStatic
+relaxes before its first print, so the variants' starting shapes differ and
+absolute angles are not comparable):
+
+| t (h) | WT | oryzalin | isoxaben 100 nM | isoxaben 600 nM |
+|---|---|---|---|---|
+| 0.75 | 2.1 | 1.2 | 4.5 | 7.4 |
+| 1.50 | 17.1 | 13.8 | 38.4 | 52.1 |
+| 3.00 | 61.0 | 51.8 | 111.3 | 129.1 |
+| 4.00 | 81.7 | 69.3 | 132.1 | 144.2 |
+
+(degrees opened; all four runs converged, zero relaxation-cap hits). Oryzalin
+now opens **15% slower** than wild type, monotone from t = 0.75 h onward,
+against exactly 0.0 difference before recalibration. The direction matches
+experiment.
+
+**What it cannot fix: isoxaben.** Reducing cellulose is modelled by lowering
+Y_f, and in a Lockhart model a softer wall yields *faster* - so opening
+accelerates, by 62% and 77% at t = 4 h (and by more earlier), where the experiment shows it
+blocked. Recalibration makes this worse rather than better, and no choice of
+stiffness can reverse it: the sign is forced by the growth law. The real
+mechanism is that cellulose-synthesis inhibition starves new wall deposition,
+which is a limit on *synthesis*, not on *compliance*, and this model has no
+wall-synthesis term at all. Reproducing isoxaben needs a new term, not a new
+parameter.
+
+**What it costs: the microtubule reorientation was a lag artefact.** The
+outer-flank switch from circumferential to longitudinal, reported above as
+emergent and matching Figs 3E-F, does not survive removal of the drag lag.
+Compared at *matched hook angle* rather than matched time, so the three runs
+are compared at the same shape:
+
+| outer-flank MT angle | hook 150 | hook 140 | hook 130 | hook 120 |
+|---|---|---|---|---|
+| RK5, Y_f = 1350 (shipped) | 3 | 5 | 6 | 13 |
+| QuasiStatic, Y_f = 1350 | 87 | 88 | 88 | 88 |
+| QuasiStatic, Y_f = 65700 | 57 | 73 | 77 | 81 |
+
+(90 = circumferential, 0 = longitudinal.) At force balance the outer flank
+stays circumferential at every stage of opening. The switch appears only when
+the shell lags: the arms swing behind where the rest lengths put them, which
+loads the outer flank longitudinally as a *transient of the relaxation*, not
+as a property of the growing equilibrium. Recalibrating recovers a little of
+the rotation (57 deg at hook 150) but nothing resembling a switch.
+
+This matters beyond the model. A thin-walled pressure vessel has hoop stress
+twice longitudinal, so maximal principal stress is circumferential unless
+differential growth overturns it - and here it does not. If cortical
+microtubules follow maximal principal stress, a quasi-static model does not
+produce the measured outer-flank switch. Either the walls carry real
+viscoelastic lag on the growth timescale, or microtubules follow something
+other than the instantaneous stress direction - strain rate would be the
+obvious candidate, and is not implemented here.
+
+**Status: measured, not adopted.** The recalibrated configuration is not the
+shipped model. It trades a working microtubule prediction for a working
+oryzalin prediction, worsens isoxaben, and has been validated only to t = 4 h -
+the fold changes, the dark control and the full 12 h trajectory have not been
+re-run against it. The recipe above reproduces it in full
+(Y_f = 65700, P = 36.2, k_growth = 13, `QuasiStatic`).
 
 
 ## Figures
