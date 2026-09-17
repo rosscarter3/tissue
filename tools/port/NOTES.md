@@ -146,3 +146,60 @@ runs.
 `SisterVertex::InitiateFromFile` reads a file named literally `sister` from the
 working directory. That is hard-coded in legacy and kept, so existing model
 directories still work.
+
+### `legacy/transport.cc` - 9 classes, 2026-09-17
+
+`Diffusion::{MembraneSimple,SimpleOne,ConductiveSimple,2D}`,
+`ActiveTransportCellEfflux`, `ActiveTransportCellEffluxMM`,
+`DiffusionActiveTransportCell`, `ActiveTransportWall`,
+`InfluxActiveTransportCell`, with their aliases. `legacy/transport.cc` is now
+empty of outstanding classes.
+
+Every init shipped with the tutorials leaves **wall variables at zero**, and
+these reactions are driven by paired wall variables (PIN, AUX/LAX, wall
+auxin). Comparing on a stock init therefore transports nothing and passes
+vacuously. `tests/port/seed_init.py` rewrites an init with deterministic
+non-zero values in both tables; the fixtures used here are seeded copies of
+`twoSquare.init` and the 267-cell `meristem.init`.
+
+All nine match legacy to 0.000e+00 - the cell-only reactions under
+`RK5Adaptive`, the wall-writing ones under `Euler`.
+
+Two of them take an optional third index level that records the flux in a
+paired wall variable, and those two forms **do** differ from legacy. The
+difference is entirely in that diagnostic field; the integrated trajectory is
+bit-identical. It is README item 5 (redundant duplicate derivative evaluations
+removed), and it shows up here because these two writes go to `wallData`
+during `derivs` and so are not side-effect free:
+
+- `InfluxActiveTransportCell` *accumulates* (`+=`) each evaluation. Legacy's
+  total is larger than v2's by exactly (2n+1)/(n+1) for n Euler steps -
+  measured 1.5010, 1.6680, 1.8016, 1.8907 at n = 1, 2, 4, 8 against predicted
+  1.5, 1.6667, 1.8, 1.8889. Legacy evaluates derivs twice per step and once
+  more before the first print; v2 evaluates once per step. The per-evaluation
+  contribution is identical, which is what that exact ratio shows.
+- `DiffusionActiveTransportCell` *assigns*, so only the last evaluation counts
+  and the two agree exactly at every print point after the first. They differ
+  at t=0 only, where legacy's extra pre-print evaluation has already
+  overwritten the field and v2 still shows the initial state.
+
+Neither field is read by the reaction or fed back on. Read it as a diagnostic
+whose scale depends on the solver, not as a rate.
+
+Two further legacy behaviours, deliberately treated differently from each
+other:
+
+`Diffusion::2D` reads its two cell centres from `Cell::positionFromVertex()`,
+the no-argument overload, which returns the *cached* vertex positions rather
+than the live `vertexData` in the same expression as the wall length and cell
+area. The cache is only refreshed by `BaseSolver::setTissueVariables()`, i.e.
+at print points. v2 reads all three from `vertexData` (README item 11). This
+is not a guess: on a static mesh the two agree to
+0.000e+00, and adding a pressure term that moves the vertices makes them
+diverge by 2.5%.
+
+`Diffusion::2D` also visits every interior wall once from each side with no
+ordering guard, so each flux is applied twice and the effective diffusion
+constant is 2*p_0. That one is **kept**, since halving it would silently
+rescale every model written against it - the doubling is reproduced
+explicitly, and the bit-exact match on a static mesh confirms it.

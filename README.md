@@ -214,6 +214,16 @@ differ from legacy for affected models — in v2's favor:
     the order the pair was listed in. v2 tests `cell2` in the second clause, as
     legacy's own comment says it intends.
 
+11. **`Diffusion::2D` stale cell centres**: legacy reads the two cell centres
+    from `Cell::positionFromVertex()`, the no-argument overload, which returns
+    each vertex's *cached* position rather than the live `vertexData` used for
+    the wall length and cell area in the same expression. The cache is only
+    refreshed by `BaseSolver::setTissueVariables()`, i.e. at print points, so
+    on a moving mesh the centre-to-centre distance lagged the rest of the
+    geometry by up to a print interval. v2 reads all three from `vertexData`
+    (measured: identical on a static mesh, 2.5% divergence once the vertices
+    move).
+
 Items 8-10 mean those three reactions cannot be compared bit-for-bit against
 legacy, and should not be. `Bending::Angle` and `Bending::NeighborCenter` are
 instead checked against an independent reimplementation of the force law in

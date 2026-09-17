@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**125 names registered here; 211 classes outstanding.**
+**141 names registered here; 202 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -22,7 +22,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/force.cc` | 15 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/membraneCycling.cc` | 9 |
-| `legacy/transport.cc` | 9 |
 | `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
@@ -138,65 +137,65 @@ Method and the log of validated batches are in `NOTES.md`.
 - `VertexFromWallSpringMTSpatial` — `VertexFromWallSpringMTSpatial`
 - `VertexFromWallSpringMTnew` — `VertexFromWallSpringMTnew`
 - `VertexFromWallSpringSpatial` — `VertexFromWallSpringSpatial`
-- `WallMechanics::SpringConcentrationHill` — `VertexFromWallSpringConcentrationHill`
-- `WallMechanics::SpringEpidermal` — `VertexFromEpidermalWallSpring`
-- `WallMechanics::SpringEpidermalCell` — `VertexFromEpidermalCellWallSpring`
-- `WallMechanics::SpringInternalExternalThreshold` — `SpringInternalExternalThreshold`
+- `WallMechanics::SpringConcentrationHill` — `VertexFromWallSpringConcentrationHill`, `WallMechanics::SpringConcentrationHill`
+- `WallMechanics::SpringEpidermal` — `VertexFromEpidermalWallSpring`, `WallMechanics::SpringEpidermal`
+- `WallMechanics::SpringEpidermalCell` — `VertexFromEpidermalCellWallSpring`, `WallMechanics::SpringEpidermalCell`
+- `WallMechanics::SpringInternalExternalThreshold` — `SpringInternalExternalThreshold`, `WallMechanics::SpringInternalExternalThreshold`
 - `WallMechanics::ViscoElastic` — `WallMechanics::ViscoElastic`
 - `cellcellRepulsion` — `cellcellRepulsion`
 - `vertexFromSubstrate` — `vertexFromSubstrate`
 
 ### `legacy/mechanical.cc` (17)
 
-- `CenterTriangulation::VertexFromCellPressure` — `VertexFromCellPressurecenterTriangulation`
-- `CenterTriangulation::VertexFromCellPressureLinear` — `VertexFromCellPressurecenterTriangulationLinear`
-- `Force::SphereCylinder` — `SphereCylinderForce`
-- `GrowthForce::SphereCylinder` — `MoveVertexSphereCylinder`
+- `CenterTriangulation::VertexFromCellPressure` — `CenterTriangulation::VertexFromCellPressure`, `VertexFromCellPressurecenterTriangulation`
+- `CenterTriangulation::VertexFromCellPressureLinear` — `CenterTriangulation::VertexFromCellPressureLinear`, `VertexFromCellPressurecenterTriangulationLinear`
+- `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
+- `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
 - `MembraneCycling::Constant` — `MembraneCycling::Constant`
 - `MembraneCyclingAll::Constant` — `MembraneCyclingAll::Constant`
 - `PerpendicularWallPressure` — `PerpendicularWallPressure`
-- `Pressure3D::ConcentrationHill` — `VertexFromCellPlaneConcentrationHill`
-- `Pressure3D::Constant` — `VertexFromCellPlane`
-- `Pressure3D::Normalized` — `VertexFromCellPlaneNormalized`
-- `Pressure3D::NormalizedSpatial` — `VertexFromCellPlaneNormalizedSpatial`
-- `Pressure3D::Spatial` — `VertexFromCellPlaneSpatial`
-- `Pressure3D::SphereCylinder` — `VertexFromCellPlaneSphereCylinder`
-- `Pressure3D::SphereCylinderConcentrationHill` — `VertexFromCellPlaneSphereCylinderConcentrationHill`
-- `Pressure3D::Triangular` — `VertexFromCellPlaneTriangular`
+- `Pressure3D::ConcentrationHill` — `Pressure3D::ConcentrationHill`, `VertexFromCellPlaneConcentrationHill`
+- `Pressure3D::Constant` — `Pressure3D::Constant`, `VertexFromCellPlane`
+- `Pressure3D::Normalized` — `Pressure3D::Normalized`, `VertexFromCellPlaneNormalized`
+- `Pressure3D::NormalizedSpatial` — `Pressure3D::NormalizedSpatial`, `VertexFromCellPlaneNormalizedSpatial`
+- `Pressure3D::Spatial` — `Pressure3D::Spatial`, `VertexFromCellPlaneSpatial`
+- `Pressure3D::SphereCylinder` — `Pressure3D::SphereCylinder`, `VertexFromCellPlaneSphereCylinder`
+- `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
+- `Pressure3D::Triangular` — `Pressure3D::Triangular`, `VertexFromCellPlaneTriangular`
 - `TargetAreaFromPressure` — `TargetAreaFromPressure`
 - `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
 
 ### `legacy/force.cc` (15)
 
 - `Force::Axial` — `Force::Axial`
-- `Force::Ball` — `VertexFromBall`
-- `Force::CellIndexRadial` — `CellForceOrigoFromIndex`
-- `Force::Cylinder` — `CylinderForce`
+- `Force::Ball` — `Force::Ball`, `VertexFromBall`
+- `Force::CellIndexRadial` — `CellForceOrigoFromIndex`, `Force::CellIndexRadial`
+- `Force::Cylinder` — `CylinderForce`, `Force::Cylinder`
 - `Force::EpidermalCoordinate` — `Force::EpidermalCoordinate`
-- `Force::EpidermalRadial` — `EpidermalRadialForce`
-- `Force::ExternalWall` — `VertexFromExternalWall`
+- `Force::EpidermalRadial` — `EpidermalRadialForce`, `Force::EpidermalRadial`
+- `Force::ExternalWall` — `Force::ExternalWall`, `VertexFromExternalWall`
 - `Force::ForceFromPlane` — `Force::ForceFromPlane`
-- `Force::IndexRadial` — `VertexForceOrigoFromIndex`
-- `Force::InfiniteWall` — `InfiniteWallForce`
-- `Force::Parabolid` — `VertexFromParabolid`
-- `Force::SphereCylinderRadius` — `SphereCylinderForceFromRadius`
-- `Force::Vector` — `VertexFromForce`
-- `Force::VectorLinear` — `VertexFromForceLinear`
-- `GrowthForce::EpidermalRadial` — `MoveEpidermalVertexRadially`
+- `Force::IndexRadial` — `Force::IndexRadial`, `VertexForceOrigoFromIndex`
+- `Force::InfiniteWall` — `Force::InfiniteWall`, `InfiniteWallForce`
+- `Force::Parabolid` — `Force::Parabolid`, `VertexFromParabolid`
+- `Force::SphereCylinderRadius` — `Force::SphereCylinderRadius`, `SphereCylinderForceFromRadius`
+- `Force::Vector` — `Force::Vector`, `VertexFromForce`
+- `Force::VectorLinear` — `Force::VectorLinear`, `VertexFromForceLinear`
+- `GrowthForce::EpidermalRadial` — `GrowthForce::EpidermalRadial`, `MoveEpidermalVertexRadially`
 
 ### `legacy/boolean.cc` (11)
 
-- `Boolean::AndGate` — `AndGate`
-- `Boolean::AndGateCount` — `AndGateCount`
-- `Boolean::AndNotGate` — `AndNotGate`
-- `Boolean::AndSpecialGate` — `AndSpecialGate`
-- `Boolean::AndSpecialGate2` — `AndSpecialGate2`
-- `Boolean::AndSpecialGate3` — `AndSpecialGate3`
-- `Boolean::AndThresholdsGate` — `AndThresholdsGate`
-- `Boolean::Count` — `Count`
-- `Boolean::FlagCount` — `FlagCount`
-- `Boolean::OrGateCount` — `OrGateCount`
-- `Boolean::OrSpecialGateCount` — `OrSpecialGateCount`
+- `Boolean::AndGate` — `AndGate`, `Boolean::AndGate`
+- `Boolean::AndGateCount` — `AndGateCount`, `Boolean::AndGateCount`
+- `Boolean::AndNotGate` — `AndNotGate`, `Boolean::AndNotGate`
+- `Boolean::AndSpecialGate` — `AndSpecialGate`, `Boolean::AndSpecialGate`
+- `Boolean::AndSpecialGate2` — `AndSpecialGate2`, `Boolean::AndSpecialGate2`
+- `Boolean::AndSpecialGate3` — `AndSpecialGate3`, `Boolean::AndSpecialGate3`
+- `Boolean::AndThresholdsGate` — `AndThresholdsGate`, `Boolean::AndThresholdGate`
+- `Boolean::Count` — `Boolean::Count`, `Count`
+- `Boolean::FlagCount` — `Boolean::FlagCount`, `FlagCount`
+- `Boolean::OrGateCount` — `Boolean::OrGateCount`, `OrGateCount`
+- `Boolean::OrSpecialGateCount` — `Boolean::OrSpecialGateCount`, `OrSpecialGateCount`
 
 ### `legacy/membraneCycling.cc` (9)
 
@@ -209,18 +208,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `MembraneCycling::LocalWallFeedbackLinear` — `MembraneCycling::LocalWallFeedbackLinear`
 - `MembraneCycling::PINFeedbackLinear` — `MembraneCycling::PINFeedbackLinear`
 - `MembraneCycling::PINFeedbackNonLinear` — `MembraneCycling::PINFeedbackNonLinear`
-
-### `legacy/transport.cc` (9)
-
-- `ActiveTransportCellEfflux` — `ActiveTransportCellEfflux`
-- `ActiveTransportCellEffluxMM` — `ActiveTransportCellEffluxMM`
-- `ActiveTransportWall` — `ActiveTransportWall`
-- `Diffusion2d` — `Diffusion2d`
-- `DiffusionActiveTransportCell` — `DiffusionActiveTransportCell`
-- `DiffusionConductiveSimple` — `DiffusionConductiveSimple`
-- `DiffusionSimpleOne` — `DiffusionSimpleOne`
-- `InfluxActiveTransportCell` — `InfluxActiveTransportCell`
-- `MembraneDiffusionSimple` — `MembraneDiffusionSimple`
 
 ### `legacy/mechanicalTRBS.cc` (8)
 
@@ -254,34 +241,34 @@ Method and the log of validated batches are in `NOTES.md`.
 ### `legacy/growth.cc` (6)
 
 - `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`
-- `WallGrowth::CenterTriangulation::Stress` — `WallGrowthStresscenterTriangulation`
-- `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`
-- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`, `WallGrowth::CenterTriangulation::StrainTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`, `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill`
+- `WallGrowth::CenterTriangulation::Stress` — `CenterTriangulation::WallGrowth::Stress`, `WallGrowth::CenterTriangulation::Stress`, `WallGrowthStresscenterTriangulation`
+- `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`, `WallGrowth::CenterTriangulation::StressConcentrationHill`
+- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`, `WallGrowth::CenterTriangulation::VectorTRBS`
 
 ### `legacy/calculate.cc` (5)
 
-- `Calculate::AngleVector` — `AngleVector`
-- `Calculate::AngleVectorXYplane` — `CalculateAngleVectorXYplane`
-- `Calculate::AngleVectors` — `CalculateAngleVectors`
-- `Calculate::TissueVolumeChange` — `TemplateVolumeChange`
+- `Calculate::AngleVector` — `AngleVector`, `Calculate::AngleVector`
+- `Calculate::AngleVectorXYplane` — `Calculate::AngleVectorXYplane`, `CalculateAngleVectorXYplane`
+- `Calculate::AngleVectors` — `Calculate::AngleVectors`, `CalculateAngleVectors`
+- `Calculate::TissueVolumeChange` — `Calculate::TissueVolumeChange`, `TemplateVolumeChange`
 - `Calculate::VertexVelocity` — `Calculate::VertexVelocity`
 
 ### `legacy/fiberModel.cc` (5)
 
-- `FiberModel::Deposition` — `FiberDeposition`
-- `FiberModel::General` — `FiberModel`
+- `FiberModel::Deposition` — `FiberDeposition`, `FiberModel::Deposition`
+- `FiberModel::General` — `FiberModel`, `FiberModel::General`
 - `FiberModel::Linear` — `FiberModel::Linear`
-- `Pressure3D::CenterTriangulation::Linear` — `VertexFromCellPlaneLinearCenterTriangulation`
-- `Pressure3D::Linear` — `VertexFromCellPlaneLinear`
+- `Pressure3D::CenterTriangulation::Linear` — `CenterTriangulation::Pressure3D::Linear`, `Pressure3D::CenterTriangulation::Linear`, `VertexFromCellPlaneLinearCenterTriangulation`
+- `Pressure3D::Linear` — `Pressure3D::Linear`, `VertexFromCellPlaneLinear`
 
 ### `legacy/growthForce.cc` (4)
 
-- `GrowthForce::CenterTriangulation::ForceToCell` — `centerTriangulation::GrowthForce::ForceToCell`
-- `GrowthForce::CenterTriangulation::Radial` — `MoveVertexRadiallycenterTriangulation`
-- `GrowthForce::X` — `MoveVertexX`
-- `GrowthForce::Y` — `MoveVertexY`
+- `GrowthForce::CenterTriangulation::ForceToCell` — `GrowthForce::centerTriangulation::ForceToCell`, `centerTriangulation::GrowthForce::ForceToCell`
+- `GrowthForce::CenterTriangulation::Radial` — `CenterTriangulation::GrowthForce::Radial`, `GrowthForce::CenterTriangulation::Radial`, `MoveVertexRadiallycenterTriangulation`
+- `GrowthForce::X` — `GrowthForce::X`, `MoveVerteX`, `MoveVertexX`
+- `GrowthForce::Y` — `GrowthForce::Y`, `MoveVertexY`
 
 ### `legacy/initiation.cc` (4)
 
@@ -299,7 +286,7 @@ Method and the log of validated batches are in `NOTES.md`.
 ### `legacy/degradation.cc` (2)
 
 - `FiberModel::Hill` — `FiberModel::Hill`
-- `Hill` — `Hill`
+- `Hill` — `Grn::Hill`, `Hill`
 
 ### `legacy/hypocotyl3D.cc` (1)
 

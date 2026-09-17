@@ -27,11 +27,17 @@ def legacy_classes():
     """{class name: [registered names]} from the legacy factory."""
     src = open(os.path.join(ROOT, "legacy", "baseReaction.cc"), errors="ignore").read()
     out = collections.defaultdict(list)
-    for m in re.finditer(r'idValue\s*==\s*"([^"]+)"(.*?)(?=idValue\s*==\s*"|\Z)',
-                         src, re.S):
-        cm = re.search(r"new\s+([A-Za-z0-9_:]+)", m.group(2))
-        if cm:
-            out[cm.group(1)].append(m.group(1))
+    # Each branch is "else if (<conditions>) return new Class(...)". Take every
+    # name tested since the previous `new`, so the aliases of a chained
+    # condition (`a == "X" || a == "Y"`) all attach to the same class - reading
+    # one name per `new` silently lets a class count as ported with its other
+    # aliases still missing.
+    pos = 0
+    for m in re.finditer(r"new\s+([A-Za-z0-9_:]+)\s*\(", src):
+        names = re.findall(r'idValue\s*==\s*"([^"]+)"', src[pos:m.start()])
+        if names:
+            out[m.group(1)] += names
+        pos = m.end()
     return out
 
 

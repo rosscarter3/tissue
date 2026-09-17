@@ -354,7 +354,8 @@ public:
 private:
   double time_ = 0.0;
 };
-TISSUE_REGISTER_REACTION(CreationSinus, "Creation::Sinus", "creationSinus")
+TISSUE_REGISTER_REACTION(CreationSinus, "Creation::Sinus", "CreationSinus",
+                         "creationSinus")
 
 } // namespace
 
