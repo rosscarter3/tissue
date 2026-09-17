@@ -35,3 +35,22 @@ over 904 values under `RK5Adaptive`. `OneWall` is the exception and it is not a
 porting error: it is the only one of the six acting on wall variables, so it
 runs into the legacy RK5 defect. Under `Euler` it matches to 0.000e+00 as well,
 which means this batch also reproduces that documented bug independently.
+
+### `legacy/creation.cc` - 7 classes, 2026-09-17
+
+`Creation::SpatialCylinder`, `SpatialRing`, `SpatialCoordinate`,
+`SpatialPlane`, `FromList`, `OneGeometric`, `Sinus`, each with its legacy
+alias (`Sinus` registers as `creationSinus`, lower case, in legacy).
+
+All seven match to 0.000e+00 over 904 values under `RK5Adaptive`. None of them
+touch wall variables, so none hits the legacy RK5 defect.
+
+One legacy oddity reproduced deliberately: `Creation::FromList` divides by
+`T.cell(k).calculateVolume()` where `k` is the loop counter, not the listed
+cell `variableIndex(1,k)` it adds to. That looks like a defect, but models
+written against legacy depend on it and the two coincide whenever the list is
+`0,1,2,...`. Flagged in the source; worth revisiting if anyone relies on a
+sparse list with the number flag set.
+
+`Creation::Sinus` keeps legacy's `6.28` rather than `2*pi` - the period that
+implies is what existing models were tuned against.

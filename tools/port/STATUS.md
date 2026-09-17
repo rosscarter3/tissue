@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**82 names registered here; 241 classes outstanding.**
+**96 names registered here; 234 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -25,7 +25,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/membraneCycling.cc` | 9 |
 | `legacy/transport.cc` | 9 |
 | `legacy/mechanicalTRBS.cc` | 8 |
-| `legacy/creation.cc` | 7 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
 | `legacy/massAction.cc` | 6 |
@@ -254,16 +253,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `VertexFromTRBScenterTriangulationMT` — `VertexFromTRBScenterTriangulationMT`
 - `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
 - `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
-
-### `legacy/creation.cc` (7)
-
-- `Creation::FromList` — `CreationFromList`
-- `Creation::OneGeometric` — `CreationOneGeometric`
-- `Creation::Sinus` — `creationSinus`
-- `Creation::SpatialCoordinate` — `CreationSpatialCoordinate`
-- `Creation::SpatialCylinder` — `CreationSpatialCylinder`
-- `Creation::SpatialPlane` — `CreationSpatialPlane`
-- `Creation::SpatialRing` — `CreationSpatialRing`
 
 ### `legacy/directionReaction.cc` (6)
 
