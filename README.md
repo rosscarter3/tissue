@@ -272,6 +272,22 @@ differ from legacy for affected models — in v2's favor:
     Legacy tracks `(1 - w)` exactly. The diagnosis is confirmed the other way
     too: re-emulating the always-false guard reproduces legacy bit-for-bit.
 
+14. **Unbounded Jacobi loops** (`mechanicalTRBS.cc`, five places): none of
+    legacy's eigenvalue loops has an iteration bound, so a tensor that does
+    not converge hangs the simulation rather than failing. It is reachable
+    from ordinary parameter choices: `VertexFromTRBScenterTriangulationMT`
+    with MF flag 2 and `Y_fibre > Y_matrix` gives a negative transverse
+    modulus, and the legacy binary then runs indefinitely (still going after
+    25 s on a two-cell mesh where the whole simulation takes well under a
+    second). Every loop here is capped at 50 sweeps, which is far above what
+    a symmetric 3x3 needs, so the run completes. That is a divergence only
+    where legacy would not have terminated at all.
+
+Item 13 applies to `VertexFromTRBSMT`,
+`VertexFromTRLScenterTriangulationMT` and
+`Hypocotyl3D::VertexFromTRBScenterTriangulationMT` as well: all four carry the
+same dead guard, and all four are fixed.
+
 Items 8-10, 12 and 13 mean those reactions cannot be compared bit-for-bit against
 legacy, and should not be. `Bending::Angle` and `Bending::NeighborCenter` are
 instead checked against an independent reimplementation of the force law in

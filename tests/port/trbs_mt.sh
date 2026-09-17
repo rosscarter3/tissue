@@ -231,3 +231,89 @@ for h in 0.001 0.0005 0.00025; do
   B=$($T/build/simulator _trls.model twoSquare3D_MT.init _eh.rk5 2>/dev/null | awk '$1==4 && NF>60 {n++; if(n==3) print $12}')
   python3 -c "print(f'    {$h:<10} {$A:<14} {$B:<14} {abs($A-$B):.3e}')"
 done
+
+echo
+echo "Hypocotyl3D::VertexFromTRBScenterTriangulationMT:"
+# Its MF flag -1 is a tissue-layer material keyed on cell variable 37, so the
+# fixture needs real layer codes rather than seeded noise.
+python3 - <<'PYEOF'
+lines = open("twoSquare3D_MT.init").read().split("\n")
+out, incell, seen = [], False, 0
+for l in lines:
+    t = l.split()
+    if len(t) == 2 and t[0] == "2" and t[1] == "60":
+        incell = True; out.append(l); continue
+    if incell and len(t) == 60:
+        t[37] = "-1" if seen == 0 else "-2"   # epidermis, then inner
+        seen += 1; out.append(" ".join(t)); continue
+    out.append(l)
+open("twoSquare3D_HYP.init", "w").write("\n".join(out))
+PYEOF
+hyp() { python3 - "$1" "$2" "$3" "$4" <<'PYEOF'
+import sys
+mf, nw, p2, p3 = sys.argv[1:5]
+open("_hyp.model", "w").write(f"""3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.05
+1
+60
+
+Hypocotyl3D::VertexFromTRBScenterTriangulationMT 11 2 11 1
+2.0
+6.0
+{p2}
+{p3}
+{mf}
+{nw}
+1.0
+1
+0.7
+0
+0
+0 1 4 5 6 7 8 9 10 20 26
+60
+""")
+PYEOF
+}
+runh() { python3 $T/tools/port/compare.py _hyp.model ${1:-twoSquare3D_MT.init} euler3.rk5 --tol=1e-9 2>&1 | tail -1; }
+for mf in 0 1; do printf "  %-42s " "MF flag $mf"; hyp $mf 0.0 0.3 0.2; runh; done
+# MF 2 reads Y_matrix as a total stiffness, so it needs Y_matrix > Y_fibre;
+# below that the transverse modulus goes negative and legacy spins forever in
+# its unbounded Jacobi loop (this port caps every one of them at 50 sweeps).
+printf "  %-42s " "MF flag 2 (needs Y_total > Y_fibre)"
+python3 - <<'PYEOF'
+open("_hyp.model", "w").write("""3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.05
+1
+60
+
+Hypocotyl3D::VertexFromTRBScenterTriangulationMT 11 2 11 1
+9.0
+6.0
+0.3
+0.2
+2
+0.0
+1.0
+1
+0.7
+0
+0
+0 1 4 5 6 7 8 9 10 20 26
+60
+""")
+PYEOF
+runh
+printf "  %-42s " "MF flag -1 (layer material)"; hyp -1 0.0 0.5 10.0; runh twoSquare3D_HYP.init
+echo "  (parameters 2 and 3 are layer scalings under MF -1, not Poisson"
+echo "   ratios, so legacy skips its range check there and so does this.)"
+printf "  %-42s " "MF -1, neighbour 0.4 (MISMATCH expected)"; hyp -1 0.4 0.5 10.0; runh twoSquare3D_HYP.init

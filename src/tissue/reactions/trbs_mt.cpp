@@ -49,6 +49,7 @@ enum MtIdx {
 // They are not configurable and not documented anywhere but the code.
 constexpr size_t kAdHocConcIndex = 13; // MF flags 6, 7, 8, 9
 constexpr size_t kAdHocFlagIndex = 40; // MF flag 0
+constexpr size_t kHypocotylLayerIndex = 37; // Hypocotyl3D MF flag -1
 
 struct Moduli {
   double youngL;
@@ -78,11 +79,20 @@ inline Lame lameOf(const Moduli &m, double poissonL, double poissonT,
   return l;
 }
 
-class VertexFromTRBScenterTriangulationMT : public Reaction {
+// Hypocotyl == true is legacy's Hypocotyl3D::VertexFromTRBScenterTriangulationMT,
+// which is this reaction with four differences and no others: it adds MF flag
+// -1, a tissue-layer material keyed on cell variable 37 (-1 epidermis, -2
+// inner, -3 anticlinal axial, -4 anticlinal transverse, each scaling a fixed
+// base modulus of 50 by one of the first four parameters); it drops MF flags
+// 9 and 10 and the ad-hoc cell-variable-40 switch inside flag 0; and its
+// derivs writes no cell variable at all, not even the transverse modulus that
+// flag 1 reports. Everything else, the update pass included, is the same
+// code.
+template <bool Hypocotyl>
+class CenterTriangulationMTBase : public Reaction {
 public:
-  VertexFromTRBScenterTriangulationMT(const ParameterList &p,
-                                      const IndexLevels &i) {
-    if (p.size() != 11 && p.size() != 13)
+  CenterTriangulationMTBase(const ParameterList &p, const IndexLevels &i) {
+    if (Hypocotyl ? p.size() != 11 : (p.size() != 11 && p.size() != 13))
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulationMT: uses 11 or 13 parameters "
           "(Y_matrix, Y_fibre, poisson_L, poisson_T, MF flag, neighbour "
@@ -90,7 +100,8 @@ public:
           "flag, double-resting-length flag, [Hill K, Hill n]).");
     const bool ok =
         (i.size() == 2 || i.size() == 4) &&
-        (i[0].size() == 11 || i[0].size() == 12) && i[1].size() == 1 &&
+        (i[0].size() == 11 || (!Hypocotyl && i[0].size() == 12)) &&
+        i[1].size() == 1 &&
         (i.size() == 2 || (i[2].size() <= 3 && i[3].size() <= 2));
     if (!ok)
       throw std::runtime_error(
@@ -101,7 +112,12 @@ public:
           "cell normal, [loosening compound]); level 1 the start of the "
           "center-triangulation cell variables; optional levels 2 and 3 store "
           "strain and stress directions.");
-    if (p[2] < 0 || p[2] >= 0.5 || p[3] < 0 || p[3] >= 0.5)
+    // Under MF flag -1 parameters 2 and 3 are layer stiffness scalings, not
+    // Poisson ratios (those are fixed at 0.2 inside), so legacy skips the
+    // range check there and so does this.
+    const bool layerMaterial = Hypocotyl && p[4] == -1;
+    if (!layerMaterial &&
+        (p[2] < 0 || p[2] >= 0.5 || p[3] < 0 || p[3] >= 0.5))
       throw std::runtime_error("VertexFromTRBScenterTriangulationMT: Poisson "
                                "ratios must satisfy 0 <= p < 0.5.");
     if (p[7] != 0 && p[7] != 1)
@@ -114,7 +130,9 @@ public:
     std::vector<size_t> shape;
     for (const auto &lvl : i)
       shape.push_back(lvl.size());
-    configure("VertexFromTRBScenterTriangulationMT", p, i, p.size(), shape,
+    configure(Hypocotyl ? "Hypocotyl3D::VertexFromTRBScenterTriangulationMT"
+                        : "VertexFromTRBScenterTriangulationMT",
+              p, i, p.size(), shape,
               {"Y_mod_M", "Y_mod_F", "P_ratio_L", "P_ratio_T", "MF_flag",
                "neighbourweight", "stressmax", "plane_stress_flag",
                "TETA_anisotropy", "MT_update_flag", "double_length_flag",
@@ -138,7 +156,12 @@ public:
     // Legacy reads two cell variables by hard-coded number in some MF modes
     // and would run off the end of the row without saying so.
     const double mf = parameter(4);
-    if (mf == 0 && cellData.cols() <= kAdHocFlagIndex)
+    if (Hypocotyl && mf == -1 && cellData.cols() <= kHypocotylLayerIndex)
+      throw std::runtime_error(
+          "Hypocotyl3D::VertexFromTRBScenterTriangulationMT: MF flag -1 reads "
+          "cell variable 37 (the tissue layer), but this tissue has fewer "
+          "cell variables.");
+    if (!Hypocotyl && mf == 0 && cellData.cols() <= kAdHocFlagIndex)
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulationMT: MF flag 0 reads cell variable "
           "40 (a hard-coded legacy switch that halves the fibre modulus when "
@@ -168,9 +191,13 @@ public:
                                  "the same number of vertices and walls.");
 
       const Moduli mod = moduliFor(cellData, c);
-      if (parameter(4) == 1.0) // this mode reports the transverse modulus back
+      // The hypocotyl form writes no cell variable from derivs.
+      if (!Hypocotyl && parameter(4) == 1.0)
         cellData[c][variableIndex(0, kYoungT)] = mod.youngT;
-      const Lame lame = lameOf(mod, parameter(2), parameter(3), planeStress);
+      const bool layerMaterial = Hypocotyl && parameter(4) == -1;
+      const Lame lame =
+          lameOf(mod, layerMaterial ? 0.2 : parameter(2),
+                 layerMaterial ? 0.2 : parameter(3), planeStress);
       const double dLambda = lame.lambdaL - lame.lambdaT;
       const double dMio = lame.mioL - lame.mioT;
 
@@ -277,7 +304,10 @@ public:
       const CellTopo &cell = T.cell(c);
       const size_t n = cell.numWall();
       const Moduli mod = moduliFor(cellData, c, /*inUpdate=*/true);
-      const Lame lame = lameOf(mod, parameter(2), parameter(3), planeStress);
+      const bool layerMaterial = Hypocotyl && parameter(4) == -1;
+      const Lame lame =
+          lameOf(mod, layerMaterial ? 0.2 : parameter(2),
+                 layerMaterial ? 0.2 : parameter(3), planeStress);
       const double dLambda = lame.lambdaL - lame.lambdaT;
       const double dMio = lame.mioL - lame.mioT;
 
@@ -512,9 +542,30 @@ private:
     if (mf == 0) { // constant anisotropic material
       m.youngL = youngMatrix + youngFiber;
       m.youngT = youngMatrix;
-      if (!inUpdate && cellData[c][kAdHocFlagIndex] == 100) { // ad-hoc switch
+      if (!Hypocotyl && !inUpdate &&
+          cellData[c][kAdHocFlagIndex] == 100) { // ad-hoc switch
         m.youngL = youngMatrix + youngFiber / 2;
         m.youngT = youngMatrix + youngFiber / 2;
+      }
+      return m;
+    }
+    if (Hypocotyl && mf == -1) {
+      // Tissue-layer material: a fixed base modulus scaled per layer, with
+      // the Poisson ratios overridden too. The layer is cell variable 37.
+      m.youngL = 50;
+      m.youngT = 50;
+      const double layer = cellData[c][kHypocotylLayerIndex];
+      if (layer == -1) { // epidermis
+        m.youngL *= parameter(0);
+        m.youngT *= parameter(0);
+      } else if (layer == -2) { // inner: hoop stiffened, axial left alone
+        m.youngL *= parameter(1);
+      } else if (layer == -3) { // anticlinal axial
+        m.youngL *= parameter(2);
+        m.youngT *= parameter(2);
+      } else if (layer == -4) { // anticlinal transverse
+        m.youngL *= parameter(3);
+        m.youngT *= parameter(3);
       }
       return m;
     }
@@ -536,8 +587,8 @@ private:
       m.youngT = youngMatrix + youngFiber - fiberL;
       return m;
     }
-    if (mf == 9 && inUpdate)
-      return m; // legacy's update chain has no branch for this flag
+    if (mf == 9 && (inUpdate || Hypocotyl))
+      return m; // absent from legacy's update chain, and from the hypocotyl one
     if (mf >= 6 && mf <= 9) {
       const double conc = cellData[c][kAdHocConcIndex];
       const double kConc = 0.005, nConc = 2.0;
@@ -571,6 +622,8 @@ private:
       m.youngT += add;
       return m;
     }
+    if (Hypocotyl && mf == 10)
+      return m; // the hypocotyl form has no loosening branch
     if (mf == 10) { // FiberModel modulus, locally loosened by a compound
       m.youngL = cellData[c][variableIndex(0, kYoungL)];
       m.youngT = 2 * youngMatrix + youngFiber - m.youngL;
@@ -740,8 +793,13 @@ private:
     cellData[c][mt + 2] = 0.0;
   }
 };
+using VertexFromTRBScenterTriangulationMT = CenterTriangulationMTBase<false>;
+using Hypocotyl3DVertexFromTRBScenterTriangulationMT =
+    CenterTriangulationMTBase<true>;
 TISSUE_REGISTER_REACTION(VertexFromTRBScenterTriangulationMT,
                          "VertexFromTRBScenterTriangulationMT")
+TISSUE_REGISTER_REACTION(Hypocotyl3DVertexFromTRBScenterTriangulationMT,
+                         "Hypocotyl3D::VertexFromTRBScenterTriangulationMT")
 
 // The same fibre-reinforced material with both moduli set by inhibitory Hill
 // functions of one cell concentration:

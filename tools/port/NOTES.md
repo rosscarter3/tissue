@@ -630,3 +630,51 @@ modulus to `Y_matrix - Y_fibre`, so it needs `Y_matrix > Y_fibre`; below that
 the modulus goes negative and the `sqrt(Y_L Y_T)` in the stiffness matrix
 returns NaN. That is a parameter-domain limit, not a port issue, but nothing
 in legacy checks it.
+
+### `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`, 2026-09-17
+
+Legacy keeps this in `hypocotyl3D.cc` as a full 2500-line copy of
+`VertexFromTRBScenterTriangulationMT`. A token-level diff of both the derivs
+and the update says it differs in exactly four places, so it is the same class
+here with a `Hypocotyl` template parameter:
+
+- it adds **MF flag -1**, a tissue-layer material keyed on cell variable 37:
+  a fixed base modulus of 50 with the Poisson ratios pinned at 0.2, scaled per
+  layer by the first four parameters - -1 epidermis (both directions), -2
+  inner (hoop only, axial left alone), -3 anticlinal axial, -4 anticlinal
+  transverse;
+- it drops MF flags 9 and 10, and the ad-hoc cell-variable-40 switch inside
+  flag 0;
+- its derivs writes no cell variable at all, not even the transverse modulus
+  that flag 1 reports in the base;
+- under MF -1, parameters 2 and 3 are layer scalings rather than Poisson
+  ratios, so legacy *skips its Poisson range check* for that flag. Reproduced:
+  without it a perfectly good hypocotyl model is rejected, since those
+  scalings are routinely above 0.5.
+
+Everything else, the update pass and the neighbour averaging included, is the
+same code.
+
+Exact against legacy (0.000e+00 over 1744 values) for MF flags 0, 1, 2 and -1,
+the last on a fixture carrying real layer codes rather than seeded noise -
+without that, no layer branch fires and both cells get the same modulus, which
+tests nothing. The neighbour-weighted cases diverge by README item 13, the
+same dead `size_t > -1` guard as everywhere else.
+
+A caution about reading this file: my first diff of the update missed its last
+2400 tokens, because I bounded the function with a brace count that terminated
+early on a comment. That made it look as though this variant had no
+neighbour-averaging pass at all, and the port briefly omitted one. The
+harness caught it - a neighbour-weighted run left the stress anisotropy at its
+initial value while legacy wrote one.
+
+One incidental find while building the harness for this variant: legacy's
+unbounded Jacobi loops are reachable from ordinary parameters, not just
+pathological ones. MF flag 2 treats `Y_matrix` as a total stiffness and sets
+the transverse modulus to `Y_matrix - Y_fibre`, so any model with
+`Y_fibre > Y_matrix` has a negative modulus, and the legacy binary then runs
+indefinitely - measured still going after 25 s on the two-cell fixture, where
+the whole run otherwise takes under a second. This port finishes immediately
+because every Jacobi is capped at 50 sweeps (README item 14). The same trap
+exists in `VertexFromTRLScenterTriangulationMT`, where a negative modulus also
+makes `sqrt(Y_L Y_T)` return NaN. Nothing in legacy checks the sign.

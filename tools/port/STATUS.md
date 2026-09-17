@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**175 names registered here; 174 classes outstanding.**
+**176 names registered here; 173 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -29,8 +29,8 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
 | `legacy/degradation.cc` | 2 |
-| `legacy/mechanicalTRBS.cc` | 2 |
 | `legacy/hypocotyl3D.cc` | 1 |
+| `legacy/mechanicalTRBS.cc` | 1 |
 
 ## Outstanding, by source
 
@@ -247,12 +247,11 @@ Method and the log of validated batches are in `NOTES.md`.
 - `FiberModel::Hill` — `FiberModel::Hill`
 - `Hill` — `Grn::Hill`, `Hill`
 
-### `legacy/mechanicalTRBS.cc` (2)
-
-- `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
-
 ### `legacy/hypocotyl3D.cc` (1)
 
 - `Hypocotyl3D::limitZdis` — `Hypocotyl3D::limitZdis`
+
+### `legacy/mechanicalTRBS.cc` (1)
+
+- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
 
