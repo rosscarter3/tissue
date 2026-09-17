@@ -142,3 +142,44 @@ VertexFromTRBScenterTriangulationConcentrationHillMT 8 6 3 1 1 1 1 1
 M
 printf "  %-42s " "six levels, forces"
 python3 $T/tools/port/compare.py _chmt6.model twoSquare3D_MT.init euler3.rk5 --tol=1e-9 --block=vertex 2>&1 | tail -1
+
+echo
+echo "VertexFromTRBSMT (same material, no center triangulation):"
+cat > _tmt.model <<'M'
+2 0 0
+
+WallGrowth::Constant 2 1 1
+0.05
+1
+0
+
+VertexFromTRBSMT 10 1 10
+1.0
+2.0
+0.3
+0.2
+0
+0.0
+0.0
+1
+0.7
+0
+0 1 4 5 6 7 8 9 10 20
+M
+printf "  %-42s " "MF flag 0, forces"
+python3 $T/tools/port/compare.py _tmt.model tri3D_MT.init euler3.rk5 --tol=1e-9 --block=vertex 2>&1 | tail -1
+printf "  %-42s " "MF flag 1, forces"
+python3 - <<'PYEOF'
+s = open("_tmt.model").read().replace("0.2\n0\n0.0", "0.2\n1\n0.0", 1)
+open("_tmt1.model", "w").write(s)
+PYEOF
+python3 $T/tools/port/compare.py _tmt1.model tri3D_MT.init euler3.rk5 --tol=1e-9 --block=vertex 2>&1 | tail -1
+echo "  The stored diagnostics are written from derivs, so legacy samples them"
+echo "  one derivative evaluation later. The gap is exactly linear in the step:"
+printf "    %-10s %-14s %-14s %s\n" "h" "legacy" "v2" "difference"
+for h in 0.001 0.0005 0.00025; do
+  printf 'Euler\n0 2\n0 6\n%s\n' $h > _eh.rk5
+  A=$($T/bin/simulator _tmt.model tri3D_MT.init _eh.rk5 2>/dev/null | awk '$1==3 && NF>45 {n++; if(n==3) print $11}')
+  B=$($T/build/simulator _tmt.model tri3D_MT.init _eh.rk5 2>/dev/null | awk '$1==3 && NF>45 {n++; if(n==3) print $11}')
+  python3 -c "print(f'    {$h:<10} {$A:<14} {$B:<14} {abs($A-$B):.3e}')"
+done

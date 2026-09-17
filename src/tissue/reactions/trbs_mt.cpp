@@ -435,7 +435,7 @@ public:
 
       // Strain: diagonalize, rank by |value|, and store.
       double eigStrain[3][3];
-      trbs::jacobiStrainStyle(strainCell, eigStrain, eps);
+      trbs::jacobiEigen3(strainCell, eigStrain, trbs::kJacobiMtStrain);
       int i1, i2, i3;
       rankPrincipal(strainCell, i1, i2, i3);
       const double s1 = strainCell[i1][i1];
@@ -635,7 +635,7 @@ private:
                         const double normalGlob[3], double eps, bool storeDirs,
                         bool byMagnitude, bool writeMises) const {
     double eig[3][3];
-    trbs::jacobiStressStyle(stressCell, eig, eps);
+    trbs::jacobiEigen3(stressCell, eig, trbs::kJacobiMtStress);
     int i1, i2, i3;
     if (byMagnitude)
       rankPrincipal(stressCell, i1, i2, i3);
@@ -965,7 +965,7 @@ private:
   void storePair(Matrix &cellData, size_t c, double A[3][3], size_t firstLevel,
                  size_t secondLevel) const {
     double eig[3][3];
-    trbs::jacobiEigen3(A, eig);
+    trbs::jacobiEigen3(A, eig, trbs::kJacobiIsotropic);
     int i1 = 0;
     if (A[1][1] > A[i1][i1])
       i1 = 1;
@@ -991,6 +991,331 @@ private:
 TISSUE_REGISTER_REACTION(
     VertexFromTRBScenterTriangulationConcentrationHillMT,
     "VertexFromTRBScenterTriangulationConcentrationHillMT")
+
+
+// The same transversely isotropic material with no center triangulation: the
+// cell *is* one triangle and its three walls are the edges. Everything the
+// center-triangulated version puts in an update() pass happens here in
+// derivs(), because there is only ever one element per cell to average over.
+//
+// Two more legacy quirks specific to this one, both reproduced:
+//  - the fibre is pulled back with F^T rather than the cofactor of F;
+//  - after the per-cell loop, cell 0's iso and aniso energy slots are
+//    overwritten with the *tissue totals*, destroying that cell's own values.
+class VertexFromTRBSMT : public Reaction {
+public:
+  VertexFromTRBSMT(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 10)
+      throw std::runtime_error(
+          "VertexFromTRBSMT: uses 10 parameters (Y_matrix, Y_fibre, "
+          "poisson_L, poisson_T, MF flag, neighbour weight, unused, "
+          "plane-stress flag, MT angle, MT update flag).");
+    const bool ok = (i.size() == 1 || i.size() == 3) && i[0].size() == 10 &&
+                    (i.size() == 1 || (i[1].size() <= 3 && i[2].size() <= 2));
+    if (!ok)
+      throw std::runtime_error(
+          "VertexFromTRBSMT: level 0 holds 10 cell variable indices (wall "
+          "length, MT direction, strain anisotropy, stress anisotropy, area "
+          "ratio, iso energy, aniso energy, longitudinal modulus, MT stress, "
+          "stress tensor); optional levels 1 and 2 store strain and stress "
+          "directions.");
+    if (p[2] < 0 || p[2] >= 0.5 || p[3] < 0 || p[3] >= 0.5)
+      throw std::runtime_error(
+          "VertexFromTRBSMT: Poisson ratios must satisfy 0 <= p < 0.5.");
+    if (p[7] != 0 && p[7] != 1)
+      throw std::runtime_error("VertexFromTRBSMT: parameter 7 must be 0 "
+                               "(plane strain) or 1 (plane stress).");
+    if (p[9] < 0 || p[9] > 4 || p[9] != std::floor(p[9]))
+      throw std::runtime_error(
+          "VertexFromTRBSMT: the MT update flag (parameter 9) must be 0-4.");
+    std::vector<size_t> shape;
+    for (const auto &lvl : i)
+      shape.push_back(lvl.size());
+    configure("VertexFromTRBSMT", p, i, 10, shape,
+              {"Y_mod_M", "Y_mod_F", "P_ratio_L", "P_ratio_T", "MF_flag",
+               "neighbourweight", "unused", "plane_stress_flag",
+               "TETA_anisotropy", "MT_update_flag"});
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &, Matrix &,
+              Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error("VertexFromTRBSMT requires a 3D tissue.");
+    const size_t wallLengthIndex = variableIndex(0, 0);
+    const size_t mtIndex = variableIndex(0, 1);
+    const size_t areaRatioIndex = variableIndex(0, 4);
+    const size_t isoEnergyIndex = variableIndex(0, 5);
+    const size_t anisoEnergyIndex = variableIndex(0, 6);
+    const size_t mtStressIndex = variableIndex(0, 8);
+    const size_t stressTensorIndex = variableIndex(0, 9);
+    const bool planeStress = parameter(7) == 1.0;
+    const bool storeDirs = numVariableIndexLevel() == 3;
+
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      const CellTopo &cell = T.cell(c);
+      if (cell.numWall() != 3)
+        throw std::runtime_error(
+            "VertexFromTRBSMT: only defined for triangular cells.");
+      Moduli mod{1.0, 1.0};
+      if (parameter(4) == 0) {
+        mod.youngL = parameter(0) + parameter(1);
+        mod.youngT = parameter(0);
+      } else if (parameter(4) == 1) {
+        mod.youngL = cellData[c][variableIndex(0, 7)];
+        mod.youngT = 2 * parameter(0) + parameter(1) - mod.youngL;
+      }
+      const Lame lame = lameOf(mod, parameter(2), parameter(3), planeStress);
+      const double dLambda = lame.lambdaL - lame.lambdaT;
+      const double dMio = lame.mioL - lame.mioT;
+
+      // Another hard-coded four-cell setup, and another parameter collision:
+      // cells 0 and 2 take their angle from parameter 5, which is also the
+      // neighbour weight, and cells 1 and 3 from parameter 8. Cells beyond
+      // the fourth are left alone.
+      if (parameter(9) == 1.0) {
+        double angle = 0.0;
+        bool set = false;
+        if (c == 0 || c == 2) {
+          angle = parameter(5);
+          set = true;
+        } else if (c == 1 || c == 3) {
+          angle = parameter(8);
+          set = true;
+        }
+        if (set) {
+          cellData[c][mtIndex] = std::cos(angle);
+          cellData[c][mtIndex + 1] = std::sin(angle);
+          cellData[c][mtIndex + 2] = 0.0;
+        }
+      }
+      const double dir[3] = {cellData[c][mtIndex], cellData[c][mtIndex + 1],
+                             cellData[c][mtIndex + 2]};
+
+      trbs::Element el;
+      for (int node = 0; node < 3; ++node)
+        for (size_t d = 0; d < 3; ++d)
+          el.pos[node][d] = vertexData[cell.vertices[node]][d];
+      for (int k = 0; k < 3; ++k)
+        el.rest[k] = wallData[cell.walls[k]][wallLengthIndex];
+      el.cur[0] = trbs::nodeDistance(el, 0, 1);
+      el.cur[1] = trbs::nodeDistance(el, 1, 2);
+      el.cur[2] = trbs::nodeDistance(el, 0, 2);
+      trbs::completeElement(el);
+
+      const trbs::LocalFrame lf = trbs::localFrameOf(el);
+      double aRest[2];
+      trbs::fibrePullbackTransposeF(lf, dir, aRest);
+      trbs::AnisoTerms an = trbs::anisotropyInvariantsFrom(lf, aRest);
+      an.trE = (el.delta[1] * el.cot[0] + el.delta[2] * el.cot[1] +
+                el.delta[0] * el.cot[2]) /
+               (4.0 * el.restArea);
+      trbs::equipartitionedDeltaS(an, dLambda, dMio);
+      double deltaF[3][3];
+      trbs::pushDeltaS(el, lf, an.deltaS, deltaF);
+      double f[3][3];
+      trbs::elementForces(
+          el, trbs::stiffnessFrom(el, lame.lambdaT + 2 * lame.mioT,
+                                  2 * lame.mioT),
+          f);
+      for (int node = 0; node < 3; ++node)
+        for (int d = 0; d < 3; ++d)
+          vertexDerivs[cell.vertices[node]][d] += f[node][d] + deltaF[node][d];
+
+      // True strain and stress for this cell's single element.
+      double B[2][2];
+      B[0][0] = lf.F[0][0] * lf.F[0][0] + lf.F[0][1] * lf.F[0][1];
+      B[0][1] = lf.F[0][0] * lf.F[1][0] + lf.F[0][1] * lf.F[1][1];
+      B[1][0] = lf.F[1][0] * lf.F[0][0] + lf.F[1][1] * lf.F[0][1];
+      B[1][1] = lf.F[1][0] * lf.F[1][0] + lf.F[1][1] * lf.F[1][1];
+      const double detB = B[0][0] * B[1][1] - B[1][0] * B[0][1];
+      double B2[2][2];
+      B2[0][0] = B[0][0] * B[0][0] + B[0][1] * B[1][0];
+      B2[0][1] = B[0][0] * B[0][1] + B[0][1] * B[1][1];
+      B2[1][0] = B[1][0] * B[0][0] + B[1][1] * B[1][0];
+      B2[1][1] = B[1][0] * B[0][1] + B[1][1] * B[1][1];
+      const double area =
+          0.25 * std::sqrt(std::max((el.cur[0] + el.cur[1] + el.cur[2]) *
+                                        (-el.cur[0] + el.cur[1] + el.cur[2]) *
+                                        (el.cur[0] - el.cur[1] + el.cur[2]) *
+                                        (el.cur[0] + el.cur[1] - el.cur[2]),
+                                    1e-12));
+      const double areaFactor = el.restArea / area;
+      double strainT[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+      strainT[0][0] = 0.5 * (1 - B[1][1] / detB);
+      strainT[0][1] = 0.5 * B[0][1] / detB;
+      strainT[1][0] = 0.5 * B[1][0] / detB;
+      strainT[1][1] = 0.5 * (1 - B[0][0] / detB);
+      double stressT[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+      for (int r = 0; r < 2; ++r)
+        for (int t = 0; t < 2; ++t)
+          stressT[r][t] =
+              areaFactor * ((lame.lambdaT * an.trE - lame.mioT) * B[r][t] +
+                            lame.mioT * B2[r][t]);
+      double dSFt[2][2];
+      for (int r = 0; r < 2; ++r)
+        for (int t = 0; t < 2; ++t)
+          dSFt[r][t] =
+              an.deltaS[r][0] * lf.F[t][0] + an.deltaS[r][1] * lf.F[t][1];
+      for (int r = 0; r < 2; ++r)
+        for (int t = 0; t < 2; ++t)
+          stressT[r][t] +=
+              areaFactor * (lf.F[r][0] * dSFt[0][t] + lf.F[r][1] * dSFt[1][t]);
+      for (double (*M)[3] : {strainT, stressT}) {
+        double tmp[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        for (int r = 0; r < 3; ++r)
+          for (int t = 0; t < 3; ++t)
+            for (int w = 0; w < 3; ++w)
+              tmp[r][t] += lf.R[r][w] * M[w][t];
+        for (int r = 0; r < 3; ++r)
+          for (int t = 0; t < 3; ++t) {
+            M[r][t] = 0;
+            for (int w = 0; w < 3; ++w)
+              M[r][t] += tmp[r][w] * lf.R[t][w];
+          }
+      }
+      cellData[c][stressTensorIndex] = stressT[0][0];
+      cellData[c][stressTensorIndex + 1] = stressT[1][1];
+      cellData[c][stressTensorIndex + 2] = stressT[2][2];
+      cellData[c][stressTensorIndex + 3] = stressT[0][1];
+      cellData[c][stressTensorIndex + 4] = stressT[0][2];
+      cellData[c][stressTensorIndex + 5] = stressT[1][2];
+
+      // Normalize the direction (unguarded, as legacy does) and project the
+      // stress onto it.
+      const double mn =
+          std::sqrt(cellData[c][mtIndex] * cellData[c][mtIndex] +
+                    cellData[c][mtIndex + 1] * cellData[c][mtIndex + 1] +
+                    cellData[c][mtIndex + 2] * cellData[c][mtIndex + 2]);
+      for (int d = 0; d < 3; ++d)
+        cellData[c][mtIndex + d] /= mn;
+      double mtStress = 0.0;
+      for (int r = 0; r < 3; ++r)
+        for (int t = 0; t < 3; ++t)
+          mtStress +=
+              cellData[c][mtIndex + r] * cellData[c][mtIndex + t] * stressT[r][t];
+      cellData[c][mtStressIndex] = mtStress;
+
+      // Strain: diagonalize, rank by magnitude, store.
+      double eigStrain[3][3];
+      trbs::jacobiEigen3(strainT, eigStrain, trbs::kJacobiMtPlain);
+      int i1, i2, i3;
+      rankPrincipal(strainT, i1, i2, i3);
+      const double s1 = strainT[i1][i1], s2 = strainT[i2][i2];
+      double perp[3] = {
+          lf.R[1][2] * eigStrain[2][i1] - lf.R[2][2] * eigStrain[1][i1],
+          lf.R[2][2] * eigStrain[0][i1] - lf.R[0][2] * eigStrain[2][i1],
+          lf.R[0][2] * eigStrain[1][i1] - lf.R[1][2] * eigStrain[0][i1]};
+      const double pn =
+          std::sqrt(perp[0] * perp[0] + perp[1] * perp[1] + perp[2] * perp[2]);
+      if (std::fabs(pn) < 0.0001)
+        for (int d = 0; d < 3; ++d)
+          perp[d] = eigStrain[d][i1];
+      cellData[c][variableIndex(0, 2)] =
+          std::fabs(s1) < 0.0000001 ? 0.0 : 1 - std::fabs(s2 / s1);
+      if (storeDirs) {
+        const size_t nStrain = numVariableIndex(1);
+        if (nStrain >= 1)
+          storeDirection(cellData, c, variableIndex(1, 0), eigStrain, i1, s1);
+        if (nStrain == 3)
+          storeDirection(cellData, c, variableIndex(1, 2), eigStrain, i2, s2);
+        if (nStrain >= 2) {
+          // Note: legacy stores the *maximal* value alongside the
+          // perpendicular direction here, not the second one.
+          const size_t at = variableIndex(1, 1);
+          for (int d = 0; d < 3; ++d)
+            cellData[c][at + d] = perp[d];
+          cellData[c][at + 3] = s1;
+        }
+      }
+      cellData[c][areaRatioIndex] = area / el.restArea;
+      cellData[c][isoEnergyIndex] =
+          (lame.lambdaT / 2) * an.trE * an.trE + lame.mioT * an.I2;
+      cellData[c][anisoEnergyIndex] =
+          (dLambda / 2) * an.I4 * an.trE + dMio * an.I5;
+    }
+
+    // Second sweep: the neighbour-weighted stress, then the stress anisotropy
+    // and directions. Legacy's neighbour guard is the always-false
+    // `size_t > -1` here too (README item 13), so its averaging never runs;
+    // this one does.
+    double totalIso = 0, totalAniso = 0;
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      totalIso += cellData[c][isoEnergyIndex];
+      totalAniso += cellData[c][anisoEnergyIndex];
+    }
+    const double weight = parameter(5);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      double S[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+      size_t counter = 0;
+      for (size_t w : T.cell(c).walls) {
+        const size_t nb = T.wall(w).otherCell(c);
+        if (Tissue::isBackground(nb))
+          continue;
+        S[0][0] += weight * cellData[nb][stressTensorIndex];
+        S[1][1] += weight * cellData[nb][stressTensorIndex + 1];
+        S[2][2] += weight * cellData[nb][stressTensorIndex + 2];
+        S[0][1] += weight * cellData[nb][stressTensorIndex + 3];
+        S[2][0] += weight * cellData[nb][stressTensorIndex + 4];
+        S[1][2] += weight * cellData[nb][stressTensorIndex + 5];
+        ++counter;
+      }
+      if (counter != 0) {
+        S[0][0] /= counter;
+        S[1][1] /= counter;
+        S[2][2] /= counter;
+        S[0][1] /= counter;
+        S[2][0] /= counter;
+        S[1][2] /= counter;
+      }
+      S[0][0] += (1 - weight) * cellData[c][stressTensorIndex];
+      S[1][1] += (1 - weight) * cellData[c][stressTensorIndex + 1];
+      S[2][2] += (1 - weight) * cellData[c][stressTensorIndex + 2];
+      S[0][1] += (1 - weight) * cellData[c][stressTensorIndex + 3];
+      S[2][0] += (1 - weight) * cellData[c][stressTensorIndex + 4];
+      S[1][2] += (1 - weight) * cellData[c][stressTensorIndex + 5];
+      S[0][2] = S[2][0];
+      S[1][0] = S[0][1];
+      S[2][1] = S[1][2];
+      double eig[3][3];
+      trbs::jacobiEigen3(S, eig, trbs::kJacobiMtPlainTop);
+      int i1, i2, i3;
+      rankPrincipal(S, i1, i2, i3);
+      const double v1 = S[i1][i1], v2 = S[i2][i2];
+      cellData[c][variableIndex(0, 3)] =
+          std::fabs(v1) < 0.000001 ? 0.0 : 1 - std::fabs(v2 / v1);
+      if (storeDirs) {
+        if (numVariableIndex(2) >= 1)
+          storeDirection(cellData, c, variableIndex(2, 0), eig, i1, v1);
+        if (numVariableIndex(2) == 2)
+          storeDirection(cellData, c, variableIndex(2, 1), eig, i2, v2);
+      }
+    }
+    // Cell 0's own energies are overwritten with the tissue totals.
+    cellData[0][isoEnergyIndex] = totalIso;
+    cellData[0][anisoEnergyIndex] = totalAniso;
+  }
+
+private:
+  static void rankPrincipal(const double A[3][3], int &i1, int &i2, int &i3) {
+    i1 = 0;
+    if (std::fabs(A[1][1]) > std::fabs(A[i1][i1]))
+      i1 = 1;
+    if (std::fabs(A[2][2]) > std::fabs(A[i1][i1]))
+      i1 = 2;
+    i2 = (i1 + 1) % 3;
+    i3 = (i1 + 2) % 3;
+    if (std::fabs(A[i3][i3]) > std::fabs(A[i2][i2]))
+      std::swap(i2, i3);
+  }
+  static void storeDirection(Matrix &cellData, size_t c, size_t at,
+                             const double eig[3][3], int col, double value) {
+    for (int d = 0; d < 3; ++d)
+      cellData[c][at + d] = eig[d][col];
+    cellData[c][at + 3] = value;
+  }
+};
+TISSUE_REGISTER_REACTION(VertexFromTRBSMT, "VertexFromTRBSMT")
 
 } // namespace
 } // namespace tissue

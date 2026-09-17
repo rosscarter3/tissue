@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**173 names registered here; 176 classes outstanding.**
+**174 names registered here; 175 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -28,7 +28,7 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
-| `legacy/mechanicalTRBS.cc` | 4 |
+| `legacy/mechanicalTRBS.cc` | 3 |
 | `legacy/degradation.cc` | 2 |
 | `legacy/hypocotyl3D.cc` | 1 |
 
@@ -242,10 +242,9 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Initiation::RandomBoolean` — `Initiation::RandomBoolean`
 - `Initiation::RandomBooleanBiased` — `Initiation::RandomBooleanBiased`
 
-### `legacy/mechanicalTRBS.cc` (4)
+### `legacy/mechanicalTRBS.cc` (3)
 
 - `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBSMT` — `VertexFromTRBSMT`
 - `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
 - `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
 

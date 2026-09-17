@@ -547,3 +547,58 @@ material without center triangulation), `VertexFromTRLScenterTriangulationMT`,
 all but a simulated-annealing optimiser over the anisotropy direction, with
 its own temperature and annealing-rate parameters - and
 `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`.
+
+### `VertexFromTRBSMT`, 2026-09-17
+
+The same transversely isotropic material with no center triangulation: the
+cell is one triangle and its three walls are the edges, so everything the
+center-triangulated version defers to an `update()` pass happens in `derivs()`
+here - there is only ever one element per cell to average over.
+
+Forces are exact against legacy (0.000e+00), for both material flags this
+variant supports.
+
+The stored diagnostics - strain and stress anisotropy, area ratio, the two
+energies, the stress projected on the fibre, the stress tensor - are written
+from `derivs`, and legacy samples them one derivative evaluation later than v2
+does (README item 5 again). That is not a formula difference and it is
+measurable as such: the gap is exactly linear in the step size, halving with
+it, on the area ratio at the first print -
+
+    h          legacy      v2          difference
+    0.001      0.97536     0.975396    3.600e-05
+    0.0005     0.975367    0.975386    1.900e-05
+    0.00025    0.975371    0.97538     9.000e-06
+
+- and the vertex trajectory is bit-exact throughout.
+
+Three more legacy behaviours reproduced rather than corrected:
+
+- The fibre is pulled back with `F^T a` here, where
+  `VertexFromTRBScenterTriangulationMT` uses the cofactor of F and
+  `...ConcentrationHillMT` uses a barycentric map. Three variants of the same
+  material, three different pullbacks. Legacy also normalizes the result
+  twice, which makes this variant's degenerate-direction fallback
+  unreachable, so there is none in the port.
+- MT update flag 1 writes another hard-coded four-cell setup, and another
+  parameter collision: cells 0 and 2 take their angle from parameter 5, which
+  is also the neighbour weight, and cells 1 and 3 from parameter 8. Cells
+  beyond the fourth are left alone entirely.
+- After the per-cell loop, **cell 0's iso and aniso energy slots are
+  overwritten with the tissue totals**, destroying that cell's own values.
+- Legacy stores the *maximal* strain value alongside the perpendicular
+  direction, not the second one, where the center-triangulated variant stores
+  the second.
+
+Its neighbour-weighted stress pass carries the same dead
+`size_t > -1` guard as the center-triangulated one (README item 13) and is
+fixed the same way.
+
+While porting it, legacy's four Jacobi loops became five, so they are now one
+`jacobiEigen3(A, eig, style)` with five named styles in `trbs_core.h`. No two
+of legacy's loops are the same - they differ in the rotation formula
+(`0.5 atan` vs half-angle), in the angle used for a degenerate pair (pi/4 with
+pi spelled 3.1415 in one place and 3.14159265 in another), in whether the
+pivot is taken at the top of the loop or refreshed at the bottom, and in
+whether the eigenvector columns are renormalized. The consolidation was
+checked by re-running every TRBS harness at 0.000e+00 first.

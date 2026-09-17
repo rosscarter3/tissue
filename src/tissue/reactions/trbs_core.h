@@ -396,6 +396,27 @@ inline BarycentricFibre barycentricFibre(const LocalFrame &lf,
   return out;
 }
 
+
+// A third way legacy pulls the fibre back to the rest frame, in
+// VertexFromTRBSMT: F^T a, rather than the cofactor of F
+// (VertexFromTRBScenterTriangulationMT) or the barycentric map
+// (VertexFromTRBScenterTriangulationConcentrationHillMT). Legacy normalizes
+// the result twice - the second pass is a no-op, and it makes that variant's
+// degenerate-direction fallback unreachable, so there is none here.
+inline void fibrePullbackTransposeF(const LocalFrame &lf,
+                                    const double dirGlobal[3],
+                                    double aRest[2]) {
+  double aLocal[3];
+  for (int j = 0; j < 3; ++j)
+    aLocal[j] = lf.R[0][j] * dirGlobal[0] + lf.R[1][j] * dirGlobal[1] +
+                lf.R[2][j] * dirGlobal[2];
+  aRest[0] = lf.F[0][0] * aLocal[0] + lf.F[1][0] * aLocal[1];
+  aRest[1] = lf.F[0][1] * aLocal[0] + lf.F[1][1] * aLocal[1];
+  const double n = std::sqrt(aRest[0] * aRest[0] + aRest[1] * aRest[1]);
+  aRest[0] /= n;
+  aRest[1] /= n;
+}
+
 // Build the strain invariants from a fibre direction already in the rest
 // frame (the barycentric pullback above supplies one).
 inline AnisoTerms anisotropyInvariantsFrom(const LocalFrame &lf,
@@ -588,79 +609,48 @@ inline void invariantAnisotropicForce(const Element &e, const LocalFrame &lf,
     }
 }
 
-// Jacobi diagonalization of a symmetric 3x3 (legacy mechanicalTRBS.cc
-// 1269-1334). A is overwritten with the diagonal form and eig's columns hold
-// the eigenvectors. A symmetric 3x3 needs only a handful of sweeps; the cap
-// bounds the cost when an eigenvalue pair is degenerate.
-inline void jacobiEigen3(double A[3][3], double eig[3][3]) {
-  for (int r = 0; r < 3; ++r)
-    for (int t = 0; t < 3; ++t)
-      eig[r][t] = (r == t) ? 1.0 : 0.0;
-  double pivot = 1.0;
-  const double pi = 3.1415;
-  int iterations = 0;
-  while (pivot > 0.00001 && ++iterations < 20) {
-    int I = 1, J = 0;
-    pivot = std::fabs(A[1][0]);
-    if (std::fabs(A[2][0]) > pivot) {
-      pivot = std::fabs(A[2][0]);
-      I = 2;
-      J = 0;
-    }
-    if (std::fabs(A[2][1]) > pivot) {
-      pivot = std::fabs(A[2][1]);
-      I = 2;
-      J = 1;
-    }
-    double rotAngle;
-    if (std::fabs(A[I][I] - A[J][J]) < 0.00001)
-      rotAngle = pi / 4;
-    else
-      rotAngle = 0.5 * std::atan((2 * A[I][J]) / (A[J][J] - A[I][I]));
-    const double Si = std::sin(rotAngle);
-    const double Co = std::cos(rotAngle);
-    double rot[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-    rot[I][I] = Co;
-    rot[J][J] = Co;
-    rot[I][J] = Si;
-    rot[J][I] = -Si;
-    double tmp[3][3];
-    for (int r = 0; r < 3; ++r)
-      for (int t = 0; t < 3; ++t) {
-        tmp[r][t] = 0.0;
-        for (int w = 0; w < 3; ++w)
-          tmp[r][t] += A[r][w] * rot[w][t];
-      }
-    for (int r = 0; r < 3; ++r)
-      for (int t = 0; t < 3; ++t) {
-        A[r][t] = 0.0;
-        for (int w = 0; w < 3; ++w)
-          A[r][t] += rot[w][r] * tmp[w][t];
-      }
-    for (int r = 0; r < 3; ++r)
-      for (int t = 0; t < 3; ++t)
-        tmp[r][t] = eig[r][t];
-    for (int r = 0; r < 3; ++r)
-      for (int t = 0; t < 3; ++t) {
-        eig[r][t] = 0.0;
-        for (int w = 0; w < 3; ++w)
-          eig[r][t] += tmp[r][w] * rot[w][t];
-      }
-  }
-}
-
-// The other Jacobi legacy uses, in the MT update pass: half-angle formulas
-// and a 1e-6 pivot threshold, with the eigenvector columns normalized
-// afterwards. It is kept separate from jacobiEigen3 because the two are not
-// interchangeable at the last bit, and each reaction is validated against the
-// one it actually uses.
+// Jacobi diagonalization of a symmetric 3x3. A is overwritten with the
+// diagonal form and eig's columns hold the eigenvectors.
 //
-// Legacy writes the loop twice with a difference that matters: the stress
-// pass finds the pivot at the top, so it always rotates once and performs one
-// extra rotation with the final sub-threshold pivot; the strain pass finds it
-// before the loop and refreshes at the bottom, so it stops without that extra
-// rotation. Both forms are here. Neither of legacy's loops is bounded - a
-// degenerate tensor hangs the simulation - so both cap at 50 sweeps.
+// Legacy writes this loop four times, and no two are the same. The
+// differences are small, none of them look deliberate, and all of them change
+// the last digits - so rather than keep four near-identical copies they are
+// one function and four named styles, which at least makes the differences
+// legible:
+//
+//   - the rotation angle comes either from 0.5 atan(2 A_IJ/(A_JJ - A_II)) or
+//     from half-angle formulas on the same quantity;
+//   - the angle used when the two diagonal entries are within eps is written
+//     as pi/4 with pi spelled 3.1415 in one place and 3.14159265 in another;
+//   - the pivot is found either at the top of the loop (so one extra rotation
+//     always runs, the last one below threshold) or before it and refreshed
+//     at the bottom (so it stops without that rotation);
+//   - the eigenvector columns are renormalized afterwards, or not.
+//
+// Legacy bounds none of these loops, so a degenerate tensor hangs the run.
+// All four are capped here.
+struct JacobiStyle {
+  double eps;
+  bool halfAngle;         // half-angle formulas instead of 0.5*atan
+  double degenerateAngle; // used when |A_II - A_JJ| < eps (atan style only)
+  bool pivotFirst;        // find the pivot at the top of the loop
+  bool normalize;         // renormalize the eigenvector columns at the end
+};
+
+// The isotropic TRBS stress path (mechanicalTRBS.cc:1269).
+inline constexpr JacobiStyle kJacobiIsotropic{1e-5, false, 3.1415 / 4, true,
+                                              false};
+// VertexFromTRBScenterTriangulationMT's update, stress pass.
+inline constexpr JacobiStyle kJacobiMtStress{1e-6, true, 0.0, true, true};
+// ... and its strain pass.
+inline constexpr JacobiStyle kJacobiMtStrain{1e-6, true, 0.0, false, true};
+// VertexFromTRBSMT's strain pass, and ...
+inline constexpr JacobiStyle kJacobiMtPlain{1e-6, false, 3.14159265 / 4, false,
+                                            false};
+// ... its stress pass, which takes the pivot at the top instead.
+inline constexpr JacobiStyle kJacobiMtPlainTop{1e-6, false, 3.14159265 / 4,
+                                               true, false};
+
 namespace detail {
 
 inline bool jacobiPivot(const double A[3][3], double eps, int &I, int &J,
@@ -682,17 +672,26 @@ inline bool jacobiPivot(const double A[3][3], double eps, int &I, int &J,
 }
 
 inline void jacobiRotate(double A[3][3], double eig[3][3], int I, int J,
-                         double eps) {
-  const double root2 = 0.70710678118;
+                         const JacobiStyle &st) {
   double Si, Co;
-  if (std::fabs(A[I][I] - A[J][J]) < eps) {
-    Si = root2;
-    Co = root2;
+  const bool degenerate = std::fabs(A[I][I] - A[J][J]) < st.eps;
+  if (st.halfAngle) {
+    const double root2 = 0.70710678118;
+    if (degenerate) {
+      Si = root2;
+      Co = root2;
+    } else {
+      double t = (2 * A[I][J]) / (A[J][J] - A[I][I]);
+      t = 1 / std::sqrt(1 + t * t);
+      Si = t < 1 ? root2 * std::sqrt(1 - t) : root2 * std::sqrt(t - 1);
+      Co = root2 * std::sqrt(1 + t);
+    }
   } else {
-    double t = (2 * A[I][J]) / (A[J][J] - A[I][I]);
-    t = 1 / std::sqrt(1 + t * t);
-    Si = t < 1 ? root2 * std::sqrt(1 - t) : root2 * std::sqrt(t - 1);
-    Co = root2 * std::sqrt(1 + t);
+    const double angle =
+        degenerate ? st.degenerateAngle
+                   : 0.5 * std::atan((2 * A[I][J]) / (A[J][J] - A[I][I]));
+    Si = std::sin(angle);
+    Co = std::cos(angle);
   }
   double rot[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
   rot[I][I] = Co;
@@ -723,44 +722,36 @@ inline void jacobiRotate(double A[3][3], double eig[3][3], int I, int J,
     }
 }
 
-inline void normalizeColumns(double eig[3][3]) {
-  for (int col = 0; col < 3; ++col) {
-    const double nrm = std::sqrt(eig[0][col] * eig[0][col] +
-                                 eig[1][col] * eig[1][col] +
-                                 eig[2][col] * eig[2][col]);
-    if (nrm > 0)
-      for (int r = 0; r < 3; ++r)
-        eig[r][col] /= nrm;
-  }
-}
-
 } // namespace detail
 
-inline void jacobiStressStyle(double A[3][3], double eig[3][3], double eps) {
+inline void jacobiEigen3(double A[3][3], double eig[3][3],
+                         const JacobiStyle &st) {
   for (int r = 0; r < 3; ++r)
     for (int t = 0; t < 3; ++t)
       eig[r][t] = (r == t) ? 1.0 : 0.0;
-  double pivot = 1.0;
   int I = 1, J = 0, sweeps = 0;
-  while (pivot > eps && ++sweeps < 50) {
-    detail::jacobiPivot(A, eps, I, J, pivot);
-    detail::jacobiRotate(A, eig, I, J, eps);
+  double pivot = 1.0;
+  if (st.pivotFirst) {
+    while (pivot > st.eps && ++sweeps < 50) {
+      detail::jacobiPivot(A, st.eps, I, J, pivot);
+      detail::jacobiRotate(A, eig, I, J, st);
+    }
+  } else {
+    bool go = detail::jacobiPivot(A, st.eps, I, J, pivot);
+    while (go && ++sweeps < 50) {
+      detail::jacobiRotate(A, eig, I, J, st);
+      go = detail::jacobiPivot(A, st.eps, I, J, pivot);
+    }
   }
-  detail::normalizeColumns(eig);
-}
-
-inline void jacobiStrainStyle(double A[3][3], double eig[3][3], double eps) {
-  for (int r = 0; r < 3; ++r)
-    for (int t = 0; t < 3; ++t)
-      eig[r][t] = (r == t) ? 1.0 : 0.0;
-  double pivot;
-  int I, J, sweeps = 0;
-  bool go = detail::jacobiPivot(A, eps, I, J, pivot);
-  while (go && ++sweeps < 50) {
-    detail::jacobiRotate(A, eig, I, J, eps);
-    go = detail::jacobiPivot(A, eps, I, J, pivot);
-  }
-  detail::normalizeColumns(eig);
+  if (st.normalize)
+    for (int col = 0; col < 3; ++col) {
+      const double nrm = std::sqrt(eig[0][col] * eig[0][col] +
+                                   eig[1][col] * eig[1][col] +
+                                   eig[2][col] * eig[2][col]);
+      if (nrm > 0)
+        for (int r = 0; r < 3; ++r)
+          eig[r][col] /= nrm;
+    }
 }
 
 // Principal direction, anisotropy a = 1 - |s2|/|s1|, and the signed s1, from
@@ -783,7 +774,7 @@ struct Principal {
 
 inline Principal principalOf(double A[3][3]) {
   double eig[3][3];
-  jacobiEigen3(A, eig);
+  jacobiEigen3(A, eig, kJacobiIsotropic);
   int order[3] = {0, 1, 2};
   const double ev[3] = {A[0][0], A[1][1], A[2][2]};
   for (int r = 0; r < 3; ++r)
