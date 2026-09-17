@@ -104,6 +104,8 @@ struct LocalFrame {
   double shapeResting[3][2];
   double F[2][2]; // deformation gradient, rest -> current
   double R[3][3]; // local -> global (columns are the element's x, y, z axes)
+  double P[3];    // rest triangle in 2D: node 0 at (Pa, Pc), node 2 at (Pb, 0)
+  double Q[3];    // the same for the current configuration
 };
 
 inline LocalFrame localFrameOf(const Element &e) {
@@ -164,6 +166,12 @@ inline LocalFrame localFrameOf(const Element &e) {
     lf.R[d][1] = Y[d];
     lf.R[d][2] = Z[d];
   }
+  lf.P[0] = Pa;
+  lf.P[1] = Pb;
+  lf.P[2] = Pc;
+  lf.Q[0] = Qa;
+  lf.Q[1] = Qb;
+  lf.Q[2] = Qc;
   return lf;
 }
 
@@ -274,22 +282,24 @@ inline void addCauchyStress(const Element &e, double lambda, double mio,
 // this uses the seeded generator the rest of the rewrite shares, so a run
 // stays reproducible. It is a degenerate fallback, and the validation runs do
 // not reach it.
-//
-// deltaF receives the three node forces to add; the returned invariants are
-// what the callers use for the stored energies and stress measures.
 struct AnisoTerms {
   double trE;      // I1
   double I2, I4, I5;
   double aRest[2]; // fibre direction in the rest frame, normalized
-  double deltaS[2][2];
+  double aa[2][2]; // the dyad a (x) a
+  double E[2][2];  // Green-Lagrange strain
+  double Eaa[2][2], aaE[2][2];
+  double deltaS[2][2]; // filled by whichever form the caller asks for
 };
 
-inline AnisoTerms anisotropicDeltaForce(const Element &e, const LocalFrame &lf,
-                                        double dLambda, double dMio,
-                                        const double dirGlobal[3],
-                                        double deltaF[3][3]) {
+// Everything the fibre contributes that is common to the variants: the
+// direction pulled back into the rest frame and the strain invariants built
+// from it. The anisotropic stress deltaS is *not* set here - legacy writes it
+// two different ways (see below) and each reaction is validated against its
+// own.
+inline AnisoTerms anisotropyInvariants(const LocalFrame &lf,
+                                       const double dirGlobal[3]) {
   AnisoTerms out;
-  // Global -> element frame, then rest configuration via cofactor(F).
   double aLocal[3];
   for (int j = 0; j < 3; ++j)
     aLocal[j] = lf.R[0][j] * dirGlobal[0] + lf.R[1][j] * dirGlobal[1] +
@@ -307,11 +317,12 @@ inline AnisoTerms anisotropicDeltaForce(const Element &e, const LocalFrame &lf,
   }
   out.aRest[0] = a[0];
   out.aRest[1] = a[1];
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t)
+      out.aa[r][t] = a[r] * a[t];
 
-  const double aa[2][2] = {{a[0] * a[0], a[0] * a[1]},
-                           {a[1] * a[0], a[1] * a[1]}};
-  double E[2][2];
-  greenStrain(lf, E);
+  greenStrain(lf, out.E);
+  const double(&E)[2][2] = out.E;
   out.trE = E[0][0] + E[1][1];
   const double E2[2][2] = {
       {E[0][0] * E[0][0] + E[0][1] * E[1][0],
@@ -321,46 +332,260 @@ inline AnisoTerms anisotropicDeltaForce(const Element &e, const LocalFrame &lf,
   out.I2 = E2[0][0] + E2[1][1];
   out.I5 = a[0] * a[0] * E2[0][0] + a[0] * a[1] * (E2[0][1] + E2[1][0]) +
            a[1] * a[1] * E2[1][1];
-  const double atEa = a[0] * a[0] * E[0][0] +
-                      a[0] * a[1] * (E[0][1] + E[1][0]) + a[1] * a[1] * E[1][1];
-  out.I4 = atEa;
+  out.I4 = a[0] * a[0] * E[0][0] + a[0] * a[1] * (E[0][1] + E[1][0]) +
+           a[1] * a[1] * E[1][1];
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t) {
+      out.Eaa[r][t] = E[r][0] * out.aa[0][t] + E[r][1] * out.aa[1][t];
+      out.aaE[r][t] = out.aa[r][0] * E[0][t] + out.aa[r][1] * E[1][t];
+    }
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t)
+      out.deltaS[r][t] = 0.0;
+  return out;
+}
 
-  const double Eaa[2][2] = {
-      {E[0][0] * aa[0][0] + E[0][1] * aa[1][0],
-       E[0][0] * aa[0][1] + E[0][1] * aa[1][1]},
-      {E[1][0] * aa[0][0] + E[1][1] * aa[1][0],
-       E[1][0] * aa[0][1] + E[1][1] * aa[1][1]}};
-  const double aaE[2][2] = {
-      {aa[0][0] * E[0][0] + aa[0][1] * E[1][0],
-       aa[0][0] * E[0][1] + aa[0][1] * E[1][1]},
-      {aa[1][0] * E[0][0] + aa[1][1] * E[1][0],
-       aa[1][0] * E[0][1] + aa[1][1] * E[1][1]}};
-  // Equipartitioned anisotropic stress. The atEa term sits on the diagonal
-  // only, as legacy writes it.
-  out.deltaS[0][0] =
-      (dLambda / 2) * (out.trE * aa[0][0] + atEa) + dMio * (Eaa[0][0] + aaE[0][0]);
-  out.deltaS[0][1] =
-      (dLambda / 2) * (out.trE * aa[0][1]) + dMio * (Eaa[0][1] + aaE[0][1]);
-  out.deltaS[1][0] =
-      (dLambda / 2) * (out.trE * aa[1][0]) + dMio * (Eaa[1][0] + aaE[1][0]);
-  out.deltaS[1][1] =
-      (dLambda / 2) * (out.trE * aa[1][1] + atEa) + dMio * (Eaa[1][1] + aaE[1][1]);
 
-  // 2nd Piola-Kirchhoff, pushed through the shape vectors and rotated out.
+// The *other* way legacy pulls the fibre direction back to the rest frame,
+// used by VertexFromTRBScenterTriangulationConcentrationHillMT. Instead of
+// applying the cofactor of F to the direction, it takes the point one unit
+// along the fibre from the element's centroid, expresses it in barycentric
+// coordinates of the current triangle, maps those onto the rest triangle, and
+// subtracts the rest centroid.
+//
+// The two agree for a rigid motion and differ under shear, but the more
+// consequential difference is that this one keeps the *length* of the result:
+// the caller scales the anisotropic Lame pair by it, so an element whose
+// deformation shortens the fibre direction also weakens its anisotropy.
+// `measure` is that length, returned before normalization.
+struct BarycentricFibre {
+  double aRest[2];
+  double measure;
+};
+
+inline BarycentricFibre barycentricFibre(const LocalFrame &lf,
+                                         const double dirGlobal[3]) {
+  const double Pa = lf.P[0], Pb = lf.P[1], Pc = lf.P[2];
+  const double Qa = lf.Q[0], Qb = lf.Q[1], Qc = lf.Q[2];
+  double aLocal[3];
+  for (int j = 0; j < 3; ++j)
+    aLocal[j] = lf.R[0][j] * dirGlobal[0] + lf.R[1][j] * dirGlobal[1] +
+                lf.R[2][j] * dirGlobal[2];
+  const double cmCur[2] = {(Qa + Qb) / 3, Qc / 3};
+  const double aCur[2] = {cmCur[0] + aLocal[0], cmCur[1] + aLocal[1]};
+  const double svCur[3][3] = {{0, 1 / Qc, 0},
+                              {-1 / Qb, (Qa - Qb) / (Qb * Qc), 1},
+                              {1 / Qb, -Qa / (Qb * Qc), 0}};
+  double bari[3];
+  for (int i = 0; i < 3; ++i)
+    bari[i] = svCur[i][0] * aCur[0] + svCur[i][1] * aCur[1] + svCur[i][2];
+  const double aRestPoint[2] = {Pa * bari[0] + Pb * bari[2], Pc * bari[0]};
+  BarycentricFibre out;
+  out.aRest[0] = aRestPoint[0] - (Pa + Pb) / 3;
+  out.aRest[1] = aRestPoint[1] - Pc / 3;
+  out.measure = std::sqrt(out.aRest[0] * out.aRest[0] +
+                          out.aRest[1] * out.aRest[1]);
+  if (out.measure < 0.001) { // degenerate: pick a direction at random
+    const double angle = random::Rnd() * 2.0 * 3.14159265;
+    out.aRest[0] = std::cos(angle);
+    out.aRest[1] = std::sin(angle);
+  } else {
+    out.aRest[0] /= out.measure;
+    out.aRest[1] /= out.measure;
+  }
+  return out;
+}
+
+// Build the strain invariants from a fibre direction already in the rest
+// frame (the barycentric pullback above supplies one).
+inline AnisoTerms anisotropyInvariantsFrom(const LocalFrame &lf,
+                                           const double aRest[2]) {
+  AnisoTerms out;
+  out.aRest[0] = aRest[0];
+  out.aRest[1] = aRest[1];
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t)
+      out.aa[r][t] = aRest[r] * aRest[t];
+  greenStrain(lf, out.E);
+  const double(&E)[2][2] = out.E;
+  out.trE = E[0][0] + E[1][1];
+  const double E2[2][2] = {
+      {E[0][0] * E[0][0] + E[0][1] * E[1][0],
+       E[0][0] * E[0][1] + E[0][1] * E[1][1]},
+      {E[1][0] * E[0][0] + E[1][1] * E[1][0],
+       E[1][0] * E[0][1] + E[1][1] * E[1][1]}};
+  out.I2 = E2[0][0] + E2[1][1];
+  out.I5 = aRest[0] * aRest[0] * E2[0][0] +
+           aRest[0] * aRest[1] * (E2[0][1] + E2[1][0]) +
+           aRest[1] * aRest[1] * E2[1][1];
+  out.I4 = aRest[0] * aRest[0] * E[0][0] +
+           aRest[0] * aRest[1] * (E[0][1] + E[1][0]) +
+           aRest[1] * aRest[1] * E[1][1];
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t) {
+      out.Eaa[r][t] = E[r][0] * out.aa[0][t] + E[r][1] * out.aa[1][t];
+      out.aaE[r][t] = out.aa[r][0] * E[0][t] + out.aa[r][1] * E[1][t];
+    }
+  for (int r = 0; r < 2; ++r)
+    for (int t = 0; t < 2; ++t)
+      out.deltaS[r][t] = 0.0;
+  return out;
+}
+
+// The equipartitioned anisotropic stress, as VertexFromTRBScenterTriangulationMT
+// writes it. The atEa term sits on the diagonal only.
+inline void equipartitionedDeltaS(AnisoTerms &t, double dLambda, double dMio) {
+  for (int r = 0; r < 2; ++r)
+    for (int c = 0; c < 2; ++c)
+      t.deltaS[r][c] = (dLambda / 2) * (t.trE * t.aa[r][c]) +
+                       dMio * (t.Eaa[r][c] + t.aaE[r][c]);
+  t.deltaS[0][0] += (dLambda / 2) * t.I4;
+  t.deltaS[1][1] += (dLambda / 2) * t.I4;
+}
+
+// The form VertexFromTRBScenterTriangulationConcentrationHillMT uses instead:
+// the shear term is halved and a -(dLambda + dMio) atEa a(x)a term subtracted.
+// The two are not the same material law; each is kept with the reaction it
+// belongs to.
+inline void hillVariantDeltaS(AnisoTerms &t, double dLambda, double dMio) {
+  for (int r = 0; r < 2; ++r)
+    for (int c = 0; c < 2; ++c)
+      t.deltaS[r][c] = dLambda * (t.trE * t.aa[r][c]) +
+                       (dMio / 2) * (t.Eaa[r][c] + t.aaE[r][c]) -
+                       (dLambda + dMio) * t.I4 * t.aa[r][c];
+  t.deltaS[0][0] += dLambda * t.I4;
+  t.deltaS[1][1] += dLambda * t.I4;
+}
+
+// Push an anisotropic stress through to the three node forces: the 2nd
+// Piola-Kirchhoff tensor, contracted with the rest shape vectors and rotated
+// back to the global frame, negated.
+inline void pushDeltaS(const Element &e, const LocalFrame &lf,
+                       const double deltaS[2][2], double deltaF[3][3]) {
   double TPK[2][2];
-  TPK[0][0] = e.restArea * (lf.F[0][0] * out.deltaS[0][0] + lf.F[0][1] * out.deltaS[1][0]);
-  TPK[1][0] = e.restArea * (lf.F[1][0] * out.deltaS[0][0] + lf.F[1][1] * out.deltaS[1][0]);
-  TPK[0][1] = e.restArea * (lf.F[0][0] * out.deltaS[0][1] + lf.F[0][1] * out.deltaS[1][1]);
-  TPK[1][1] = e.restArea * (lf.F[1][0] * out.deltaS[0][1] + lf.F[1][1] * out.deltaS[1][1]);
+  for (int r = 0; r < 2; ++r)
+    for (int c = 0; c < 2; ++c)
+      TPK[r][c] =
+          e.restArea * (lf.F[r][0] * deltaS[0][c] + lf.F[r][1] * deltaS[1][c]);
   for (int i = 0; i < 3; ++i) {
-    const double lx = TPK[0][0] * lf.shapeResting[i][0] +
-                      TPK[0][1] * lf.shapeResting[i][1];
-    const double ly = TPK[1][0] * lf.shapeResting[i][0] +
-                      TPK[1][1] * lf.shapeResting[i][1];
+    const double lx =
+        TPK[0][0] * lf.shapeResting[i][0] + TPK[0][1] * lf.shapeResting[i][1];
+    const double ly =
+        TPK[1][0] * lf.shapeResting[i][0] + TPK[1][1] * lf.shapeResting[i][1];
     for (int d = 0; d < 3; ++d)
       deltaF[i][d] = -(lf.R[d][0] * lx + lf.R[d][1] * ly);
   }
-  return out;
+}
+
+// The equipartitioned correction end to end, for callers that want it in one
+// step.
+inline AnisoTerms anisotropicDeltaForce(const Element &e, const LocalFrame &lf,
+                                        double dLambda, double dMio,
+                                        const double dirGlobal[3],
+                                        double deltaF[3][3]) {
+  AnisoTerms t = anisotropyInvariants(lf, dirGlobal);
+  equipartitionedDeltaS(t, dLambda, dMio);
+  pushDeltaS(e, lf, t.deltaS, deltaF);
+  return t;
+}
+
+
+// The second anisotropic force legacy uses, in
+// VertexFromTRBScenterTriangulationConcentrationHillMT. Rather than pushing a
+// stress tensor through the shape vectors, it differentiates the invariants
+// I1, I4 and I5 directly with respect to the node positions and assembles
+//   dF = -[ dLambda (I4 dI1 + I1 dI4) + dMio dI5
+//           - (dMio + dLambda) I4 dI4 ] A_rest
+//
+// Transcribed as legacy writes it, including two things that look like slips
+// but change the answer, so are not "corrected" here: the rest and current
+// edge arrays are cyclically rotated just before this block while `cotan` and
+// `Delta` are not, and the derIprim1 accumulation multiplies by
+// position[m] inside a loop over i (so the i-sum only scales one position
+// vector).
+inline void invariantAnisotropicForce(const Element &e, const LocalFrame &lf,
+                                      double area, const double aRest[2],
+                                      double dLambda, double dMio,
+                                      double deltaF[3][3]) {
+  // Angle between the fibre and each rest shape vector.
+  double teta[3];
+  for (int i = 0; i < 3; ++i) {
+    const double sx = lf.shapeResting[i][0], sy = lf.shapeResting[i][1];
+    teta[i] = std::acos((sx * aRest[0] + sy * aRest[1]) /
+                        std::sqrt(sx * sx + sy * sy + 0.0000001));
+  }
+  // Legacy's cyclic rotation of the edge arrays.
+  const double rest[3] = {e.rest[1], e.rest[2], e.rest[0]};
+  const double len[3] = {e.cur[1], e.cur[2], e.cur[0]};
+  const double A = e.restArea;
+  const double Rcirc2 = (0.25 * len[0] * len[1] * len[2] / area) *
+                        (0.25 * len[0] * len[1] * len[2] / area);
+
+  // The index not in {a, b}; only read when a != b.
+  auto other = [](int a, int b) { return 3 - a - b; };
+  auto DD = [&](int a, int b) {
+    return a == b ? 0.25 * rest[a] * rest[a] / (A * A)
+                  : -0.5 * e.cot[other(a, b)] / A;
+  };
+  auto aD = [&](int i) { return 0.5 * std::cos(teta[i]) * rest[i] / A; };
+
+  double derIprim1[3][3], derIprim4[3][3], derIprim5[3][3];
+  for (int m = 0; m < 3; ++m) {
+    for (int coor = 0; coor < 3; ++coor)
+      derIprim1[m][coor] = 0;
+    for (int i = 0; i < 3; ++i) {
+      const double DiDm = DD(i, m);
+      for (int coor = 0; coor < 3; ++coor)
+        derIprim1[m][coor] += 2 * DiDm * e.pos[m][coor];
+    }
+  }
+  double Iprim4 = 0;
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) {
+      const double QiQj =
+          (i == j) ? Rcirc2 : Rcirc2 - len[other(i, j)] * len[other(i, j)] * 0.5;
+      Iprim4 += QiQj * aD(i) * aD(j);
+    }
+  for (int p = 0; p < 3; ++p) {
+    for (int coor = 0; coor < 3; ++coor)
+      derIprim4[p][coor] = 0;
+    for (int m = 0; m < 3; ++m)
+      for (int coor = 0; coor < 3; ++coor)
+        derIprim4[p][coor] += aD(m) * e.pos[m][coor];
+    for (int coor = 0; coor < 3; ++coor)
+      derIprim4[p][coor] *= 2 * aD(p);
+  }
+  for (int p = 0; p < 3; ++p) {
+    for (int coor = 0; coor < 3; ++coor)
+      derIprim5[p][coor] = 0;
+    for (int n = 0; n < 3; ++n)
+      for (int r = 0; r < 3; ++r)
+        for (int sIdx = 0; sIdx < 3; ++sIdx) {
+          const double QrQs = e.pos[r][0] * e.pos[sIdx][0] +
+                              e.pos[r][1] * e.pos[sIdx][1] +
+                              e.pos[r][2] * e.pos[sIdx][2];
+          const double DnDr = DD(n, r);
+          const double DsDp = DD(sIdx, p);
+          const double w =
+              2 * (DnDr * aD(sIdx) * aD(p) + DsDp * aD(r) * aD(n)) * QrQs;
+          for (int coor = 0; coor < 3; ++coor)
+            derIprim5[p][coor] += w * e.pos[n][coor];
+        }
+  }
+
+  const double I1 =
+      (e.delta[1] * e.cot[0] + e.delta[2] * e.cot[1] + e.delta[0] * e.cot[2]) /
+      (4 * A);
+  const double I4 = 0.5 * Iprim4 - 0.5;
+  for (int i = 0; i < 3; ++i)
+    for (int j = 0; j < 3; ++j) {
+      const double derI1 = 0.5 * derIprim1[i][j];
+      const double derI4 = 0.5 * derIprim4[i][j];
+      const double derI5 = 0.25 * derIprim5[i][j] - 0.5 * derIprim4[i][j];
+      deltaF[i][j] = (-dLambda * (I4 * derI1 + I1 * derI4) - dMio * derI5 +
+                      (dMio + dLambda) * I4 * derI4) *
+                     A;
+    }
 }
 
 // Jacobi diagonalization of a symmetric 3x3 (legacy mechanicalTRBS.cc
@@ -423,7 +648,6 @@ inline void jacobiEigen3(double A[3][3], double eig[3][3]) {
       }
   }
 }
-
 
 // The other Jacobi legacy uses, in the MT update pass: half-angle formulas
 // and a 1e-6 pivot threshold, with the eigenvector columns normalized

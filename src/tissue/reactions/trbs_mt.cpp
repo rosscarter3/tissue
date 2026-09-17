@@ -743,5 +743,254 @@ private:
 TISSUE_REGISTER_REACTION(VertexFromTRBScenterTriangulationMT,
                          "VertexFromTRBScenterTriangulationMT")
 
+// The same fibre-reinforced material with both moduli set by inhibitory Hill
+// functions of one cell concentration:
+//     Y_L = Y_L_min + Y_L_max K^n/(K^n + c^n),   likewise Y_T
+// so the species softens the wall along and across the fibre independently.
+//
+// Legacy writes this as its own ~1000-line copy, and it differs from
+// VertexFromTRBScenterTriangulationMT in four places that are easy to miss:
+//
+//  - the shear modulus convention is Y/(1+p) rather than Y/(2(1+p)), so the
+//    stiffness coefficients are (lambdaT + mioT, mioT);
+//  - the anisotropic stress uses a different formula (trbs::hillVariantDeltaS);
+//  - the trace that enters both stress terms is the cotangent form
+//    (sum Delta_i cot_i)/(4 A_rest), not the trace of the Green strain;
+//  - the true stress is scaled by detF here and by 1/detF there.
+//
+// Unlike the reaction above, the cell strain and stress are accumulated and
+// stored inside derivs() rather than in an update() pass.
+class VertexFromTRBScenterTriangulationConcentrationHillMT : public Reaction {
+public:
+  VertexFromTRBScenterTriangulationConcentrationHillMT(const ParameterList &p,
+                                                       const IndexLevels &i) {
+    const bool ok = (i.size() == 2 || i.size() == 6) && i[0].size() == 3 &&
+                    i[1].size() == 1;
+    if (!ok)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationConcentrationHillMT: level 0 "
+          "holds the wall length, the cell concentration and the MT direction "
+          "start index; level 1 the start of the center-triangulation cell "
+          "variables; optional levels 2-5 store the maximal strain, the 2nd "
+          "strain, the maximal stress and the 2nd stress (direction then "
+          "value, 4 cell variables each).");
+    if (p.size() != 8)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationConcentrationHillMT: uses eight "
+          "parameters (Y_L_min, Y_L_max, poisson_L, Y_T_min, Y_T_max, "
+          "poisson_T, K_hill, n_hill).");
+    std::vector<size_t> shape;
+    for (const auto &lvl : i)
+      shape.push_back(lvl.size());
+    configure("VertexFromTRBScenterTriangulationConcentrationHillMT", p, i, 8,
+              shape,
+              {"Y_mod_L_min", "Y_mod_L_max", "P_ratio_L", "Y_mod_T_min",
+               "Y_mod_T_max", "P_ratio_T", "K_hill", "n_hill"});
+  }
+
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(1, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &cellDerivs, Matrix &,
+              Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "VertexFromTRBScenterTriangulationConcentrationHillMT requires a 3D "
+          "tissue.");
+    const size_t wallLengthIndex = variableIndex(0, 0);
+    const size_t concIndex = variableIndex(0, 1);
+    const size_t mtIndex = variableIndex(0, 2);
+    const size_t comIndex = variableIndex(1, 0);
+    const size_t lengthInternalIndex = comIndex + 3;
+    const double kPow = std::pow(parameter(6), parameter(7));
+    const bool storeDirs = numVariableIndexLevel() == 6;
+
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      const CellTopo &cell = T.cell(c);
+      const size_t n = cell.numWall();
+      if (cell.numVertex() != n)
+        throw std::runtime_error(
+            "VertexFromTRBScenterTriangulationConcentrationHillMT: needs the "
+            "same number of vertices and walls.");
+      const double hill =
+          kPow / (kPow + std::pow(cellData[c][concIndex], parameter(7)));
+      const double youngL = parameter(0) + parameter(1) * hill;
+      const double youngT = parameter(3) + parameter(4) * hill;
+      const double poissonL = parameter(2), poissonT = parameter(5);
+      const double lambdaL = youngL * poissonL / (1 - poissonL * poissonL);
+      const double mioL = youngL / (1 + poissonL);
+      const double lambdaT = youngT * poissonT / (1 - poissonT * poissonT);
+      const double mioT = youngT / (1 + poissonT);
+      const double dLambda = lambdaL - lambdaT, dMio = mioL - mioT;
+      const double dir[3] = {cellData[c][mtIndex], cellData[c][mtIndex + 1],
+                             cellData[c][mtIndex + 2]};
+
+      double strainCell[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+      double stressCell[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+      double totalRestArea = 0;
+
+      for (size_t k = 0; k < n; ++k) {
+        const size_t k1 = (k + 1) % n;
+        const size_t v2 = cell.vertices[k];
+        const size_t v3 = cell.vertices[k1];
+        trbs::Element el;
+        for (size_t d = 0; d < 3; ++d) {
+          el.pos[0][d] = cellData[c][comIndex + d];
+          el.pos[1][d] = vertexData[v2][d];
+          el.pos[2][d] = vertexData[v3][d];
+        }
+        el.rest[0] = cellData[c][lengthInternalIndex + k];
+        el.rest[1] = wallData[cell.walls[k]][wallLengthIndex];
+        el.rest[2] = cellData[c][lengthInternalIndex + k1];
+        el.cur[0] = trbs::nodeDistance(el, 0, 1);
+        el.cur[1] = trbs::nodeDistance(el, 1, 2);
+        el.cur[2] = trbs::nodeDistance(el, 0, 2);
+        trbs::completeElement(el);
+
+        const trbs::LocalFrame lf = trbs::localFrameOf(el);
+        // This variant pulls the fibre back barycentrically and scales the
+        // anisotropic moduli by the length of the result.
+        const trbs::BarycentricFibre fib = trbs::barycentricFibre(lf, dir);
+        trbs::AnisoTerms an = trbs::anisotropyInvariantsFrom(lf, fib.aRest);
+        // Its trace is the cotangent form, not tr(E).
+        an.trE = (el.delta[1] * el.cot[0] + el.delta[2] * el.cot[1] +
+                  el.delta[0] * el.cot[2]) /
+                 (4.0 * el.restArea);
+        const double aLam = fib.measure * dLambda, aMio = fib.measure * dMio;
+        trbs::hillVariantDeltaS(an, aLam, aMio);
+        const double area0 =
+            0.25 * std::sqrt(std::max((el.cur[0] + el.cur[1] + el.cur[2]) *
+                                          (-el.cur[0] + el.cur[1] + el.cur[2]) *
+                                          (el.cur[0] - el.cur[1] + el.cur[2]) *
+                                          (el.cur[0] + el.cur[1] - el.cur[2]),
+                                      1e-12));
+        double deltaF[3][3];
+        trbs::invariantAnisotropicForce(el, lf, area0, fib.aRest, aLam, aMio,
+                                        deltaF);
+
+        double f[3][3];
+        trbs::elementForces(el, trbs::stiffnessFrom(el, lambdaT + mioT, mioT),
+                            f);
+        for (int node = 0; node < 3; ++node)
+          for (int d = 0; d < 3; ++d)
+            f[node][d] += deltaF[node][d];
+        for (int d = 0; d < 3; ++d) {
+          cellDerivs[c][comIndex + d] += f[0][d];
+          vertexDerivs[v2][d] += f[1][d];
+          vertexDerivs[v3][d] += f[2][d];
+        }
+
+        // True strain and true stress of this element, rotated out.
+        double B[2][2];
+        B[0][0] = lf.F[0][0] * lf.F[0][0] + lf.F[0][1] * lf.F[0][1];
+        B[0][1] = lf.F[0][0] * lf.F[1][0] + lf.F[0][1] * lf.F[1][1];
+        B[1][0] = lf.F[1][0] * lf.F[0][0] + lf.F[1][1] * lf.F[0][1];
+        B[1][1] = lf.F[1][0] * lf.F[1][0] + lf.F[1][1] * lf.F[1][1];
+        const double detB = B[0][0] * B[1][1] - B[1][0] * B[0][1];
+        double B2[2][2];
+        B2[0][0] = B[0][0] * B[0][0] + B[0][1] * B[1][0];
+        B2[0][1] = B[0][0] * B[0][1] + B[0][1] * B[1][1];
+        B2[1][0] = B[1][0] * B[0][0] + B[1][1] * B[1][0];
+        B2[1][1] = B[1][0] * B[0][1] + B[1][1] * B[1][1];
+        const double area =
+            0.25 * std::sqrt(std::max((el.cur[0] + el.cur[1] + el.cur[2]) *
+                                          (-el.cur[0] + el.cur[1] + el.cur[2]) *
+                                          (el.cur[0] - el.cur[1] + el.cur[2]) *
+                                          (el.cur[0] + el.cur[1] - el.cur[2]),
+                                      1e-12));
+        const double areaFactor = area / el.restArea;
+        double strainT[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        strainT[0][0] = 0.5 * (1 - B[1][1] / detB);
+        strainT[0][1] = 0.5 * B[0][1] / detB;
+        strainT[1][0] = 0.5 * B[1][0] / detB;
+        strainT[1][1] = 0.5 * (1 - B[0][0] / detB);
+        double stressT[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+        for (int r = 0; r < 2; ++r)
+          for (int t = 0; t < 2; ++t)
+            stressT[r][t] = areaFactor * ((lambdaT * an.trE - mioT / 2) * B[r][t] +
+                                          (mioT / 2) * B2[r][t]);
+        double dSFt[2][2];
+        for (int r = 0; r < 2; ++r)
+          for (int t = 0; t < 2; ++t)
+            dSFt[r][t] =
+                an.deltaS[r][0] * lf.F[t][0] + an.deltaS[r][1] * lf.F[t][1];
+        for (int r = 0; r < 2; ++r)
+          for (int t = 0; t < 2; ++t)
+            stressT[r][t] +=
+                areaFactor * (lf.F[r][0] * dSFt[0][t] + lf.F[r][1] * dSFt[1][t]);
+
+        for (double (*M)[3] : {strainT, stressT}) {
+          double tmp[3][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+          for (int r = 0; r < 3; ++r)
+            for (int t = 0; t < 3; ++t)
+              for (int w = 0; w < 3; ++w)
+                tmp[r][t] += lf.R[r][w] * M[w][t];
+          for (int r = 0; r < 3; ++r)
+            for (int t = 0; t < 3; ++t) {
+              M[r][t] = 0;
+              for (int w = 0; w < 3; ++w)
+                M[r][t] += tmp[r][w] * lf.R[t][w];
+            }
+        }
+        for (int r = 0; r < 3; ++r)
+          for (int t = 0; t < 3; ++t) {
+            strainCell[r][t] += el.restArea * strainT[r][t];
+            stressCell[r][t] += el.restArea * stressT[r][t];
+          }
+        totalRestArea += el.restArea;
+      }
+
+      if (!storeDirs)
+        continue;
+      for (int r = 0; r < 3; ++r)
+        for (int t = 0; t < 3; ++t) {
+          strainCell[r][t] /= totalRestArea;
+          stressCell[r][t] /= totalRestArea;
+        }
+      // Ranked by signed value here, with no step-down for a principal
+      // direction lying along the cell normal.
+      storePair(cellData, c, strainCell, 2, 3);
+      storePair(cellData, c, stressCell, 4, 5);
+    }
+  }
+
+private:
+  // Diagonalize, then store the largest principal direction and value at the
+  // level `firstLevel` index and the second at `secondLevel`, when given.
+  void storePair(Matrix &cellData, size_t c, double A[3][3], size_t firstLevel,
+                 size_t secondLevel) const {
+    double eig[3][3];
+    trbs::jacobiEigen3(A, eig);
+    int i1 = 0;
+    if (A[1][1] > A[i1][i1])
+      i1 = 1;
+    if (A[2][2] > A[i1][i1])
+      i1 = 2;
+    int i2 = (i1 + 1) % 3, i3 = (i1 + 2) % 3;
+    if (A[i3][i3] > A[i2][i2])
+      i2 = i3;
+    if (numVariableIndex(firstLevel)) {
+      const size_t at = variableIndex(firstLevel, 0);
+      for (int d = 0; d < 3; ++d)
+        cellData[c][at + d] = eig[d][i1];
+      cellData[c][at + 3] = A[i1][i1];
+    }
+    if (numVariableIndex(secondLevel)) {
+      const size_t at = variableIndex(secondLevel, 0);
+      for (int d = 0; d < 3; ++d)
+        cellData[c][at + d] = eig[d][i2];
+      cellData[c][at + 3] = A[i2][i2];
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(
+    VertexFromTRBScenterTriangulationConcentrationHillMT,
+    "VertexFromTRBScenterTriangulationConcentrationHillMT")
+
 } // namespace
 } // namespace tissue

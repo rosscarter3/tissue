@@ -83,3 +83,62 @@ for w in 0.0001 0.2 0.4 0.8; do
   N=$($T/build/simulator _mt.model twoSquare3D_MT.init _one.rk5 2>/dev/null | awk '$1==4 && NF>60 {v=$11} END{print v}')
   printf "    %-10s %-16s %-16s\n" "$w" "$L" "$N"
 done
+
+echo
+echo "VertexFromTRBScenterTriangulationConcentrationHillMT:"
+cat > _chmt.model <<'M'
+3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.05
+1
+60
+
+VertexFromTRBScenterTriangulationConcentrationHillMT 8 2 3 1
+1.0
+3.0
+0.3
+0.5
+2.0
+0.2
+0.5
+2.0
+0 4 1
+60
+M
+printf "  %-42s " "two levels (no stored directions)"
+python3 $T/tools/port/compare.py _chmt.model twoSquare3D_MT.init euler3.rk5 --tol=1e-9 2>&1 | tail -1
+# With storage, derivs writes cell variables, so only the t=0 print differs -
+# the same derivs-side-effect timing as elsewhere; every later print agrees.
+cat > _chmt6.model <<'M'
+3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.05
+1
+60
+
+VertexFromTRBScenterTriangulationConcentrationHillMT 8 6 3 1 1 1 1 1
+1.0
+3.0
+0.3
+0.5
+2.0
+0.2
+0.5
+2.0
+0 4 1
+60
+15
+31
+35
+41
+M
+printf "  %-42s " "six levels, forces"
+python3 $T/tools/port/compare.py _chmt6.model twoSquare3D_MT.init euler3.rk5 --tol=1e-9 --block=vertex 2>&1 | tail -1

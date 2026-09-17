@@ -495,3 +495,55 @@ center triangulation), `VertexFromTRLScenterTriangulationMT`,
 `VertexFromTRBScenterTriangulationMTOpt`, and
 `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`. All five are variants of
 the reaction ported here and now have the whole kernel available.
+
+### `VertexFromTRBScenterTriangulationConcentrationHillMT`, 2026-09-17
+
+The fibre-reinforced material with both moduli set by inhibitory Hill
+functions of one cell concentration. Legacy ships it as its own ~1000-line
+copy, but it is *not* the same material law as
+`VertexFromTRBScenterTriangulationMT` with a different modulus - four things
+differ, and each of the first three showed up as a shrinking mismatch as they
+were found:
+
+- the shear modulus convention is `Y/(1+p)` rather than `Y/(2(1+p))`, so the
+  stiffness coefficients read `(lambdaT + mioT, mioT)`;
+- the trace entering both stress terms is the cotangent form
+  `(sum Delta_i cot_i)/(4 A_rest)`, not `tr(E)`;
+- the fibre is pulled back to the rest frame **barycentrically** - take the
+  point one unit along the fibre from the current centroid, express it in
+  barycentric coordinates of the current triangle, map those onto the rest
+  triangle, subtract the rest centroid - rather than by applying the cofactor
+  of F. The two agree for a rigid motion and differ under shear, but the
+  consequential part is that this one keeps the *length* of the result and
+  scales the anisotropic Lame pair by it, so an element whose deformation
+  shortens the fibre direction also weakens its anisotropy;
+- the anisotropic force is not a stress tensor pushed through the shape
+  vectors at all. It differentiates the invariants I1, I4 and I5 directly with
+  respect to the node positions.
+
+All four are now separate pieces in `trbs_core.h`
+(`hillVariantDeltaS`, `barycentricFibre`, `anisotropyInvariantsFrom`,
+`invariantAnisotropicForce`), so the two materials share the geometry and
+differ only where they actually differ.
+
+Exact against legacy (0.000e+00 over 1744 values) in the two-level form. The
+six-level form, which stores the maximal and second strain and stress
+directions, writes those from `derivs`, so it differs at the **t=0 print
+only** - the same derivs-side-effect timing as everywhere else. Measured: the
+stored strain direction is `0 0 1 0` in both simulators at every print after
+the first; at t=0 legacy shows the value its extra pre-print evaluation wrote
+and v2 shows the untouched initial contents.
+
+Two legacy slips are reproduced rather than corrected, because both change the
+answer and neither has an invariance that forces the issue: the rest and
+current edge arrays are cyclically rotated just before the invariant-derivative
+block while `cotan` and `Delta` are not, and the `derIprim1` accumulation
+multiplies by `position[m]` inside a loop over `i`, so the i-sum only ever
+scales one position vector.
+
+Still outstanding in `mechanicalTRBS.cc`: `VertexFromTRBSMT` (the same
+material without center triangulation), `VertexFromTRLScenterTriangulationMT`,
+`VertexFromTRBScenterTriangulationMTOpt` - which is not a material variant at
+all but a simulated-annealing optimiser over the anisotropy direction, with
+its own temperature and annealing-rate parameters - and
+`Hypocotyl3D::VertexFromTRBScenterTriangulationMT`.
