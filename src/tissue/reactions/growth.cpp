@@ -236,6 +236,132 @@ TISSUE_REGISTER_REACTION(CTWallGrowthConstant,
                          "WallGrowth::CenterTriangulation::Constant",
                          "CenterTriangulation::WallGrowth::Constant")
 
+// Lockhart yielding applied to the center-triangulation edges: each internal
+// edge (cell centre to vertex k) grows once its stretch (d - L)/L passes a
+// threshold, at a rate the caller supplies per cell.
+//
+// Legacy offers a stress_flag that would read a stored wall stress instead of
+// the stretch, but neither of the two reactions below implements it -
+// `Stress` exits at construction and `StressConcentrationHill` prints an
+// error per vertex on every evaluation and then grows nothing. Both reject it
+// here instead, so a model that sets it is told once rather than silently
+// producing no growth.
+template <class RateFn>
+void ctStretchYield(Tissue &T, Matrix &cellData, Matrix &vertexData,
+                    Matrix &cellDerivs, size_t posStartIndex, double threshold,
+                    bool linear, RateFn kOf) {
+  const size_t lengthStartIndex = posStartIndex + 3;
+  parallelFor(T.numCell(), [&](size_t b, size_t e) {
+    for (size_t c = b; c < e; ++c) {
+      const double k = kOf(c);
+      for (size_t j = 0; j < T.cell(c).numVertex(); ++j) {
+        const size_t v = T.cell(c).vertices[j];
+        double distance = 0.0;
+        for (size_t d = 0; d < vertexData.cols(); ++d) {
+          const double diff = vertexData[v][d] - cellData[c][d + posStartIndex];
+          distance += diff * diff;
+        }
+        distance = std::sqrt(distance);
+        const double rest = cellData[c][j + lengthStartIndex];
+        const double stretch = (distance - rest) / rest;
+        if (stretch > threshold) {
+          double rate = k * (stretch - threshold);
+          if (linear)
+            rate *= rest;
+          cellDerivs[c][j + lengthStartIndex] += rate;
+        }
+      }
+    }
+  });
+}
+
+class CTWallGrowthStress : public Reaction {
+public:
+  CTWallGrowthStress(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 4)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::Stress: uses four parameters "
+          "(k_growth, s_threshold, strain_flag, linear_flag).");
+    if (p[2] != 1.0)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::Stress: strain_flag must be 1 "
+          "(stretch); the stress form is not implemented, in legacy either.");
+    if (p[3] != 0.0 && p[3] != 1.0)
+      throw std::runtime_error("WallGrowth::CenterTriangulation::Stress: "
+                               "linear_flag must be 0 or 1.");
+    if (i.empty() || i.size() > 2 || i[0].size() != 1)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::Stress: start of the "
+          "center-triangulation cell variables in level 0.");
+    configure("WallGrowth::CenterTriangulation::Stress", p, i, 4,
+              std::vector<size_t>(i.size(), 1),
+              {"k_growth", "s_threshold", "strain_flag", "linear_flag"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &) override {
+    const double k = parameter(0);
+    ctStretchYield(T, cellData, vertexData, cellDerivs, variableIndex(0, 0),
+                   parameter(1), parameter(3) == 1.0,
+                   [&](size_t) { return k; });
+  }
+};
+TISSUE_REGISTER_REACTION(CTWallGrowthStress,
+                         "WallGrowth::CenterTriangulation::Stress",
+                         "CenterTriangulation::WallGrowth::Stress",
+                         "WallGrowthStresscenterTriangulation")
+
+// The same rule with the growth rate raised by an activating Hill function of
+// a cell concentration: k = k_const + k_hill c^n/(K^n + c^n).
+class CTWallGrowthStressConcentrationHill : public Reaction {
+public:
+  CTWallGrowthStressConcentrationHill(const ParameterList &p,
+                                      const IndexLevels &i) {
+    if (p.size() != 7)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::StressConcentrationHill: uses "
+          "seven parameters (k_growthConst, k_growthHill, K_Hill, n_Hill, "
+          "s_threshold, strain_flag, linear_flag).");
+    if (p[5] != 1.0)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::StressConcentrationHill: "
+          "strain_flag must be 1 (stretch); the stress form is not "
+          "implemented, in legacy either - there it printed an error per "
+          "vertex and grew nothing.");
+    if (p[6] != 0.0 && p[6] != 1.0)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::StressConcentrationHill: "
+          "linear_flag must be 0 or 1.");
+    if (i.empty() || i.size() > 2 || i[0].size() != 2)
+      throw std::runtime_error(
+          "WallGrowth::CenterTriangulation::StressConcentrationHill: start of "
+          "the center-triangulation cell variables and the concentration "
+          "index in level 0.");
+    std::vector<size_t> shape{2};
+    if (i.size() == 2)
+      shape.push_back(i[1].size());
+    configure("WallGrowth::CenterTriangulation::StressConcentrationHill", p, i,
+              7, shape,
+              {"k_growthConst", "k_growthHill", "K_Hill", "n_Hill",
+               "s_threshold", "strain_flag", "linear_flag"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &) override {
+    const size_t concIndex = variableIndex(0, 1);
+    const double kPow = std::pow(parameter(2), parameter(3));
+    ctStretchYield(T, cellData, vertexData, cellDerivs, variableIndex(0, 0),
+                   parameter(4), parameter(6) == 1.0, [&](size_t c) {
+                     const double cPow =
+                         std::pow(cellData[c][concIndex], parameter(3));
+                     return parameter(0) +
+                            parameter(1) * cPow / (kPow + cPow);
+                   });
+  }
+};
+TISSUE_REGISTER_REACTION(
+    CTWallGrowthStressConcentrationHill,
+    "WallGrowth::CenterTriangulation::StressConcentrationHill",
+    "CenterTriangulation::WallGrowth::StressConcentrationHill")
+
 // Wall stress, either summed from listed wall variables or computed as the
 // Almansi-style extension (d - L)/L. Shared by the spatial and Hill variants
 // below; `useStrain` corresponds to legacy's stress/strain flag.

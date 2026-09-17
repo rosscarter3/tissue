@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**157 names registered here; 186 classes outstanding.**
+**162 names registered here; 184 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -23,10 +23,10 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/boolean.cc` | 11 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
-| `legacy/growth.cc` | 6 |
 | `legacy/mechanicalTRBS.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
+| `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
 | `legacy/degradation.cc` | 2 |
@@ -211,15 +211,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `HillGeneralThree` — `HillGeneralThree`
 - `HillGeneralTwo` — `HillGeneralTwo`
 
-### `legacy/growth.cc` (6)
-
-- `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`, `WallGrowth::CenterTriangulation::StrainTRBS`
-- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`, `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill`
-- `WallGrowth::CenterTriangulation::Stress` — `CenterTriangulation::WallGrowth::Stress`, `WallGrowth::CenterTriangulation::Stress`, `WallGrowthStresscenterTriangulation`
-- `WallGrowth::CenterTriangulation::StressConcentrationHill` — `CenterTriangulation::WallGrowth::StressConcentrationHill`, `WallGrowth::CenterTriangulation::StressConcentrationHill`
-- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`, `WallGrowth::CenterTriangulation::VectorTRBS`
-
 ### `legacy/mechanicalTRBS.cc` (6)
 
 - `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
@@ -244,6 +235,13 @@ Method and the log of validated batches are in `NOTES.md`.
 - `FiberModel::Linear` — `FiberModel::Linear`
 - `Pressure3D::CenterTriangulation::Linear` — `CenterTriangulation::Pressure3D::Linear`, `Pressure3D::CenterTriangulation::Linear`, `VertexFromCellPlaneLinearCenterTriangulation`
 - `Pressure3D::Linear` — `Pressure3D::Linear`, `VertexFromCellPlaneLinear`
+
+### `legacy/growth.cc` (4)
+
+- `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBS` — `CenterTriangulation::WallGrowth::StrainTRBS`, `WallGrowth::CenterTriangulation::StrainTRBS`
+- `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill` — `CenterTriangulation::WallGrowth::StrainTRBSConcentrationHill`, `WallGrowth::CenterTriangulation::StrainTRBSConcentrationHill`
+- `WallGrowth::CenterTriangulation::VectorTRBS` — `CenterTriangulation::WallGrowth::VectorTRBS`, `WallGrowth::CenterTriangulation::VectorTRBS`
 
 ### `legacy/growthForce.cc` (4)
 

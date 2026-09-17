@@ -314,3 +314,22 @@ anisotropy modes and some ad-hoc branches keyed on hard-coded cell variable
 indices. The kernel above already takes the coefficient pair the transversely
 isotropic form needs (`lambdaT + 2 mioT`, `2 mioT`), so the material part is
 in place.
+
+### `legacy/growth.cc` center-triangulation stress rules - 2 classes, 2026-09-17
+
+`WallGrowth::CenterTriangulation::Stress` and `StressConcentrationHill`, with
+their aliases. Both are Lockhart yielding applied to the internal
+centre-to-vertex edges rather than to walls: an edge grows once its stretch
+`(d - L)/L` passes a threshold, the Hill variant raising the rate by
+`k_hill c^n/(K^n + c^n)`. They share one `ctStretchYield()` helper. Both
+0.000e+00 against legacy (2.2e-16 for the Hill variant under `RK5Adaptive`).
+
+Both legacy versions carry a `stress_flag` selecting a stored wall stress
+instead of the stretch, and neither implements it: `Stress` exits at
+construction, and `StressConcentrationHill` prints an error per vertex on
+every evaluation and then grows nothing at all. Both reject the flag at
+construction here, so a model setting it is told once instead of silently
+producing no growth while filling stderr.
+
+`tests/port/trbs.sh` drives all of the above plus the TRBS elasticity, and
+`tests/port/tri3D.init` is the triangular 3D fixture `VertexFromTRBS` needs.
