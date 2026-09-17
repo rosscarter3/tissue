@@ -13,7 +13,9 @@ Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
 the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner-flank
 tissue-length fold change (2.16x against 2.149x measured; the outer flank
 overshoots, 1.11x against 1.055x), the inner/outer microtubule reorientation
-asymmetry, and the direction of the auxin- and pH-dependent perturbations
+asymmetry (which needs the sub-epidermal growth term — see below; without it
+the switch this model produces comes from the solver's drag lag), and the
+direction of the auxin- and pH-dependent perturbations
 (though those act on the growth gate directly, so their direction is
 guaranteed by construction and only their magnitude is a test — see below).
 It does **not** reproduce the microtubule and cellulose perturbations — the
@@ -211,7 +213,11 @@ shape-neutral at equilibrium but sets the drag lag that partly determines the
 opening rate under `RK5Adaptive`. What is *not* fitted to this curve, and so
 carries the evidential weight, is everything else: the inner-flank fold
 change, the microtubule reorientation, the anisotropy magnitudes, and the
-perturbation responses. The model over-opens late: real hooks stall near 35–45° once the
+perturbation responses. (Not being fitted is necessary for a result to count
+as evidence, not sufficient — the microtubule reorientation is unfitted and
+still turned out to be a solver artefact.)
+
+The model over-opens late: real hooks stall near 35–45° once the
 cotyledons separate, which this model has no representation of (the paper's
 own `a2` replicate series bottoms out at 22.7°, so part of the late spread is
 experimental). The dark control never opens — but that is a consistency
@@ -226,7 +232,11 @@ i.e. the maximal principal stress direction (90° = circumferential/transverse,
 0° = longitudinal). The inner flank holds 89–90° circumferential throughout
 while the outer flank switches to longitudinal within the first hour and
 rotates back as the organ straightens — the inner/outer switch asymmetry of
-Figs 3E–F and 4E, emergent rather than imposed.
+Figs 3E–F and 4E, emergent rather than imposed. **This result does not
+survive removal of the drag lag**: at force balance the outer flank stays
+circumferential throughout, so the switch is a transient of the relaxation
+rather than a property of the growing equilibrium. See *Recalibrating to the
+paper's stiffness ratio* for the matched-hook-angle control.
 
 **Perturbations** (`run_perturbations.py`), each a single parameter change.
 Hook angle in degrees; WT light is 79.2° at 4 h and 12.5° at 10 h. The two
@@ -281,16 +291,21 @@ RK5Adaptive, about 4.5% of the opening either way:
 | Y_f = 0 | 110.2 | 65.3 | 13.6 |
 
 The explanation is simply how little of the force balance the fibre carries:
-Y_m = 20000 against Y_f = 1350, so the fibre is ~6% of wall stiffness, and a
-strain-gated growth law turns a 6% stiffness change into a few-percent growth
-change. A four-point dose-response under `QuasiStatic` confirms the gain is
+the fibre carries **2.67%** of it. That figure is measured, not inferred from
+the parameters: relaxing the same geometry with and without the fibre and
+comparing mean wall strain gives `K_f/K_m = eps(Y_f=0)/eps(Y_f) - 1`, which
+needs no assumption that the two force laws share units. (Dividing the raw
+parameters, Y_f/(Y_m+Y_f) = 6.3%, overstates it 2.4-fold — they are not
+comparable, since the fibre term carries an extra `area/(2d)` width factor.)
+A strain-gated growth law then turns a 2.7% stiffness change into a
+few-percent growth change. A four-point dose-response under `QuasiStatic` confirms the gain is
 linear in the fibre's share, measured at peak sensitivity (t = 1 h):
 
 | Y_f | share of stiffness | effect (deg) | linear prediction | ratio |
 |---|---|---|---|---|
-| 1350 | 6.3% | 0.000 | – | – |
-| 675 | 3.3% | 1.965 | 2.007 | 0.98 |
-| 337.5 | 1.7% | 2.977 | 3.010 | 0.99 |
+| 1350 | 2.67% | 0.000 | – | – |
+| 675 | 1.35% | 1.965 | 2.007 | 0.98 |
+| 337.5 | 0.68% | 2.977 | 3.010 | 0.99 |
 | 0 | 0% | 4.013 | 4.013 | 1.00 |
 
 within 2% of proportional throughout. (These are re-runs with the relaxation
@@ -341,9 +356,10 @@ consequence.
 
 What this means for the results above:
 
-- The **stress anisotropy and CMT reorientation are a faithful readout** —
-  the inner/outer switch asymmetry in `fig4` and `fig5` is a real prediction
-  of the stress solver, and it matches Figs 3E–F and 4E.
+- The **stress anisotropy is a faithful readout** of whatever stress state
+  the solver is in — but the CMT switch it produces in `fig4` and `fig5` is a
+  readout of the *lagged* state, and disappears at force balance. It is not
+  the independent confirmation of Figs 3E–F it was presented as.
 - But anisotropy is **not a driver** of opening in this model. The
   differential growth comes entirely from the geometric `Lmax` differential
   and the auxin/pH gates. That is why oryzalin and isoxaben do nothing, and
@@ -363,6 +379,212 @@ change: Y_m, Y_f, turgor, the growth rate and the mobility scaling (see
 numerical lesson 1) all trade against each other, and the current fit
 (RMSE 11.9°) was tuned against the existing balance. It is the single most
 valuable next step for this model.
+
+
+## Recalibrating to the paper's stiffness ratio
+
+The section above says the fix is to move Y_m : Y_f toward the paper's
+75 : 100 and refit. That was done. It works for one of the two failed
+perturbation classes, cannot work for the other, and costs a result that had
+been reported as a success. All three outcomes are worth having.
+
+**The recipe.** Measuring the fibre share directly (above) gives
+K_f/K_m = 0.0274 at Y_f = 1350, and the response is linear in Y_f, so the
+paper's 57% share needs **Y_f = 65700**. Raising it that far stiffens the
+shell, which would change the growth drive as well as its distribution, so
+turgor is raised to **P = 36.2** to put mean wall strain back on its original
+value (0.0304 against 0.0306, within 0.7%). Only the matrix:fibre *split* then
+differs from the shipped model. `k_growth` refits to **13** under `QuasiStatic`
+(scanned over 8/13/20 against the measured curve; at t = 1 h the model gives
+155.8 deg against 155.6 measured, and at t = 1.5 h, 143.7 against ~144.5).
+
+The quasi-static solver is not optional here. The fibre loads the *stiffest*
+mode disproportionately: lambda_max rises from 1.5e5 to 1.4e6, a factor of 9,
+where mean stiffness rises only 2.2x. Explicit integration costs h ~ 1/lambda
+and so becomes 9x more expensive, while FIRE costs dt ~ 1/sqrt(lambda), 3x.
+
+**What it fixes: oryzalin.** Depolymerising microtubules is modelled by
+K_hill -> 50, which makes the fibre isotropic at unchanged magnitude. With the
+fibre carrying 57% rather than 2.7%, that redistribution finally has something
+to redistribute. Opening measured from each run's own frame 0 (QuasiStatic
+relaxes before its first print, so the variants' starting shapes differ and
+absolute angles are not comparable):
+
+| t (h) | WT | oryzalin | isoxaben 100 nM | isoxaben 600 nM |
+|---|---|---|---|---|
+| 0.75 | 2.1 | 1.2 | 4.5 | 7.4 |
+| 1.50 | 17.1 | 13.8 | 38.4 | 52.1 |
+| 3.00 | 61.0 | 51.8 | 111.3 | 129.1 |
+| 4.00 | 81.7 | 69.3 | 132.1 | 144.2 |
+
+(degrees opened; all four runs converged, zero relaxation-cap hits). Oryzalin
+now opens **15% slower** than wild type, monotone from t = 0.75 h onward,
+against exactly 0.0 difference before recalibration. The direction matches
+experiment.
+
+**What it cannot fix: isoxaben.** Reducing cellulose is modelled by lowering
+Y_f, and in a Lockhart model a softer wall yields *faster* - so opening
+accelerates, by 62% and 77% at t = 4 h (and by more earlier), where the experiment shows it
+blocked. Recalibration makes this worse rather than better, and no choice of
+stiffness can reverse it: the sign is forced by the growth law. The real
+mechanism is that cellulose-synthesis inhibition starves new wall deposition,
+which is a limit on *synthesis*, not on *compliance*, and this model has no
+wall-synthesis term at all. Reproducing isoxaben needs a new term, not a new
+parameter.
+
+**What it costs: the microtubule reorientation was a lag artefact.** The
+outer-flank switch from circumferential to longitudinal, reported above as
+emergent and matching Figs 3E-F, does not survive removal of the drag lag.
+Compared at *matched hook angle* rather than matched time, so the three runs
+are compared at the same shape:
+
+| outer-flank MT angle | hook 150 | hook 140 | hook 130 | hook 120 |
+|---|---|---|---|---|
+| RK5, Y_f = 1350 (shipped) | 3 | 5 | 6 | 13 |
+| QuasiStatic, Y_f = 1350 | 87 | 88 | 88 | 88 |
+| QuasiStatic, Y_f = 65700 | 57 | 73 | 77 | 81 |
+| QuasiStatic + growing core | 90 | 90 | 88 | 7 |
+
+(90 = circumferential, 0 = longitudinal.) At force balance the outer flank
+stays circumferential at every stage of opening. The switch appears only when
+the shell lags: the arms swing behind where the rest lengths put them, which
+loads the outer flank longitudinally as a *transient of the relaxation*, not
+as a property of the growing equilibrium. Recalibrating recovers a little of
+the rotation (57 deg at hook 150) but nothing resembling a switch.
+
+**That retraction was itself too broad, and the reason is instructive.** A
+thin-walled vessel has hoop stress twice longitudinal, so maximal principal
+stress stays circumferential unless something overturns it — and in *this*
+model nothing can, because the only longitudinal load is turgor. But the paper
+has such a term, and this model omitted it. In `hook_part.calc_long_stress()`:
+
+    sigma_long = p r / (2 t)  +  long_internal_stress_rate * time
+
+The longitudinal stress **rises with time** as the sub-epidermal tissue grows
+and stretches the epidermis, while hoop stress is fixed by the geometry at
+2.53x the reference on the inner flank and 1.74x on the outer (λ = 2.88). So
+longitudinal overtakes hoop on the *outer* flank first, roughly twice as
+early — and that is the paper's mechanism for the switch and for its
+inner/outer asymmetry. It is not drag lag, and it is not evidence that
+microtubules follow anything other than stress.
+
+The shell reproduces the geometric half of that mechanism independently:
+measured maximal principal stress at t = 0 gives an inner/outer ratio of
+**1.460**, against **1.454** from the paper's analytic toroid — 0.4%. What was
+missing was the loading half. See *Sub-epidermal growth* below.
+
+So the honest statement is narrower than the retraction: with turgor as the
+only longitudinal load, the switch this model produces under `RK5Adaptive`
+comes from drag lag rather than from the equilibrium stress state. That says
+the model was incomplete, not that the mechanism is wrong — and supplying the
+missing driver (`InnerTissue::GrowingCore`, below) restores the switch at
+force balance, outer flank first, with no lag involved. The retraction is
+withdrawn.
+
+**Status: measured, not adopted.** The recalibrated configuration is not the
+shipped model. It trades a working microtubule prediction for a working
+oryzalin prediction, worsens isoxaben, and has been validated only to t = 4 h -
+the fold changes, the dark control and the full 12 h trajectory have not been
+re-run against it. The recipe above reproduces it in full
+(Y_f = 65700, P = 36.2, k_growth = 13, `QuasiStatic`).
+
+
+## Sub-epidermal growth: the missing driver
+
+The epidermis is the growth-limiting layer — inner tissues in compression, the
+epidermis in tension — so when the sub-epidermal tissue elongates it stretches
+the epidermal cells longitudinally. That is the paper's driver for the
+microtubule switch, and this model does not have it: everything inside the
+epidermis is represented by a single uniform turgor pressure.
+
+**What the paper does.** `hook_part.calc_long_stress()` adds
+`long_internal_stress_rate * time` to the pressure-vessel longitudinal stress,
+while hoop stress stays fixed at `(2λ + sin φ)/(λ + sin φ)` times the
+reference — 2.53× on the inner flank, 1.74× on the outer. Longitudinal
+therefore overtakes hoop on the outer flank at roughly half the time it takes
+on the inner, producing both the switch and its inner/outer asymmetry.
+
+**The geometric half is already reproduced here, independently.** Measured
+maximal principal stress at t = 0 gives an inner/outer ratio of **1.460**
+against the analytic toroid's **1.454** — 0.4%, from a cell-resolved shell
+that was never fitted to it. What was missing is the loading half.
+
+**Two formulations failed before one worked, and the failures specify the
+requirement.**
+
+*As a prescribed tension along the axial walls* (`InnerTissue::AxialGrowth`),
+it does the right thing to the stress — outer longitudinal rose 754 → 831 in
+0.05 h and the predicted microtubule direction began to rotate — but tension
+along the surface of a *curved* shell exerts a straightening moment, so the
+load that flips the anisotropy opened the hook 23° in three minutes.
+
+*As a progressive shortening of the axial reference lengths*, it releases
+stress instead of building it: with growth off at 0.20/h both principal
+stresses **fall** over 2 h (outer 1323 → 1031 and 754 → 632), because a shell
+free to contract simply contracts until strain re-equilibrates against turgor.
+
+So the inner tissue has to be present as a body the epidermis cannot contract
+past — not a pressure, and not a change to the epidermis's own reference state.
+
+### `InnerTissue::GrowingCore`
+
+The core carries its own reference length per axial wall, starting at the
+current geometry so it is stress-free at t = 0, and
+
+- **grows proportionally**, `dLc/dt = g·Lc`. Uniform proportional elongation is
+  a similarity transform: inner and outer arcs lengthen by the same factor,
+  curvature is preserved, and no straightening moment is applied. This is what
+  the constant-tension version got wrong.
+- **pushes one-sidedly**, `F = K(Lc − d)` only while `d < Lc`. A tissue resists
+  compression and cannot pull. The force is self-limiting — the shell stretches
+  until `d ≈ Lc` and the force falls away — so it drives the shell to a
+  definite length rather than loading it without bound. Being one-sided also
+  means it sets a *floor*: the inner flank can still outgrow it, while the
+  outer flank is held stretched against it.
+
+**With growth off, it reproduces the switch and its asymmetry** (K = 1e4,
+g = 0.05/h; σ₁ and σ₂ are the maximal and minimal principal stresses):
+
+| t (h) | inner σ₁ | inner σ₂ | MT inner | outer σ₁ | outer σ₂ | MT outer |
+|---|---|---|---|---|---|---|
+| 0.0 | 1931 | 734 | 90° | 1323 | 754 | 90° |
+| 1.0 | 1963 | 1023 | 90° | 1359 | 1238 | 90° |
+| 1.5 | 1983 | 1182 | 90° | 1499 | 1408 | **1°** |
+| 2.0 | 1990 | 1261 | **90°** | 1635 | 1418 | **0°** |
+
+Longitudinal stress climbs steadily on both flanks while hoop barely moves.
+On the outer flank the two converge and swap at t ≈ 1.5 h; on the inner flank
+they stay far apart (1990 against 1261) and never do. That is the paper's
+mechanism exactly: the switch is outer-first because the toroid puts more hoop
+stress on the inner flank, so longitudinal has further to climb there.
+
+**With growth on it still happens, delayed, at force balance** (`QuasiStatic`,
+k_growth = 13, core g = 0.05/h):
+
+| t (h) | hook | MT inner | MT outer | outer anisotropy |
+|---|---|---|---|---|
+| 0.0 | 159.1 | 90° | 90° | 0.430 |
+| 2.0 | 106.7 | 90° | 90° | 0.249 |
+| 3.0 | 74.4 | 90° | 90° | 0.111 |
+| 3.5 | 64.0 | 90° | 88° | 0.010 |
+| 4.0 | 59.9 | **90°** | **7°** | 0.038 |
+
+The outer flank switches to longitudinal and the inner one does not — with no
+drag lag anywhere in the calculation. The delay from 1.5 h to ~3.75 h is the
+third obstacle at work: Lockhart yielding relieves the imposed strain, so the
+core has to outpace the epidermis's own growth before it can load it. At
+g = 0.02/h it never quite does, and the outer anisotropy dips to 0.25 and
+recovers instead of collapsing.
+
+**So the retraction is withdrawn.** The microtubule switch is not a solver
+artefact. It is real physics that this model was missing, and supplying it —
+as the paper does — reproduces the switch and its inner/outer asymmetry at
+true mechanical equilibrium.
+
+**What remains.** `k_growth` was fitted without the core, and the core adds
+opening drive, so the kinetics now run fast (59.9° at t = 4 h against 81.5°
+measured); the two need a joint refit. The core's stiffness and rate are
+hand-set, not measured. And this has been run to 4 h, not 12.
 
 
 ## Figures
@@ -524,4 +746,7 @@ condition number unchanged. What it buys is that the scaling is no longer
   single-cell fold change (inner reaches ~4x); the simulation curve there is
   a tissue-level arc measure and belongs with the middle panel
   (`length_measurements.csv`, inner 2.15x), which it matches to 0.01x.
-- **Epidermis only.** Inner tissues are represented by turgor alone.
+- **Epidermis only, and this is the big one.** Inner tissues are represented
+  by a uniform turgor pressure. The sub-epidermal tissue does not grow, so it
+  cannot stretch the epidermis longitudinally — which is the paper's driver
+  for the microtubule switch. See *Sub-epidermal growth: the missing driver*.
