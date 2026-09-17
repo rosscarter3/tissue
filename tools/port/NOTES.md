@@ -203,3 +203,52 @@ ordering guard, so each flux is applied twice and the effective diffusion
 constant is 2*p_0. That one is **kept**, since halving it would silently
 rescale every model written against it - the doubling is reproduced
 explicitly, and the bit-exact match on a static mesh confirms it.
+
+### `legacy/membraneCycling.cc` + `membraneCyclingAll.cc` - 14 classes, 2026-09-17
+
+All eleven registered `MembraneCycling::` reactions and all three
+`MembraneCyclingAll::` ones. Both files are now empty of outstanding classes.
+(`MembraneCycling::CrossMembraneLinear` exists in the source but the legacy
+factory has no entry for it, so no model can reach it; not ported.)
+
+These share one shape - walk each cell's walls, move carrier on at k_on and
+off at k_off across the membrane facing that cell, modulated by something -
+and the port factors that into one `cycle()` helper taking the net on-rate per
+membrane. The `MembraneCyclingAll::` variants are the same rules with the "the
+wall must separate two real cells" test dropped.
+
+Ten match legacy to 0.000e+00, compared under `Euler` since they all write
+wall variables. They were compared on a seeded init
+(`tests/port/seed_init.py`) for the reason given in the transport entry: the
+carrier lives in paired wall variables, which every shipped init leaves at
+zero.
+
+The other four diverge on purpose - README item 12. Each has a typo in one of
+its two mirror-image branches, so the result depends on which of a wall's
+cells the init file happened to list first. That is not a property any of
+these rules can sensibly have, which gives a test that does not need legacy at
+all: `tests/port/membrane_swapcheck.py` rewrites the init with every wall's
+cell1/cell2 flipped and its paired wall variables swapped to match, and
+compares the cell variables.
+
+    reaction                                        legacy      v2
+    LocalWallFeedbackLinear                         1.001e-01   0.000e+00
+    PINFeedbackLinear                               7.890e-02   0.000e+00
+    PINFeedbackNonLinear                            4.572e-03   0.000e+00
+    All::LocalWallFeedbackNonLinearInhibition       1.644e-02   0.000e+00
+
+Run against the ten reactions that needed no fix, legacy is invariant to
+0.000e+00 too, so the check is discriminating rather than trivially satisfied.
+
+Two legacy behaviours kept: `CellFluxExocytosis` removes carrier from a
+membrane in proportion to the square of the outward auxin flux it carries but
+does nothing at all to an inward-facing one - an asymmetry, not an oversight
+in transcription. And `LocalWallFeedbackNonLinearInhibition`'s two terms are
+inhibited by different functions, `1/(x^n + k^n)` against
+`1/(1 + x^n/k^n)`, which differ by a factor `k^n`; that rescales k_on against
+k_off but leaves both monotonically inhibited, so it is preserved.
+
+`TISSUE_REGISTER_REACTION` pastes the type name into an identifier, so
+template instantiations are registered through a `using` alias. Several of
+these reactions differ only in a boundary flag or a linear/non-linear switch,
+and are one template each.

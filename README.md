@@ -224,7 +224,34 @@ differ from legacy for affected models — in v2's favor:
     (measured: identical on a static mesh, 2.5% divergence once the vertices
     move).
 
-Items 8-10 mean those three reactions cannot be compared bit-for-bit against
+12. **Four broken cell1/cell2 symmetries in `membraneCycling.cc` and
+    `membraneCyclingAll.cc`**. Which of a wall's two cells an init file stores
+    as `cell1` is arbitrary, and the paired wall variables are stored in that
+    same order, so relabelling both together must leave the dynamics
+    unchanged. Four reactions break that, each through a typo in one of the
+    two mirror-image branches:
+    - `MembraneCycling::LocalWallFeedbackLinear` and
+      `MembraneCycling::PINFeedbackLinear` index the **wall** table with the
+      **cell** index (`wallData[i]` for `wallData[j]`) in their off-rate term,
+      reading an unrelated wall - or out of range in any tissue with more
+      cells than walls.
+    - `MembraneCycling::PINFeedbackNonLinear` raises the membrane load to
+      `parameter(2)`, the Hill half-max, instead of `parameter(3)`, the Hill
+      exponent, so one face of every wall ran a different power law from the
+      other.
+    - `MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition` reads the
+      wall signal from the first face in one term of its second branch and
+      from the second face in the other.
+
+    All four are fixed. They are validated by the symmetry itself rather than
+    against legacy: `tests/port/membrane_swapcheck.py` reruns a model with
+    every wall's orientation flipped and checks the cell variables are
+    unchanged. v2 is invariant to 0.000e+00 for all four; legacy shifts by
+    0.5-10%. The same check passes for legacy on the ten reactions in those
+    files that needed no fix, so it is discriminating rather than trivially
+    satisfied.
+
+Items 8-10 and 12 mean those reactions cannot be compared bit-for-bit against
 legacy, and should not be. `Bending::Angle` and `Bending::NeighborCenter` are
 instead checked against an independent reimplementation of the force law in
 `tests/port/bending_refcheck.py`; `SisterVertex::SpringCellConc` is compared

@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**141 names registered here; 202 classes outstanding.**
+**155 names registered here; 188 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -18,10 +18,9 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/network.cc` | 41 |
 | `legacy/adhocReaction.cc` | 40 |
 | `legacy/mechanicalSpring.cc` | 19 |
-| `legacy/mechanical.cc` | 17 |
 | `legacy/force.cc` | 15 |
+| `legacy/mechanical.cc` | 15 |
 | `legacy/boolean.cc` | 11 |
-| `legacy/membraneCycling.cc` | 9 |
 | `legacy/mechanicalTRBS.cc` | 8 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
@@ -30,7 +29,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/fiberModel.cc` | 5 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
-| `legacy/membraneCyclingAll.cc` | 3 |
 | `legacy/degradation.cc` | 2 |
 | `legacy/hypocotyl3D.cc` | 1 |
 
@@ -145,26 +143,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `cellcellRepulsion` — `cellcellRepulsion`
 - `vertexFromSubstrate` — `vertexFromSubstrate`
 
-### `legacy/mechanical.cc` (17)
-
-- `CenterTriangulation::VertexFromCellPressure` — `CenterTriangulation::VertexFromCellPressure`, `VertexFromCellPressurecenterTriangulation`
-- `CenterTriangulation::VertexFromCellPressureLinear` — `CenterTriangulation::VertexFromCellPressureLinear`, `VertexFromCellPressurecenterTriangulationLinear`
-- `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
-- `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
-- `MembraneCycling::Constant` — `MembraneCycling::Constant`
-- `MembraneCyclingAll::Constant` — `MembraneCyclingAll::Constant`
-- `PerpendicularWallPressure` — `PerpendicularWallPressure`
-- `Pressure3D::ConcentrationHill` — `Pressure3D::ConcentrationHill`, `VertexFromCellPlaneConcentrationHill`
-- `Pressure3D::Constant` — `Pressure3D::Constant`, `VertexFromCellPlane`
-- `Pressure3D::Normalized` — `Pressure3D::Normalized`, `VertexFromCellPlaneNormalized`
-- `Pressure3D::NormalizedSpatial` — `Pressure3D::NormalizedSpatial`, `VertexFromCellPlaneNormalizedSpatial`
-- `Pressure3D::Spatial` — `Pressure3D::Spatial`, `VertexFromCellPlaneSpatial`
-- `Pressure3D::SphereCylinder` — `Pressure3D::SphereCylinder`, `VertexFromCellPlaneSphereCylinder`
-- `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
-- `Pressure3D::Triangular` — `Pressure3D::Triangular`, `VertexFromCellPlaneTriangular`
-- `TargetAreaFromPressure` — `TargetAreaFromPressure`
-- `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
-
 ### `legacy/force.cc` (15)
 
 - `Force::Axial` — `Force::Axial`
@@ -183,6 +161,24 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Force::VectorLinear` — `Force::VectorLinear`, `VertexFromForceLinear`
 - `GrowthForce::EpidermalRadial` — `GrowthForce::EpidermalRadial`, `MoveEpidermalVertexRadially`
 
+### `legacy/mechanical.cc` (15)
+
+- `CenterTriangulation::VertexFromCellPressure` — `CenterTriangulation::VertexFromCellPressure`, `VertexFromCellPressurecenterTriangulation`
+- `CenterTriangulation::VertexFromCellPressureLinear` — `CenterTriangulation::VertexFromCellPressureLinear`, `VertexFromCellPressurecenterTriangulationLinear`
+- `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
+- `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
+- `PerpendicularWallPressure` — `PerpendicularWallPressure`
+- `Pressure3D::ConcentrationHill` — `Pressure3D::ConcentrationHill`, `VertexFromCellPlaneConcentrationHill`
+- `Pressure3D::Constant` — `Pressure3D::Constant`, `VertexFromCellPlane`
+- `Pressure3D::Normalized` — `Pressure3D::Normalized`, `VertexFromCellPlaneNormalized`
+- `Pressure3D::NormalizedSpatial` — `Pressure3D::NormalizedSpatial`, `VertexFromCellPlaneNormalizedSpatial`
+- `Pressure3D::Spatial` — `Pressure3D::Spatial`, `VertexFromCellPlaneSpatial`
+- `Pressure3D::SphereCylinder` — `Pressure3D::SphereCylinder`, `VertexFromCellPlaneSphereCylinder`
+- `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
+- `Pressure3D::Triangular` — `Pressure3D::Triangular`, `VertexFromCellPlaneTriangular`
+- `TargetAreaFromPressure` — `TargetAreaFromPressure`
+- `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
+
 ### `legacy/boolean.cc` (11)
 
 - `Boolean::AndGate` — `AndGate`, `Boolean::AndGate`
@@ -196,18 +192,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Boolean::FlagCount` — `Boolean::FlagCount`, `FlagCount`
 - `Boolean::OrGateCount` — `Boolean::OrGateCount`, `OrGateCount`
 - `Boolean::OrSpecialGateCount` — `Boolean::OrSpecialGateCount`, `OrSpecialGateCount`
-
-### `legacy/membraneCycling.cc` (9)
-
-- `MembraneCycling::CellFluxExocytosis` — `MembraneCycling::CellFluxExocytosis`
-- `MembraneCycling::CellUpTheGradientLinear` — `MembraneCycling::CellUpTheGradientLinear`
-- `MembraneCycling::CellUpTheGradientNonLinear` — `MembraneCycling::CellUpTheGradientNonLinear`
-- `MembraneCycling::CrossMembraneNonLinear` — `MembraneCycling::CrossMembraneNonLinear`
-- `MembraneCycling::InternalCellLinear` — `MembraneCycling::InternalCellLinear`
-- `MembraneCycling::InternalCellNonLinear` — `MembraneCycling::InternalCellNonLinear`
-- `MembraneCycling::LocalWallFeedbackLinear` — `MembraneCycling::LocalWallFeedbackLinear`
-- `MembraneCycling::PINFeedbackLinear` — `MembraneCycling::PINFeedbackLinear`
-- `MembraneCycling::PINFeedbackNonLinear` — `MembraneCycling::PINFeedbackNonLinear`
 
 ### `legacy/mechanicalTRBS.cc` (8)
 
@@ -276,12 +260,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Initiation::FaceArea2D` — `Initiation::FaceArea2D`
 - `Initiation::RandomBoolean` — `Initiation::RandomBoolean`
 - `Initiation::RandomBooleanBiased` — `Initiation::RandomBooleanBiased`
-
-### `legacy/membraneCyclingAll.cc` (3)
-
-- `MembraneCycling::LocalWallFeedbackNonLinear` — `MembraneCycling::LocalWallFeedbackNonLinear`
-- `MembraneCyclingAll::LocalWallFeedbackNonLinear` — `MembraneCyclingAll::LocalWallFeedbackNonLinear`
-- `MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition` — `MembraneCyclingAll::LocalWallFeedbackNonLinearInhibition`
 
 ### `legacy/degradation.cc` (2)
 
