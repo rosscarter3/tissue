@@ -7,7 +7,7 @@ pt_*.model
 # run outputs
 *.out
 *.log
-vtk/
+vtk*/
 *.pvsm
 
 # the published paper itself (not ours to redistribute)
