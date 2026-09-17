@@ -13,10 +13,9 @@ Given a dark-grown hook and a light stimulus at t = 0, the model reproduces
 the measured opening kinetics (RMSE 11.9° over 0-10 h), the inner-flank
 tissue-length fold change (2.16x against 2.149x measured; the outer flank
 overshoots, 1.11x against 1.055x), the inner/outer microtubule reorientation
-asymmetry (**but see the recalibration section — that one turns out to be an
-artefact of the solver's drag lag, not a property of the growing
-equilibrium**), and the direction of the auxin- and pH-dependent
-perturbations
+asymmetry (which needs the sub-epidermal growth term — see below; without it
+the switch this model produces comes from the solver's drag lag), and the
+direction of the auxin- and pH-dependent perturbations
 (though those act on the growth gate directly, so their direction is
 guaranteed by construction and only their magnitude is a test — see below).
 It does **not** reproduce the microtubule and cellulose perturbations — the
@@ -444,6 +443,7 @@ are compared at the same shape:
 | RK5, Y_f = 1350 (shipped) | 3 | 5 | 6 | 13 |
 | QuasiStatic, Y_f = 1350 | 87 | 88 | 88 | 88 |
 | QuasiStatic, Y_f = 65700 | 57 | 73 | 77 | 81 |
+| QuasiStatic + growing core | 90 | 90 | 88 | 7 |
 
 (90 = circumferential, 0 = longitudinal.) At force balance the outer flank
 stays circumferential at every stage of opening. The switch appears only when
@@ -476,7 +476,10 @@ missing was the loading half. See *Sub-epidermal growth* below.
 So the honest statement is narrower than the retraction: with turgor as the
 only longitudinal load, the switch this model produces under `RK5Adaptive`
 comes from drag lag rather than from the equilibrium stress state. That says
-the model was incomplete, not that the mechanism is wrong.
+the model was incomplete, not that the mechanism is wrong — and supplying the
+missing driver (`InnerTissue::GrowingCore`, below) restores the switch at
+force balance, outer flank first, with no lag involved. The retraction is
+withdrawn.
 
 **Status: measured, not adopted.** The recalibrated configuration is not the
 shipped model. It trades a working microtubule prediction for a working
@@ -506,55 +509,82 @@ maximal principal stress at t = 0 gives an inner/outer ratio of **1.460**
 against the analytic toroid's **1.454** — 0.4%, from a cell-resolved shell
 that was never fitted to it. What was missing is the loading half.
 
-**`InnerTissue::AxialGrowth` is a first attempt at that loading half, and it
-does not yet work. Two formulations were tried and both fail, for reasons
-worth recording.**
+**Two formulations failed before one worked, and the failures specify the
+requirement.**
 
-*As an applied tension along the axial walls.* This does what it should to the
-stress — outer-flank longitudinal stress rose from 754 to 831 in 0.05 h, and
-the predicted microtubule direction began to rotate. But tension along the
-surface fibres of a *curved* shell exerts a straightening moment, so the load
-needed to flip the anisotropy opened the hook 23° in three minutes. The
-paper's analytic parts are immune to this: each carries a prescribed stress
-with no coupling to the organ's shape.
+*As a prescribed tension along the axial walls* (`InnerTissue::AxialGrowth`),
+it does the right thing to the stress — outer longitudinal rose 754 → 831 in
+0.05 h and the predicted microtubule direction began to rotate — but tension
+along the surface of a *curved* shell exerts a straightening moment, so the
+load that flips the anisotropy opened the hook 23° in three minutes.
 
-*As a progressive shortening of the axial walls' reference length.* With
-growth switched off so nothing could relieve it, this does not build stress at
-all — it releases it. At 0.20/h both stresses *fall* over 2 h (outer hoop
-1323 → 1031, longitudinal 754 → 632), because a shell that is free to contract
-simply contracts until strain re-equilibrates against turgor.
+*As a progressive shortening of the axial reference lengths*, it releases
+stress instead of building it: with growth off at 0.20/h both principal
+stresses **fall** over 2 h (outer 1323 → 1031 and 754 → 632), because a shell
+free to contract simply contracts until strain re-equilibrates against turgor.
 
-| stretch rate | t (h) | outer hoop | outer longitudinal |
-|---|---|---|---|
-| 0.06/h | 0 → 2 | 1323 → 1274 | 754 → 767 |
-| 0.20/h | 0 → 2 | 1323 → 1031 | 754 → 632 |
+So the inner tissue has to be present as a body the epidermis cannot contract
+past — not a pressure, and not a change to the epidermis's own reference state.
 
-**What that second failure identifies is the actual requirement.** The
-sub-epidermal tissue has to be present as a *load-bearing element* — something
-the epidermis cannot contract past — not as a pressure and not as a change to
-the epidermis's own reference state. Turgor at fixed P resists radial collapse
-but offers no resistance to axial shortening, so the shell relieves any
-imposed longitudinal strain by getting shorter.
+### `InnerTissue::GrowingCore`
 
-**And a third obstacle sits behind both.** With the growth law on, imposed
-strain is absorbed almost as fast as it is applied: Lockhart yielding pins
-strain near its threshold, so longitudinal stress cannot drift far above hoop.
-The paper's longitudinal stress rises without bound precisely because it is a
-prescribed function of time that nothing relieves. In a model where stress is
-emergent and growth relieves it, the sub-epidermal loading must outpace the
-epidermis's ability to yield for the anisotropy to flip at all.
+The core carries its own reference length per axial wall, starting at the
+current geometry so it is stress-free at t = 0, and
 
-**Concrete next step.** Represent the core as a growing incompressible volume
-with its own reference *length* and *radius*, coupled to the shell by a stiff
-penalty, and let it grow anisotropically. Elongating the core faster than it
-widens loads the epidermis longitudinally, cannot be relieved by the shell
-contracting, and applies no external straightening moment — the shape response
-then comes only through the mechanics. This is a new reaction, not a parameter
-change, and it is the thing most likely to restore the microtubule switch for
-the right reason. There is also a lead worth testing first: stress scales with
-load while shape change scales with load/stiffness, so the recalibrated shell
-(2.2× stiffer overall) should flip the anisotropy with proportionally less
-straightening than the shipped one.
+- **grows proportionally**, `dLc/dt = g·Lc`. Uniform proportional elongation is
+  a similarity transform: inner and outer arcs lengthen by the same factor,
+  curvature is preserved, and no straightening moment is applied. This is what
+  the constant-tension version got wrong.
+- **pushes one-sidedly**, `F = K(Lc − d)` only while `d < Lc`. A tissue resists
+  compression and cannot pull. The force is self-limiting — the shell stretches
+  until `d ≈ Lc` and the force falls away — so it drives the shell to a
+  definite length rather than loading it without bound. Being one-sided also
+  means it sets a *floor*: the inner flank can still outgrow it, while the
+  outer flank is held stretched against it.
+
+**With growth off, it reproduces the switch and its asymmetry** (K = 1e4,
+g = 0.05/h; σ₁ and σ₂ are the maximal and minimal principal stresses):
+
+| t (h) | inner σ₁ | inner σ₂ | MT inner | outer σ₁ | outer σ₂ | MT outer |
+|---|---|---|---|---|---|---|
+| 0.0 | 1931 | 734 | 90° | 1323 | 754 | 90° |
+| 1.0 | 1963 | 1023 | 90° | 1359 | 1238 | 90° |
+| 1.5 | 1983 | 1182 | 90° | 1499 | 1408 | **1°** |
+| 2.0 | 1990 | 1261 | **90°** | 1635 | 1418 | **0°** |
+
+Longitudinal stress climbs steadily on both flanks while hoop barely moves.
+On the outer flank the two converge and swap at t ≈ 1.5 h; on the inner flank
+they stay far apart (1990 against 1261) and never do. That is the paper's
+mechanism exactly: the switch is outer-first because the toroid puts more hoop
+stress on the inner flank, so longitudinal has further to climb there.
+
+**With growth on it still happens, delayed, at force balance** (`QuasiStatic`,
+k_growth = 13, core g = 0.05/h):
+
+| t (h) | hook | MT inner | MT outer | outer anisotropy |
+|---|---|---|---|---|
+| 0.0 | 159.1 | 90° | 90° | 0.430 |
+| 2.0 | 106.7 | 90° | 90° | 0.249 |
+| 3.0 | 74.4 | 90° | 90° | 0.111 |
+| 3.5 | 64.0 | 90° | 88° | 0.010 |
+| 4.0 | 59.9 | **90°** | **7°** | 0.038 |
+
+The outer flank switches to longitudinal and the inner one does not — with no
+drag lag anywhere in the calculation. The delay from 1.5 h to ~3.75 h is the
+third obstacle at work: Lockhart yielding relieves the imposed strain, so the
+core has to outpace the epidermis's own growth before it can load it. At
+g = 0.02/h it never quite does, and the outer anisotropy dips to 0.25 and
+recovers instead of collapsing.
+
+**So the retraction is withdrawn.** The microtubule switch is not a solver
+artefact. It is real physics that this model was missing, and supplying it —
+as the paper does — reproduces the switch and its inner/outer asymmetry at
+true mechanical equilibrium.
+
+**What remains.** `k_growth` was fitted without the core, and the core adds
+opening drive, so the kinetics now run fast (59.9° at t = 4 h against 81.5°
+measured); the two need a joint refit. The core's stiffness and rate are
+hand-set, not measured. And this has been run to 4 h, not 12.
 
 
 ## Figures
