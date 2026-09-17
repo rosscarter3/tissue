@@ -587,6 +587,39 @@ measured); the two need a joint refit. The core's stiffness and rate are
 hand-set, not measured. And this has been run to 4 h, not 12.
 
 
+### Isoxaben: a retraction, and what the test actually shows
+
+An earlier version of this README claimed isoxaben could not be reproduced by
+any stiffness choice, because lowering Y_f softens the wall and a Lockhart law
+makes a softer wall yield faster. That claim was wrong, and wrong in the worst
+way — it tested something the paper does not propose.
+
+The paper's prescription is not "lower Y_f". It is low Y_f **plus a
+compensatory Y_m increase plus raised longitudinal stress**, motivated by
+wall-integrity signalling (FERONIA and THESEUS mutants are hypersensitive to
+isoxaben, Figs 6E-F), and it is simulated as such in their Figs 6G-H.
+
+Running that prescription here — low Y_f, raised Y_m, and a faster growing
+core for the longitudinal stress — reproduces both reported effects:
+
+| variant | Y_f | Y_m | core | opened by 5 h | outer switch |
+|---|---|---|---|---|---|
+| mock | 1350 | 20000 | 0.025 | 108.3° | none |
+| Y_f only | 470 | 20000 | 0.025 | 110.4° | none |
+| **paper's prescription** | 470 | 30000 | 0.04 | **63.5°** | **3.0 h** |
+| stronger compensation | 470 | 40000 | 0.05 | 35.4° | 1.25 h |
+
+Opening slows by 41%, matching Fig 6C, *and* the CMT switch accelerates from
+never-within-the-run to 3.0 h, matching the faster reorientation in Fig 6D and
+the model result in Fig 6H — with the dose-dependence going the right way on
+both. Lowering Y_f alone does neither.
+
+This is a stronger test of that hypothesis than the analytic model can give,
+because here the longitudinal stress is not prescribed: it emerges from the
+force balance and is continuously relieved by growth. The compensation
+mechanism survives that.
+
+
 ## Figures and animation of the switch
 
 `plot_mt_switch.py` and `animate_switch.py` read a run of `hook_core.model`
