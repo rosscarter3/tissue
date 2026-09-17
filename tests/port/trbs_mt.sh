@@ -183,3 +183,51 @@ for h in 0.001 0.0005 0.00025; do
   B=$($T/build/simulator _tmt.model tri3D_MT.init _eh.rk5 2>/dev/null | awk '$1==3 && NF>45 {n++; if(n==3) print $11}')
   python3 -c "print(f'    {$h:<10} {$A:<14} {$B:<14} {abs($A-$B):.3e}')"
 done
+
+echo
+echo "VertexFromTRLScenterTriangulationMT (orthotropic linear elements):"
+trls() { python3 - "$1" "$2" "$3" "$4" <<'PYEOF'
+import sys
+ym, yf, mf, nw = sys.argv[1:5]
+open("_trls.model", "w").write(f"""3 0 0
+
+CenterTriangulation::Initiate 0 1 1
+60
+
+CenterTriangulation::WallGrowth::Constant 2 1 1
+0.05
+1
+60
+
+VertexFromTRLScenterTriangulationMT 11 2 11 1
+{ym}
+{yf}
+0.3
+0.2
+{mf}
+{nw}
+1.0
+1
+0.7
+0
+0
+0 1 4 5 6 7 8 9 10 20 26
+60
+""")
+PYEOF
+}
+runv() { python3 $T/tools/port/compare.py _trls.model twoSquare3D_MT.init euler3.rk5 --tol=1e-9 --block=vertex 2>&1 | tail -1; }
+for mf in 0 1 5; do printf "  %-42s " "MF flag $mf, forces"; trls 1.0 2.0 $mf 0.0; runv; done
+# MF 2 reads Y_matrix as a total, so it needs Y_matrix > Y_fibre.
+printf "  %-42s " "MF flag 2 (Y_total 5, Y_fibre 2)"; trls 5.0 2.0 2 0.0; runv
+printf "  %-42s " "neighbour weight 0.4"; trls 1.0 2.0 0 0.4; runv
+echo "  Its stored diagnostics are sampled one evaluation later by legacy,"
+echo "  the same as VertexFromTRBSMT; the gap is linear in the step:"
+printf "    %-10s %-14s %-14s %s\n" "h" "legacy" "v2" "difference"
+trls 1.0 2.0 0 0.0
+for h in 0.001 0.0005 0.00025; do
+  printf 'Euler\n0 2\n0 6\n%s\n' $h > _eh.rk5
+  A=$($T/bin/simulator _trls.model twoSquare3D_MT.init _eh.rk5 2>/dev/null | awk '$1==4 && NF>60 {n++; if(n==3) print $12}')
+  B=$($T/build/simulator _trls.model twoSquare3D_MT.init _eh.rk5 2>/dev/null | awk '$1==4 && NF>60 {n++; if(n==3) print $12}')
+  python3 -c "print(f'    {$h:<10} {$A:<14} {$B:<14} {abs($A-$B):.3e}')"
+done

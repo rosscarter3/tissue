@@ -602,3 +602,31 @@ pi spelled 3.1415 in one place and 3.14159265 in another), in whether the
 pivot is taken at the top of the loop or refreshed at the bottom, and in
 whether the eigenvector columns are renormalized. The consolidation was
 checked by re-running every TRBS harness at 0.000e+00 first.
+
+### `VertexFromTRLScenterTriangulationMT`, 2026-09-17
+
+Triangular *linear* elements on a center-triangulated cell: the same fibre
+direction, the same stored state, but the mechanics are an orthotropic
+St Venant-Kirchhoff triangle rather than biquadratic springs. There is no
+spring term at all - the whole force is the stress pushed through the shape
+vectors, so it reuses `pushDeltaS` and nothing else of the TRBS force path.
+
+The stress is taken in the *fibre* frame: rotate the Green strain into it,
+apply the orthotropic stiffness in Voigt form, rotate back. Two things about
+that stiffness are worth noticing, and both are legacy's: the Poisson ratio in
+the whole in-plane block is the *longitudinal* one, and the shear modulus is
+built from the longitudinal Young's modulus alone - the transverse ratio
+(parameter 3) only ever reaches the Lame constants, which this reaction
+computes and then never uses.
+
+Forces exact against legacy (0.000e+00) for every material flag it supports
+(0, 1, 2, 5), under both plane assumptions and with neighbour weighting on.
+Its stored diagnostics carry the same one-evaluation sampling offset as
+`VertexFromTRBSMT`, linear in the step size (4.1e-5, 2.1e-5, 1.0e-5 at
+h = 0.001, 0.0005, 0.00025), with the vertex trajectory bit-exact throughout.
+
+Flag 2 treats `Y_matrix` as a *total* stiffness and sets the transverse
+modulus to `Y_matrix - Y_fibre`, so it needs `Y_matrix > Y_fibre`; below that
+the modulus goes negative and the `sqrt(Y_L Y_T)` in the stiffness matrix
+returns NaN. That is a parameter-domain limit, not a port issue, but nothing
+in legacy checks it.
