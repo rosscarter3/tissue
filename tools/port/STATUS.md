@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**171 names registered here; 178 classes outstanding.**
+**172 names registered here; 177 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -23,9 +23,9 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/boolean.cc` | 11 |
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
-| `legacy/mechanicalTRBS.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/fiberModel.cc` | 5 |
+| `legacy/mechanicalTRBS.cc` | 5 |
 | `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
@@ -205,15 +205,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `HillGeneralThree` — `HillGeneralThree`
 - `HillGeneralTwo` — `HillGeneralTwo`
 
-### `legacy/mechanicalTRBS.cc` (6)
-
-- `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBSMT` — `VertexFromTRBSMT`
-- `VertexFromTRBScenterTriangulationConcentrationHillMT` — `VertexFromTRBScenterTriangulationConcentrationHillMT`
-- `VertexFromTRBScenterTriangulationMT` — `VertexFromTRBScenterTriangulationMT`
-- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
-- `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
-
 ### `legacy/calculate.cc` (5)
 
 - `Calculate::AngleVector` — `AngleVector`, `Calculate::AngleVector`
@@ -229,6 +220,14 @@ Method and the log of validated batches are in `NOTES.md`.
 - `FiberModel::Linear` — `FiberModel::Linear`
 - `Pressure3D::CenterTriangulation::Linear` — `CenterTriangulation::Pressure3D::Linear`, `Pressure3D::CenterTriangulation::Linear`, `VertexFromCellPlaneLinearCenterTriangulation`
 - `Pressure3D::Linear` — `Pressure3D::Linear`, `VertexFromCellPlaneLinear`
+
+### `legacy/mechanicalTRBS.cc` (5)
+
+- `Hypocotyl3D::VertexFromTRBScenterTriangulationMT` — `Hypocotyl3D::VertexFromTRBScenterTriangulationMT`
+- `VertexFromTRBSMT` — `VertexFromTRBSMT`
+- `VertexFromTRBScenterTriangulationConcentrationHillMT` — `VertexFromTRBScenterTriangulationConcentrationHillMT`
+- `VertexFromTRBScenterTriangulationMTOpt` — `VertexFromTRBScenterTriangulationMTOpt`
+- `VertexFromTRLScenterTriangulationMT` — `VertexFromTRLScenterTriangulationMT`
 
 ### `legacy/growth.cc` (4)
 

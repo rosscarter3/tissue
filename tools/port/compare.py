@@ -5,7 +5,11 @@ Every reaction ported from `legacy/` should be checked against the behaviour it
 is replacing, not just against whether it compiles. This drives both binaries
 over the same model/init/solver and diffs the print-flag-0 output numerically.
 
-    python3 tools/port/compare.py MODEL INIT SOLVER [--tol 1e-9]
+    python3 tools/port/compare.py MODEL INIT SOLVER [--tol 1e-9] [--block=vertex]
+
+--block=vertex compares only the vertex-position blocks. Use it to check a
+reaction's derivs() independently of an update() that writes cell variables:
+port and validate the forces first, then the bookkeeping.
 
 Exits non-zero if the two disagree by more than the tolerance, printing the
 worst offending value and where it is.
@@ -70,8 +74,34 @@ def numbers(text):
     return out
 
 
-def compare(a, b, tol):
-    na, nb = numbers(a), numbers(b)
+def vertex_numbers(text):
+    """Just the vertex-position blocks.
+
+    Each printed state is [vertex block, cell block, wall block], every block
+    a "<rows> <cols>" header followed by its rows. The vertex block is the
+    first, so its header gives nVertex and the dimension; every later block
+    with that exact header is another print's vertices.
+    """
+    lines = text.splitlines()
+    hdr = None
+    for i, line in enumerate(lines):
+        parts = line.split()
+        if len(parts) == 2 and all(p.isdigit() for p in parts):
+            hdr, start = parts, i
+            break
+    if hdr is None:
+        return []
+    nv, dim = int(hdr[0]), int(hdr[1])
+    out = []
+    for i, line in enumerate(lines):
+        if line.split() == hdr:
+            for row in lines[i + 1:i + 1 + nv]:
+                out += [float(t) for t in row.split()[:dim]]
+    return out
+
+
+def compare(a, b, tol, extract=numbers):
+    na, nb = extract(a), extract(b)
     if len(na) != len(nb):
         return None, f"output shape differs: {len(na)} values vs {len(nb)}"
     worst, where = 0.0, -1
@@ -92,6 +122,8 @@ def main():
     if len(args) < 3:
         sys.exit(__doc__)
     model, init, solver = args[:3]
+    extract = vertex_numbers if any(
+        a.startswith("--block=vertex") for a in sys.argv[1:]) else numbers
 
     for b, name in ((LEGACY, "legacy/bin/simulator"), (NEW, "build/simulator")):
         if not os.path.exists(b):
@@ -100,13 +132,13 @@ def main():
     solver = text_solver(solver)
     old = run(LEGACY, model, init, solver)
     new = run(NEW, model, init, solver)
-    worst, where = compare(old, new, tol)
+    worst, where = compare(old, new, tol, extract)
     if worst is None:
         print(f"MISMATCH  {where}")
         sys.exit(1)
     verdict = "match" if worst <= tol else "MISMATCH"
     print(f"{verdict}  worst relative difference {worst:.3e} "
-          f"(tolerance {tol:.0e}) over {len(numbers(new))} values"
+          f"(tolerance {tol:.0e}) over {len(extract(new))} values"
           + (f", first at index {where}" if worst > tol else ""))
     sys.exit(0 if worst <= tol else 1)
 

@@ -251,7 +251,28 @@ differ from legacy for affected models — in v2's favor:
     files that needed no fix, so it is discriminating rather than trivially
     satisfied.
 
-Items 8-10 and 12 mean those reactions cannot be compared bit-for-bit against
+13. **`VertexFromTRBScenterTriangulationMT` neighbour weighting never
+    happens** (`mechanicalTRBS.cc:5568`): the guard on the neighbour list is
+    `neighbor[nn] < numCells && neighbor[nn] > -1`, and `neighbor` is a
+    `std::vector<size_t>`, so the second test compares an unsigned value
+    against `SIZE_MAX` and is **always false**. The whole neighbour-averaging
+    loop is dead. What `parameter(5)` actually does in legacy is scale each
+    cell's own stress by `(1 - neighbourweight)` before the anisotropy is
+    taken from it - so a model asking for spatial smoothing of the stress
+    field the microtubules respond to got no smoothing and a silently weaker
+    stress instead. Measured on a fixture whose two cells agree to under 1%,
+    where a real average must barely move the answer:
+
+        weight   legacy       v2 (fixed)
+        0.0001   0.00112498   0.00112509
+        0.2      0.000900072  0.00112501
+        0.4      0.000675054  0.00112497
+        0.8      0.000225018  0.00112503
+
+    Legacy tracks `(1 - w)` exactly. The diagnosis is confirmed the other way
+    too: re-emulating the always-false guard reproduces legacy bit-for-bit.
+
+Items 8-10, 12 and 13 mean those reactions cannot be compared bit-for-bit against
 legacy, and should not be. `Bending::Angle` and `Bending::NeighborCenter` are
 instead checked against an independent reimplementation of the force law in
 `tests/port/bending_refcheck.py`; `SisterVertex::SpringCellConc` is compared

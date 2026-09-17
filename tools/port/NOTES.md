@@ -405,3 +405,93 @@ cell1/cell2 asymmetries in membraneCycling.cc there is no invariance the rule
 must satisfy here, so it is reproduced rather than "fixed". The harness tests
 both a direction index where both fixture cells are flagged and one where only
 one is, since that is the path the coupling changes.
+
+### `legacy/mechanicalTRBS.cc`: the transversely isotropic material, 2026-09-17
+
+`VertexFromTRBScenterTriangulationMT` - the fibre-reinforced material itself,
+about 1800 live lines in legacy (573 of `derivs`, 1231 of `update`), and the
+one the microtubule feedback in the hook work runs on.
+
+It decomposes cleanly onto the kernel extracted earlier. The isotropic part of
+the element force is the ordinary TRBS force evaluated with the *transverse*
+moduli, which `stiffnessFrom(el, lambdaT + 2 mioT, 2 mioT)` already gave; the
+fibre adds a correction from the extra Lame pair and the fibre direction
+pulled back into the element's rest frame with the cofactor of F. That
+correction is now `anisotropicDeltaForce()` in `trbs_core.h`, and the element
+frame it needs - shape vectors, deformation gradient, local-to-global
+rotation - came out as `localFrameOf()`, which the isotropic Cauchy stress was
+already rebuilding inline. `addCauchyStress` was moved onto it and re-checked
+at 0.000e+00 first.
+
+`derivs` matched legacy on the first run, and all eleven MF (material) flags
+match to 0.000e+00, under both plane stress and plane strain, with and without
+wall dynamics. `update` - the pass that computes each cell's area-averaged
+true strain and true stress, diagonalizes both, and stores the anisotropy
+measures, energies, Mises stress and cell normal that other reactions read -
+matched on its first run too, then needed three corrections found by the
+harness:
+
+- Legacy's `update` has a *different* material chain from its `derivs`: no
+  branch at all for MF flag 9, and no ad-hoc `cellData[40] == 100` switch in
+  MF flag 0. Neither difference looks intentional; both change results, so
+  both are reproduced (`moduliFor(..., inUpdate)`).
+- Legacy's two stress passes differ: the direct one ranks the principal values
+  by magnitude and records the Mises stress, the neighbour-averaged one ranks
+  by signed value and records none.
+- The two Jacobi loops also differ - the stress pass finds its pivot at the
+  top of the loop and so performs one extra rotation below threshold, the
+  strain pass finds it before and refreshes at the bottom. Both forms are in
+  `trbs_core.h`. Neither of legacy's loops is bounded; both are capped at 50
+  sweeps here, since a degenerate tensor otherwise hangs the run.
+
+One deliberate divergence, README item 13: legacy's neighbour weighting is
+dead code, guarded by `size_t > -1`. See the README for the measurements. The
+diagnosis was confirmed both ways - emulating the broken guard reproduces
+legacy bit-for-bit, and instrumenting the fixed loop shows it reaching one
+neighbour per cell on the two-cell fixture and contributing exactly
+`w * neighbour`.
+
+Three further legacy behaviours, documented in the source rather than changed:
+
+- The **MT update flag** (parameter 9) is documented in the constructor as
+  offering four feedback modes - force to stress, to strain, to
+  perpendicular-strain - and the constructor validates it in 0-4. Only mode 1
+  (set the direction from the TETA angle) does anything. Nothing in this
+  reaction rotates the direction toward stress or strain; the stored direction
+  is only ever normalized.
+- **MF flag 10's Hill constants** are read from parameters 9 and 10 - the MT
+  update flag and the double-resting-length flag - although the 13-parameter
+  form exists precisely to carry them at 11 and 12, where nothing reads them.
+  The mode is unusable as written: the Hill exponent can only be 0 or 1 and
+  the half-max only 0-4, and neither flag can then be set independently. The
+  11-parameter form keeps legacy's reading so existing models reproduce
+  exactly; the 13-parameter form uses the documented positions.
+- The **sliver branch**: a near-degenerate element makes legacy *double* the
+  derivatives already accumulated on its three nodes and drop its own force.
+  That is not a meaningful remedy, but it is reachable, so it is reproduced
+  with its warning rather than reinterpreted.
+
+Two smaller changes. The degenerate-fibre fallback draws from the seeded
+generator the rest of the rewrite shares rather than libc `rand()`, so runs
+stay reproducible; it is a fallback for a fibre lying along the element normal
+and the validation runs do not reach it. And MF flags 0 and 6-9 read cell
+variables 40 and 13 by hard-coded number, which legacy would run off the end
+of the row without saying so - `initiate()` now checks the row is wide enough
+and says which mode needs it.
+
+The MF flags whose `derivs` writes a cell variable (1 writes the transverse
+modulus, 5 reads the anisotropic energy, and MT update flag 1 writes the
+direction) differ from legacy at the **t=0 print only**, the same
+derivs-side-effect timing as the transport and spring reactions. The
+trajectories are identical: measured on MF flag 1, legacy prints 3.60489 and
+3.43234 for the two cells at every print, v2 prints the untouched initial
+values at t=0 and then the same 3.60489 / 3.43234. The harness compares those
+configurations with `--block=vertex`, which `tools/port/compare.py` now
+supports for exactly this purpose.
+
+Still outstanding in this file: `VertexFromTRBSMT` (the same material without
+center triangulation), `VertexFromTRLScenterTriangulationMT`,
+`VertexFromTRBScenterTriangulationConcentrationHillMT`,
+`VertexFromTRBScenterTriangulationMTOpt`, and
+`Hypocotyl3D::VertexFromTRBScenterTriangulationMT`. All five are variants of
+the reaction ported here and now have the whole kernel available.
