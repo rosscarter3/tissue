@@ -781,5 +781,192 @@ public:
 TISSUE_REGISTER_REACTION(DownInternalGradientModelGeometric,
                          "DownInternalGradientModelGeometric")
 
+
+// --- the AuxinROPModel family -----------------------------------------------
+//
+// SimpleROPModel with the ROP made explicit: a third species cycles between
+// the cell and each membrane with the opposite-face Hill feedback, and it is
+// the *ROP* on a membrane that pulls PIN out of the cell there. Auxin lives in
+// a wall compartment, as in SimpleROPModel 1-3.
+//
+// Level 0 = (cell auxin, cell PIN, cell ROP); level 1 = (paired wall auxin,
+// paired membrane PIN, paired membrane ROP).
+
+// Hill of the opposite face, shared by all three.
+inline double ropFeedback(const Matrix &wallData, size_t w, size_t idx,
+                          size_t other, double K, double n) {
+  const double x = std::pow(wallData[w][idx + other], n);
+  return x / (std::pow(K, n) + x);
+}
+
+class AuxinROPModel : public Reaction {
+public:
+  AuxinROPModel(const ParameterList &p, const IndexLevels &i) {
+    if (i.size() != 2 || i[0].size() != 3 || i[1].size() != 3)
+      throw std::runtime_error("AuxinROPModel: level 0 = (auxin, PIN, ROP); "
+                               "level 1 = paired wall (auxin, PIN, ROP).");
+    configure("AuxinROPModel", p, i, 16, {3, 3},
+              {"c_IAA", "d_IAA", "p_IAAH(in)", "p_IAAH(out)", "p_IAA-",
+               "D_IAA", "c_PIN", "d_PIN", "endo_PIN", "exo_PIN", "c_ROP",
+               "d_ROP", "endo_ROP", "exo_ROP", "K_hill", "n_hill"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t rI = variableIndex(0, 2);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    const size_t rwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) - parameter(7) * cellData[c][pI];
+      cellDerivs[c][rI] += parameter(10) - parameter(11) * cellData[c][rI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        double fac = parameter(3) * cellData[c][aI] -
+                     parameter(2) * wallData[w][awI + own] +
+                     parameter(4) * cellData[c][aI] * wallData[w][pwI + own];
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(5) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(5) * wallData[w][awI + own];
+        fac = parameter(8) * wallData[w][pwI + own] -
+              parameter(9) * cellData[c][pI] * wallData[w][rwI + own];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+        fac = parameter(12) * wallData[w][rwI + own] *
+                  ropFeedback(wallData, w, rwI, other, parameter(14),
+                              parameter(15)) -
+              parameter(13) * cellData[c][rI] * wallData[w][awI + own];
+        wallDerivs[w][rwI + own] -= fac;
+        cellDerivs[c][rI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(AuxinROPModel, "AuxinROPModel")
+
+// AuxinROPModel with two saturating terms added: auxin secretion saturates in
+// the cell's auxin, and PIN removal is a Hill function of the membrane ROP
+// rather than linear in it. Three extra parameters, so the numbering shifts.
+class AuxinROPModel2 : public Reaction {
+public:
+  AuxinROPModel2(const ParameterList &p, const IndexLevels &i) {
+    if (i.size() != 2 || i[0].size() != 3 || i[1].size() != 3)
+      throw std::runtime_error("AuxinROPModel2: level 0 = (auxin, PIN, ROP); "
+                               "level 1 = paired wall (auxin, PIN, ROP).");
+    configure("AuxinROPModel2", p, i, 19, {3, 3},
+              {"c_IAA", "d_IAA", "p_IAAH(in)", "p_IAAH(out)", "p_IAA-",
+               "K_IAA", "D_IAA", "c_PIN", "d_PIN", "endo_PIN", "exo_PIN",
+               "K_PIN", "n_PIN", "c_ROP", "d_ROP", "endo_ROP", "K_ROP",
+               "n_ROP", "exo_ROP"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t rI = variableIndex(0, 2);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    const size_t rwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(7) - parameter(8) * cellData[c][pI];
+      cellDerivs[c][rI] += parameter(13) - parameter(14) * cellData[c][rI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        double fac = parameter(3) * cellData[c][aI] -
+                     parameter(2) * wallData[w][awI + own] +
+                     parameter(4) * wallData[w][pwI + own] * cellData[c][aI] /
+                         (parameter(5) + cellData[c][aI]);
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(6) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(6) * wallData[w][awI + own];
+        fac = parameter(9) * wallData[w][pwI + own] -
+              parameter(10) * cellData[c][pI] *
+                  ropFeedback(wallData, w, rwI, own, parameter(11),
+                              parameter(12));
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+        fac = parameter(15) * wallData[w][rwI + own] *
+                  ropFeedback(wallData, w, rwI, other, parameter(16),
+                              parameter(17)) -
+              parameter(18) * cellData[c][rI] * wallData[w][awI + own];
+        wallDerivs[w][rwI + own] -= fac;
+        cellDerivs[c][rI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(AuxinROPModel2, "AuxinROPModel2")
+
+// AuxinROPModel with an AUX/LAX-dependent influx from the wall, read from a
+// fourth cell variable.
+//
+// The two faces of a wall do NOT run the same law here: legacy's cell1 branch
+// uses the new form - secretion `(p3 + p4 PIN) a` against an influx
+// `(p2 + p16 AUX) a_wall` - while its cell2 branch still carries the
+// AuxinROPModel form, `p3 a - p2 a_wall + p4 a PIN`, with no AUX term at all.
+// So `parameter(16)` and the AUX cell variable are only ever read on the cell1
+// side, and the reaction's behaviour depends on which cell an init file
+// happens to list first for each wall.
+//
+// That looks like a half-finished edit rather than a typo: the second branch
+// is the older expression, intact. Unlike the cell1/cell2 asymmetries fixed in
+// membraneCycling.cc, there is no way to tell from the code which form was
+// meant, so this is reproduced as written and flagged rather than repaired.
+class AuxinROPModel3 : public Reaction {
+public:
+  AuxinROPModel3(const ParameterList &p, const IndexLevels &i) {
+    if (i.size() != 2 || i[0].size() != 4 || i[1].size() != 3)
+      throw std::runtime_error(
+          "AuxinROPModel3: level 0 = (auxin, PIN, ROP, AUX); level 1 = paired "
+          "wall (auxin, PIN, ROP).");
+    configure("AuxinROPModel3", p, i, 17, {4, 3},
+              {"c_IAA", "d_IAA", "p_IAAH(in)", "p_IAAH(out)", "p_IAA-",
+               "D_IAA", "c_PIN", "d_PIN", "endo_PIN", "exo_PIN", "c_ROP",
+               "d_ROP", "endo_ROP", "exo_ROP", "K_hill", "n_hill",
+               "p_IAA-(AUX)"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t rI = variableIndex(0, 2), auxI = variableIndex(0, 3);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    const size_t rwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) - parameter(7) * cellData[c][pI];
+      cellDerivs[c][rI] += parameter(10) - parameter(11) * cellData[c][rI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        // The asymmetry described above: only side 0 gets the AUX term.
+        double fac =
+            own == 0
+                ? (parameter(3) + parameter(4) * wallData[w][pwI]) *
+                          cellData[c][aI] -
+                      (parameter(2) + parameter(16) * cellData[c][auxI]) *
+                          wallData[w][awI]
+                : parameter(3) * cellData[c][aI] -
+                      parameter(2) * wallData[w][awI + 1] +
+                      parameter(4) * cellData[c][aI] * wallData[w][pwI + 1];
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(5) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(5) * wallData[w][awI + own];
+        fac = parameter(8) * wallData[w][pwI + own] -
+              parameter(9) * cellData[c][pI] * wallData[w][rwI + own];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+        fac = parameter(12) * wallData[w][rwI + own] *
+                  ropFeedback(wallData, w, rwI, other, parameter(14),
+                              parameter(15)) -
+              parameter(13) * cellData[c][rI] * wallData[w][awI + own];
+        wallDerivs[w][rwI + own] -= fac;
+        cellDerivs[c][rI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(AuxinROPModel3, "AuxinROPModel3")
+
 } // namespace
 } // namespace tissue

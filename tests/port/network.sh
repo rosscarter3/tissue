@@ -146,3 +146,35 @@ $P15
 0 1
 3 1 7"; run euler.rk5 twoSquareM.init
 done
+
+echo
+echo "The AuxinROPModel family:"
+S16=$(python3 -c "print('\n'.join(f'{0.05+0.03*k:.3f}' for k in range(16)))")
+S19=$(python3 -c "print('\n'.join(f'{0.05+0.03*k:.3f}' for k in range(19)))")
+S17=$(python3 -c "print('\n'.join(f'{0.05+0.03*k:.3f}' for k in range(17)))")
+printf "%-46s " "AuxinROPModel"
+mk "AuxinROPModel 16 2 3 3
+$S16
+0 1 2
+3 1 5"; run euler.rk5
+printf "%-46s " "AuxinROPModel2"
+mk "AuxinROPModel2 19 2 3 3
+$S19
+0 1 2
+3 1 5"; run euler.rk5
+printf "%-46s " "AuxinROPModel3"
+mk "AuxinROPModel3 17 2 4 3
+$S17
+0 1 2 4
+3 1 5"; run euler.rk5
+echo
+echo "AuxinROPModel3's two wall faces run different laws, so its results"
+echo "depend on which cell an init file lists first for each wall. Both"
+echo "simulators agree, because the port reproduces it:"
+python3 $T/tests/port/membrane_swapcheck.py single.model twoSquareT.init euler.rk5
+echo "  and the control, whose branches do mirror each other:"
+mk "AuxinROPModel 16 2 3 3
+$S16
+0 1 2
+3 1 5"
+python3 $T/tests/port/membrane_swapcheck.py single.model twoSquareT.init euler.rk5

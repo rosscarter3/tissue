@@ -819,3 +819,33 @@ suggest:
   of wall variable 0 refreshed only at print points; this reads that variable
   live, so the two agree exactly unless a model grows wall lengths - the same
   divergence as README item 11.
+
+### `legacy/network.cc`: the AuxinROPModel family - 3 classes, 2026-09-18
+
+`SimpleROPModel` with the ROP made explicit: a third species cycles between
+the cell and each membrane with the opposite-face Hill feedback, and it is the
+*ROP* on a membrane that pulls PIN out of the cell there. All three 0.000e+00
+against legacy.
+
+`AuxinROPModel2` adds two saturating terms - auxin secretion saturating in the
+cell's auxin, and PIN removal a Hill of the membrane ROP rather than linear in
+it - which shifts the parameter numbering by three.
+
+**`AuxinROPModel3` is not symmetric in a wall's two faces, and this is worth
+Ross's attention.** Its cell1 branch uses a new secretion law with an
+AUX/LAX-dependent influx, `(p3 + p4 PIN) a - (p2 + p16 AUX) a_wall`, while its
+cell2 branch still carries the plain `AuxinROPModel` expression with no AUX
+term at all. So `parameter(16)` and the AUX cell variable are read only on the
+cell1 side, and the model's behaviour depends on which cell an init file
+happens to list first for each wall - an arbitrary artefact of the file.
+Measured with `tests/port/membrane_swapcheck.py`: flipping every wall's
+orientation moves the result by **2.524e-01**, where `AuxinROPModel` is
+invariant to 0.000e+00.
+
+Unlike the cell1/cell2 asymmetries fixed in `membraneCycling.cc`, this one is
+not a typo that can be read off the code - the second branch is the older
+expression, intact, so it looks like a half-finished edit and there is no way
+to tell which form was intended. It is therefore reproduced as written and
+flagged here rather than repaired. Both simulators show the same 25% swing,
+which is the evidence that the port is faithful; whether the model should
+behave that way is a question for whoever uses it.

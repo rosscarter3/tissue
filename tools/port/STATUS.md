@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**193 names registered here; 156 classes outstanding.**
+**196 names registered here; 153 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -16,7 +16,7 @@ Method and the log of validated batches are in `NOTES.md`.
 | legacy source | outstanding |
 |---|---|
 | `legacy/adhocReaction.cc` | 40 |
-| `legacy/network.cc` | 25 |
+| `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
@@ -76,7 +76,7 @@ Method and the log of validated batches are in `NOTES.md`.
 - `restrictVertexRadially` — `restrictVertexRadially`
 - `scaleTemplate` — `scaleTemplate`
 
-### `legacy/network.cc` (25)
+### `legacy/network.cc` (22)
 
 - `AuxinExoBistability` — `AuxinExoBistability`, `AuxinPINBistabilityModelCellNew`
 - `AuxinFluxModel` — `AuxinFluxModel`
@@ -93,9 +93,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `AuxinModelStress` — `AuxinModelStress`
 - `AuxinPINBistabilityModel` — `AuxinPINBistabilityModel`
 - `AuxinPINBistabilityModelCell` — `AuxinPINBistabilityModelCell`
-- `AuxinROPModel` — `AuxinROPModel`
-- `AuxinROPModel2` — `AuxinROPModel2`
-- `AuxinROPModel3` — `AuxinROPModel3`
 - `AuxinWallModel` — `AuxinWallModel`
 - `CellCellAuxinTransport` — `CellCellAuxinTransport`
 - `IntracellularCoupling` — `IntracellularCoupling`
