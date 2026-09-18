@@ -11,6 +11,7 @@
 //
 #include <cmath>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "tissue/core/tissue.h"
@@ -565,6 +566,220 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(SimpleROPModel7, "SimpleROPModel7")
+
+
+// --- the gradient models ----------------------------------------------------
+//
+// Five reactions built on the SimpleROPModel7 skeleton - marked walls run the
+// model, unmarked ones leak - but with the membrane PIN feedback coming from
+// an auxin concentration rather than from the opposite face:
+//
+//     dPIN_membrane/dt = p8 PIN_membrane - p9 PIN_cell * N^n/(K^n + D^n)
+//
+// Where N and D come from is the whole difference between them: the cell's own
+// auxin in both (up the internal gradient), K in the numerator so the term is
+// repressed instead (down the internal gradient), or the *neighbour's* auxin
+// in both (up the external gradient).
+//
+// The shared parameter list is the SimpleROPModel one, with p13 and p14 the
+// leak rates for unmarked walls.
+#define GRADIENT_CHECK(NAME)                                                   \
+  if (i.size() != 2 || i[0].size() != 2 || i[1].size() != 3)                   \
+    throw std::runtime_error(                                                  \
+        std::string(NAME) + ": level 0 = (cell auxin, cell PIN); level 1 = "   \
+                            "(unused, paired membrane PIN, wall marker).");    \
+  configure(NAME, p, i, 15, {2, 3},                                            \
+            {"c_IAA", "d_IAA", "p_IAAH(in)", "p_IAAH(out)", "K_PIN", "D_IAA",  \
+             "c_PIN", "d_PIN", "endo_PIN", "exo_PIN", "K_hill", "n_hill",      \
+             "p_12", "leak_IAA", "leak_PIN"});
+
+enum class GradientSource { OwnAuxin, Repressed, NeighbourAuxin };
+
+template <GradientSource kSource>
+class GradientModel : public Reaction {
+public:
+  GradientModel(const ParameterList &p, const IndexLevels &i) {
+    GRADIENT_CHECK(name())
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1), mwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      forEachInteriorWall(
+          T, c, [&](size_t, size_t w, size_t neigh, size_t side) {
+            const size_t own = side;
+            if (wallData[w][mwI] == 1) {
+              double fac =
+                  parameter(2) * cellData[c][aI] +
+                  parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+              cellDerivs[c][aI] -= fac;
+              cellDerivs[neigh][aI] += fac;
+              const double a = kSource == GradientSource::NeighbourAuxin
+                                   ? cellData[neigh][aI]
+                                   : cellData[c][aI];
+              const double num = kSource == GradientSource::Repressed
+                                     ? parameter(10)
+                                     : a;
+              fac = parameter(8) * wallData[w][pwI + own] -
+                    parameter(9) * cellData[c][pI] *
+                        std::pow(num, parameter(11)) /
+                        (std::pow(parameter(10), parameter(11)) +
+                         std::pow(a, parameter(11)));
+              wallDerivs[w][pwI + own] -= fac;
+              cellDerivs[c][pI] += fac;
+            } else if (wallData[w][mwI] == 0) {
+              const double fa = parameter(13) * cellData[c][aI];
+              const double fp = parameter(14) * cellData[c][pI];
+              cellDerivs[c][aI] -= fa;
+              cellDerivs[c][pI] -= fp;
+              cellDerivs[neigh][aI] += fa;
+              cellDerivs[neigh][pI] += fp;
+            }
+          });
+    }
+  }
+
+private:
+  static const char *name() {
+    switch (kSource) {
+    case GradientSource::OwnAuxin:
+      return "UpInternalGradientModel";
+    case GradientSource::Repressed:
+      return "DownInternalGradientModel";
+    }
+    return "UpExternalGradientModel";
+  }
+};
+using UpInternalGradientModel = GradientModel<GradientSource::OwnAuxin>;
+using DownInternalGradientModel = GradientModel<GradientSource::Repressed>;
+using UpExternalGradientModel = GradientModel<GradientSource::NeighbourAuxin>;
+TISSUE_REGISTER_REACTION(UpInternalGradientModel, "UpInternalGradientModel")
+TISSUE_REGISTER_REACTION(DownInternalGradientModel, "DownInternalGradientModel")
+TISSUE_REGISTER_REACTION(UpExternalGradientModel, "UpExternalGradientModel")
+
+// DownInternalGradientModel with the auxin transport removed: PIN still cycles
+// on every marked membrane, but nothing moves between cells through them.
+//
+// Two structural quirks of legacy's branching are kept. The PIN cycling runs
+// on *boundary* membranes too - the interior test is absent from both
+// branches. And the leak is attached as an `else` to the cell2 branch only, so
+// an unmarked wall leaks when the cell is its cell1 and does nothing when the
+// cell is its cell2.
+class DownInternalGradientModelSingleCell : public Reaction {
+public:
+  DownInternalGradientModelSingleCell(const ParameterList &p,
+                                      const IndexLevels &i) {
+    GRADIENT_CHECK("DownInternalGradientModelSingleCell")
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1), mwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      const CellTopo &cell = T.cell(c);
+      for (size_t n = 0; n < cell.numWall(); ++n) {
+        const size_t w = cell.walls[n];
+        const Wall &wall = T.wall(w);
+        const double hill =
+            std::pow(parameter(10), parameter(11)) /
+            (std::pow(parameter(10), parameter(11)) +
+             std::pow(cellData[c][aI], parameter(11)));
+        if (wall.cell1 == c && wallData[w][mwI] == 1) {
+          const double fac = parameter(8) * wallData[w][pwI] -
+                             parameter(9) * cellData[c][pI] * hill;
+          wallDerivs[w][pwI] -= fac;
+          cellDerivs[c][pI] += fac;
+        }
+        if (wall.cell2 == c && wallData[w][mwI] == 1) {
+          const double fac = parameter(8) * wallData[w][pwI + 1] -
+                             parameter(9) * cellData[c][pI] * hill;
+          wallDerivs[w][pwI + 1] -= fac;
+          cellDerivs[c][pI] += fac;
+        } else if (wall.cell1 == c && !Tissue::isBackground(wall.cell2) &&
+                   wallData[w][mwI] == 0) {
+          const double fa = parameter(13) * cellData[c][aI];
+          const double fp = parameter(14) * cellData[c][pI];
+          cellDerivs[c][aI] -= fa;
+          cellDerivs[c][pI] -= fp;
+          cellDerivs[wall.cell2][aI] += fa;
+          cellDerivs[wall.cell2][pI] += fp;
+        }
+      }
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(DownInternalGradientModelSingleCell,
+                         "DownInternalGradientModelSingleCell")
+
+// DownInternalGradientModel with the fluxes scaled by wall length over cell
+// volume - g_ij for the donor, g_ji for the receiver, so a small cell gains
+// more per unit of flux than a large one.
+//
+// Two legacy details kept. The PIN taken off a membrane is *not* scaled while
+// the PIN added to the cell is, so PIN is not conserved between the two. And
+// the wall length comes from `Wall::length()`, legacy's cached copy of wall
+// variable 0 refreshed only at print points; this reads that variable live,
+// so the two agree exactly unless a model is growing wall lengths - the same
+// divergence as README item 11.
+class DownInternalGradientModelGeometric : public Reaction {
+public:
+  DownInternalGradientModelGeometric(const ParameterList &p,
+                                     const IndexLevels &i) {
+    GRADIENT_CHECK("DownInternalGradientModelGeometric")
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &cellDerivs, Matrix &wallDerivs,
+              Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1), mwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      const double cellVolume = T.cellVolume(c, vertexData);
+      forEachInteriorWall(
+          T, c, [&](size_t, size_t w, size_t neigh, size_t side) {
+            const size_t own = side;
+            const double lengthWall = wallData[w][0];
+            const double gij = lengthWall / cellVolume;
+            const double gji = lengthWall / T.cellVolume(neigh, vertexData);
+            if (wallData[w][mwI] == 1) {
+              double fac =
+                  parameter(2) * cellData[c][aI] +
+                  parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+              cellDerivs[c][aI] -= gij * fac;
+              cellDerivs[neigh][aI] += gji * fac;
+              fac = parameter(8) * wallData[w][pwI + own] -
+                    parameter(9) * cellData[c][pI] *
+                        std::pow(parameter(10), parameter(11)) /
+                        (std::pow(parameter(10), parameter(11)) +
+                         std::pow(cellData[c][aI], parameter(11)));
+              wallDerivs[w][pwI + own] -= fac; // unscaled, as legacy has it
+              cellDerivs[c][pI] += gij * fac;
+            } else if (wallData[w][mwI] == 0) {
+              const double fa = parameter(13) * cellData[c][aI];
+              const double fp = parameter(14) * cellData[c][pI];
+              cellDerivs[c][aI] -= gij * fa;
+              cellDerivs[c][pI] -= gij * fp;
+              cellDerivs[neigh][aI] += gji * fa;
+              cellDerivs[neigh][pI] += gji * fp;
+            }
+          });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(DownInternalGradientModelGeometric,
+                         "DownInternalGradientModelGeometric")
 
 } // namespace
 } // namespace tissue

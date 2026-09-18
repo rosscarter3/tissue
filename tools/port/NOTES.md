@@ -788,3 +788,34 @@ Testing 7 needed a fixture carrying real 0/1 markers: with the seeded values
 neither branch fires and the comparison passes without exercising the
 reaction at all. Both branches are covered now, including an all-zero variant
 that runs only the leak path.
+
+### `legacy/network.cc`: the gradient models - 5 classes, 2026-09-18
+
+Five reactions on the `SimpleROPModel7` skeleton - marked walls run the model,
+unmarked ones leak - but with the membrane PIN feedback coming from an auxin
+concentration rather than from the opposite face:
+
+    dPIN_membrane/dt = p8 PIN_membrane - p9 PIN_cell N^n/(K^n + D^n)
+
+Where N and D come from is the entire difference between the first three:
+the cell's own auxin in both (up the internal gradient), K in the numerator so
+the term is repressed instead (down the internal gradient), or the
+*neighbour's* auxin in both (up the external gradient). One template, three
+aliases. All 0.000e+00 against legacy.
+
+The other two are `DownInternalGradientModel` with a change each, and both
+carry legacy branching that is worth naming because it is not what the names
+suggest:
+
+- `...SingleCell` drops the auxin transport, so PIN cycles but nothing moves
+  between cells. Its interior-wall test is absent from both cycling branches,
+  so PIN cycles on *boundary* membranes too; and its leak is attached as an
+  `else` to the cell2 branch alone, so an unmarked wall leaks when the cell is
+  its cell1 and does nothing when the cell is its cell2.
+- `...Geometric` scales the fluxes by wall length over cell volume, g_ij for
+  the donor and g_ji for the receiver. The PIN taken *off* a membrane is not
+  scaled while the PIN added to the cell is, so PIN is not conserved between
+  the two. Its wall length comes from `Wall::length()`, legacy's cached copy
+  of wall variable 0 refreshed only at print points; this reads that variable
+  live, so the two agree exactly unless a model grows wall lengths - the same
+  divergence as README item 11.

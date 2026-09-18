@@ -120,3 +120,29 @@ $P13
 0.09
 0 1
 3 1 7"; run euler.rk5 twoSquareM.init
+
+echo
+echo "The gradient models:"
+P15="0.05
+0.02
+0.3
+0.4
+0.6
+0.15
+0.1
+0.03
+0.5
+0.25
+0.4
+2.0
+0.07
+0.12
+0.09"
+for n in UpInternalGradientModel DownInternalGradientModel UpExternalGradientModel \
+         DownInternalGradientModelSingleCell DownInternalGradientModelGeometric; do
+  printf "%-46s " "$n"
+  mk "$n 15 2 2 3
+$P15
+0 1
+3 1 7"; run euler.rk5 twoSquareM.init
+done
