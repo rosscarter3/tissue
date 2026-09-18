@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**177 names registered here; 172 classes outstanding.**
+**181 names registered here; 168 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -15,8 +15,8 @@ Method and the log of validated batches are in `NOTES.md`.
 
 | legacy source | outstanding |
 |---|---|
-| `legacy/network.cc` | 41 |
 | `legacy/adhocReaction.cc` | 40 |
+| `legacy/network.cc` | 37 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
@@ -32,50 +32,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/hypocotyl3D.cc` | 1 |
 
 ## Outstanding, by source
-
-### `legacy/network.cc` (41)
-
-- `AuxinExoBistability` — `AuxinExoBistability`, `AuxinPINBistabilityModelCellNew`
-- `AuxinFluxModel` — `AuxinFluxModel`
-- `AuxinModel1` — `AuxinModel1`
-- `AuxinModel1S` — `AuxinModel1S`
-- `AuxinModel4` — `AuxinModel4`
-- `AuxinModel5` — `AuxinModel5`
-- `AuxinModel6` — `AuxinModel6`
-- `AuxinModel7` — `AuxinModel7`
-- `AuxinModelSimple1` — `AuxinModelSimple1`
-- `AuxinModelSimple1Wall` — `AuxinModelSimple1Wall`
-- `AuxinModelSimple2` — `AuxinModelSimple2`
-- `AuxinModelSimple3` — `AuxinModelSimple3`
-- `AuxinModelSimple4` — `AuxinModelSimple4`
-- `AuxinModelSimple5` — `AuxinModelSimple5`
-- `AuxinModelSimpleStress` — `AuxinModelSimpleStress`
-- `AuxinModelStress` — `AuxinModelStress`
-- `AuxinPINBistabilityModel` — `AuxinPINBistabilityModel`
-- `AuxinPINBistabilityModelCell` — `AuxinPINBistabilityModelCell`
-- `AuxinROPModel` — `AuxinROPModel`
-- `AuxinROPModel2` — `AuxinROPModel2`
-- `AuxinROPModel3` — `AuxinROPModel3`
-- `AuxinTransportCellCellNoGeometry` — `AuxinTransportCellCellNoGeometry`
-- `AuxinWallModel` — `AuxinWallModel`
-- `CellCellAuxinTransport` — `CellCellAuxinTransport`
-- `DownInternalGradientModel` — `DownInternalGradientModel`
-- `DownInternalGradientModelGeometric` — `DownInternalGradientModelGeometric`
-- `DownInternalGradientModelSingleCell` — `DownInternalGradientModelSingleCell`
-- `IntracellularCoupling` — `IntracellularCoupling`
-- `IntracellularIndirectCoupling` — `IntracellularIndirectCoupling`
-- `IntracellularPartitioning` — `IntracellularPartitioning`
-- `LinPolarizationFast` — `LinPolarizationFast`
-- `LinPolarizationFastExact` — `LinPolarizationFastExact`
-- `SimpleROPModel` — `SimpleROPModel`
-- `SimpleROPModel2` — `SimpleROPModel2`
-- `SimpleROPModel3` — `SimpleROPModel3`
-- `SimpleROPModel4` — `SimpleROPModel4`
-- `SimpleROPModel5` — `SimpleROPModel5`
-- `SimpleROPModel6` — `SimpleROPModel6`
-- `SimpleROPModel7` — `SimpleROPModel7`
-- `UpExternalGradientModel` — `UpExternalGradientModel`
-- `UpInternalGradientModel` — `UpInternalGradientModel`, `UpInternalGradientModel`
 
 ### `legacy/adhocReaction.cc` (40)
 
@@ -119,6 +75,46 @@ Method and the log of validated batches are in `NOTES.md`.
 - `randomizeMT` — `randomizeMT`
 - `restrictVertexRadially` — `restrictVertexRadially`
 - `scaleTemplate` — `scaleTemplate`
+
+### `legacy/network.cc` (37)
+
+- `AuxinExoBistability` — `AuxinExoBistability`, `AuxinPINBistabilityModelCellNew`
+- `AuxinFluxModel` — `AuxinFluxModel`
+- `AuxinModel1S` — `AuxinModel1S`
+- `AuxinModel4` — `AuxinModel4`
+- `AuxinModel5` — `AuxinModel5`
+- `AuxinModel6` — `AuxinModel6`
+- `AuxinModel7` — `AuxinModel7`
+- `AuxinModelSimple2` — `AuxinModelSimple2`
+- `AuxinModelSimple3` — `AuxinModelSimple3`
+- `AuxinModelSimple4` — `AuxinModelSimple4`
+- `AuxinModelSimple5` — `AuxinModelSimple5`
+- `AuxinModelSimpleStress` — `AuxinModelSimpleStress`
+- `AuxinModelStress` — `AuxinModelStress`
+- `AuxinPINBistabilityModel` — `AuxinPINBistabilityModel`
+- `AuxinPINBistabilityModelCell` — `AuxinPINBistabilityModelCell`
+- `AuxinROPModel` — `AuxinROPModel`
+- `AuxinROPModel2` — `AuxinROPModel2`
+- `AuxinROPModel3` — `AuxinROPModel3`
+- `AuxinWallModel` — `AuxinWallModel`
+- `CellCellAuxinTransport` — `CellCellAuxinTransport`
+- `DownInternalGradientModel` — `DownInternalGradientModel`
+- `DownInternalGradientModelGeometric` — `DownInternalGradientModelGeometric`
+- `DownInternalGradientModelSingleCell` — `DownInternalGradientModelSingleCell`
+- `IntracellularCoupling` — `IntracellularCoupling`
+- `IntracellularIndirectCoupling` — `IntracellularIndirectCoupling`
+- `IntracellularPartitioning` — `IntracellularPartitioning`
+- `LinPolarizationFast` — `LinPolarizationFast`
+- `LinPolarizationFastExact` — `LinPolarizationFastExact`
+- `SimpleROPModel` — `SimpleROPModel`
+- `SimpleROPModel2` — `SimpleROPModel2`
+- `SimpleROPModel3` — `SimpleROPModel3`
+- `SimpleROPModel4` — `SimpleROPModel4`
+- `SimpleROPModel5` — `SimpleROPModel5`
+- `SimpleROPModel6` — `SimpleROPModel6`
+- `SimpleROPModel7` — `SimpleROPModel7`
+- `UpExternalGradientModel` — `UpExternalGradientModel`
+- `UpInternalGradientModel` — `UpInternalGradientModel`, `UpInternalGradientModel`
 
 ### `legacy/force.cc` (15)
 

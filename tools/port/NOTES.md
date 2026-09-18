@@ -713,3 +713,40 @@ each cell contributes to it.
 
 `legacy/mechanicalTRBS.cc` is now empty of outstanding classes: 14.5k lines,
 twelve reactions, all ported and all checked against legacy.
+
+### `legacy/network.cc`: the AuxinModelSimple1 family, 2026-09-18
+
+`network.cc` holds 41 auxin/PIN network models in 5700 lines - families of
+near-identical reactions differing in one production term, one Hill factor, or
+whether a flux is weighted by geometry. Nearly all share one shape: a per-cell
+block of production and degradation ODEs, then a polarised transport block
+that walks the cell's interior walls, builds a normalising sum over the
+neighbours, and exports auxin in proportion to the PIN allocated to each
+membrane. `forEachInteriorWall`, `neighbourSum` and `onBoundary` carry that
+traversal; each reaction supplies its own chemistry.
+
+First batch, all 0.000e+00 against legacy on the two-cell fixture and the
+267-cell mesh:
+
+- `AuxinModelSimple1` and `AuxinModel1` - the same model, the second weighting
+  each flux by wall length over cell volume. One template, one flag.
+- `AuxinModelSimple1Wall` - polarises on a *wall* variable instead of the
+  neighbouring cell's. Legacy shifts the whole set up by the most negative
+  value so a negative signal cannot invert the denominator, but applies that
+  correction inside the accumulation loop, where it only sees the walls
+  visited so far. Reproduced as written.
+- `AuxinTransportCellCellNoGeometry` - transport only, with the polarisation
+  signal a Hill function of the neighbour's X. Boundary walls contribute the
+  baseline k1 to the normalising sum even though nothing moves across them.
+
+One behaviour worth naming, since three of these share it: when the
+normalising sum comes out at exactly zero, `AuxinModelSimple1` sets the
+polarisation rate to **1**, not to 1/n. A cell with no signal anywhere around
+it therefore exports at the full rate through every membrane rather than
+spreading one unit between them.
+
+The optional membrane-PIN store writes to `wallData` from `derivs`, so it
+differs from legacy at the **t=0 print only** - the same derivs-side-effect
+timing as the transport, spring and MT reactions. Measured on the interior
+wall of the two-cell fixture: legacy 0.230822 / 0.280055 at t=0 where v2 still
+shows the seeded values, and both 0.238324 / 0.296522 at every print after.
