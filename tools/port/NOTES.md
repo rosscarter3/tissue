@@ -927,3 +927,51 @@ published results came out of the code as written:
   flags 0, 1 and 3, and flag 3's randomness is in `initiate` only.
 
 Next blocker for these models is `UpdateMTDirectionEquilibrium`.
+
+### `legacy/directionReaction.cc`, 2026-09-18
+
+All six classes, the whole file, because all six are registered and the file
+is small. `UpdateMTDirectionEquilibrium` is what the benchmark wanted next
+(the `bozorg_etal_2014` models reach it right after `FiberModel`); the other
+five came along at no extra cost.
+
+A direction occupies `dimension` consecutive cell variables from the given
+index, so one index names two variables in 2D and three in 3D.
+
+Exact (0.000e+00) against legacy over 19 configurations in 2D and 3D
+(`tests/port/direction.sh`), covering both `Continous` forms, both `Update`
+forms with each of their one-, two- and three-parameter gate combinations,
+`ConcenHill`, `RotatingDirection`, and a no-op for each.
+
+The fixture needed a second reaction to be meaningful at all. `UpdateMTDirection`
+and `UpdateMTDirectionEquilibrium` both `initiate()` the direction *to* the
+target, so a model containing only one of them has nothing left to follow and
+is a no-op for the whole run - it "matched" legacy while doing nothing. Every
+case for those two therefore runs `RotatingDirection` on the target index as
+well, which keeps the target moving and doubles as that reaction's own test.
+Checked, not assumed: opening the velocity gate, changing the stress
+threshold, and going from two parameters to three each change v2's own output.
+
+Legacy behaviour kept deliberately:
+
+- `myMath::pi()` is the truncated literal `3.14159265`, and the angle folding
+  in `ContinousMTDirection` is sensitive to it, so `kLegacyPi` is that literal
+  rather than `M_PI` - as in `bending.cpp`, which needs a differently
+  truncated one.
+- `UpdateMTDirectionConcenHill`'s alignment test is hard-coded to three
+  components while everything around it loops over `dimension`, so in a 2D
+  model it also reads whichever cell variable follows each direction. Kept;
+  changing it would change 2D results and no 2D model is known to use it.
+- That same reaction writes the direction straight into `cellData` from
+  `derivs()` with no `h`, so an adaptive solver applies it once per
+  *derivative evaluation* rather than once per step. It is a direction update
+  wearing a derivative's clothes; the gates in `UpdateMTDirectionEquilibrium`
+  exist because that is the form you want when the target is noisy.
+- `UpdateMTDirection` does not align the two axes before stepping, while
+  `UpdateMTDirectionEquilibrium` does. A target pointing the other way
+  therefore drags the direction through zero length in the first and takes the
+  short way round in the second. This looks like an omission in the older
+  class rather than a choice, but both are reachable from model files and the
+  difference is visible in results, so both are reproduced as written.
+
+Next blocker for the `bozorg_etal_2014` models is `CalculateAngleVectors`.

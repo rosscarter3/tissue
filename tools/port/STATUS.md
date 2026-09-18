@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**203 names registered here; 148 classes outstanding.**
+**209 names registered here; 142 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -21,7 +21,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/mechanical.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/boolean.cc` | 11 |
-| `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
 | `legacy/growth.cc` | 4 |
@@ -166,15 +165,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Boolean::FlagCount` — `Boolean::FlagCount`, `FlagCount`
 - `Boolean::OrGateCount` — `Boolean::OrGateCount`, `OrGateCount`
 - `Boolean::OrSpecialGateCount` — `Boolean::OrSpecialGateCount`, `OrSpecialGateCount`
-
-### `legacy/directionReaction.cc` (6)
-
-- `ContinousMTDirection` — `ContinousMTDirection`
-- `ContinousMTDirection3d` — `ContinousMTDirection3d`
-- `RotatingDirection` — `RotatingDirection`
-- `UpdateMTDirection` — `UpdateMTDirection`
-- `UpdateMTDirectionConcenHill` — `UpdateMTDirectionConcenHill`
-- `UpdateMTDirectionEquilibrium` — `UpdateMTDirectionEquilibrium`
 
 ### `legacy/grn.cc` (6)
 
