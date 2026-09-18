@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 
+#include "tissue/core/direction.h"
 #include "tissue/core/matrix.h"
 #include "tissue/core/types.h"
 
@@ -169,12 +170,37 @@ public:
                          Matrix &vertexDerivs);
   void updateReactions(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
                        double step);
-  // Direction machinery: not ported yet (models with a direction block are
-  // rejected at read time), so these are structural no-ops.
-  void initiateDirection(Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
-                         Matrix &) {}
-  void updateDirection(double, Matrix &, Matrix &, Matrix &, Matrix &,
-                       Matrix &, Matrix &) {}
+  // Direction machinery. A model declares at most one direction, as a pair of
+  // rules; with no direction block these stay null and every hook is a no-op.
+  void setDirection(std::unique_ptr<DirectionUpdate> update,
+                    std::unique_ptr<DirectionDivision> division) {
+    directionUpdate_ = std::move(update);
+    directionDivision_ = std::move(division);
+  }
+  bool hasDirection() const { return directionUpdate_ != nullptr; }
+  void initiateDirection(Matrix &cellData, Matrix &wallData, Matrix &vertexData,
+                         Matrix &cellDerivs, Matrix &wallDerivs,
+                         Matrix &vertexDerivs) {
+    if (directionUpdate_)
+      directionUpdate_->initiate(*this, cellData, wallData, vertexData,
+                                 cellDerivs, wallDerivs, vertexDerivs);
+  }
+  void updateDirection(double h, Matrix &cellData, Matrix &wallData,
+                       Matrix &vertexData, Matrix &cellDerivs,
+                       Matrix &wallDerivs, Matrix &vertexDerivs) {
+    if (directionUpdate_)
+      directionUpdate_->update(*this, h, cellData, wallData, vertexData,
+                               cellDerivs, wallDerivs, vertexDerivs);
+  }
+  // Called with the mother's index right after a division; the daughter is the
+  // last cell.
+  void updateDirectionDivision(size_t cellI, Matrix &cellData, Matrix &wallData,
+                               Matrix &vertexData, Matrix &cellDerivs,
+                               Matrix &wallDerivs, Matrix &vertexDerivs) {
+    if (directionDivision_)
+      directionDivision_->update(*this, cellI, cellData, wallData, vertexData,
+                                 cellDerivs, wallDerivs, vertexDerivs);
+  }
 
   // Applies division/removal rules; returns true if the topology changed, so
   // callers can re-validate connectivity only when there is something to
@@ -226,6 +252,8 @@ private:
 
   std::vector<std::unique_ptr<Reaction>> reactions_;
   std::vector<std::unique_ptr<CompartmentChange>> compartmentChanges_;
+  std::unique_ptr<DirectionUpdate> directionUpdate_;
+  std::unique_ptr<DirectionDivision> directionDivision_;
 };
 
 } // namespace tissue

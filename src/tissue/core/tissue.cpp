@@ -1035,6 +1035,12 @@ void Tissue::divideCell(size_t cellI, size_t wI, size_t w3I, Vec3 v1Pos,
   assert(walls_[Nw].cell1 == i);
   assert(walls_[Nw].cell2 == Nc);
 
+  // Direction rules see the division here, at legacy's call site: after the
+  // topology is final but before the size-dependent split below, so a rule
+  // that re-picks a cell's wall reads the geometry legacy gave it.
+  updateDirectionDivision(i, cellData, wallData, vertexData, cellDerivs,
+                          wallDerivs, vertexDerivs);
+
   // Split size-dependent variables in proportion to daughter areas.
   if (!volumeChangeList.empty()) {
     sortWallAndVertex(i);

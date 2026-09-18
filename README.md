@@ -332,6 +332,12 @@ relaxation. Setting a derivative to zero (a clamp, `VertexNoUpdateFromIndex`)
 is not prescribed velocity — zero is consistent with force balance and needs
 no declaration.
 
+Directions: `StaticDirection` (update) and `ParallellDirection` (division).
+A model's direction block is now read rather than refused, but only for those
+two rules - any other direction rule still fails at read time naming itself.
+Both are no-ops, in legacy too: the direction lives in `cellData`, which
+division already copies to the daughter.
+
 Print flags: 0, 1, 2 (VTK), 3, 4, 5 (gnuplot), 77, 107.
 
 This covers every model shipped in `examples/tutorials`. A model using an

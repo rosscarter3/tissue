@@ -94,10 +94,13 @@ void Tissue::readModel(std::istream &in, int verbose) {
   if (numDirectionVal == 1) {
     RuleBlock update = readRuleBlock(in, "Tissue::readModel(directionUpdate)");
     RuleBlock division = readRuleBlock(in, "Tissue::readModel(directionDivision)");
-    parseError("Tissue::readModel: direction rules ('" + update.id + "', '" +
-               division.id +
-               "') are not ported to tissue v2 yet; use the legacy simulator "
-               "for models with a direction block.");
+    setDirection(
+        DirectionUpdate::create(update.id, update.parameters, update.indices),
+        DirectionDivision::create(division.id, division.parameters,
+                                  division.indices));
+    if (verbose)
+      std::cerr << "Direction " << update.id << " / " << division.id
+                << " added." << std::endl;
   }
 }
 

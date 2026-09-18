@@ -1031,3 +1031,42 @@ With this batch every *reaction* in `bozorg_etal_2014/scripts/fig3/BC` is
 recognised. Those models are now blocked on the direction *block*
 (`StaticDirection`, `ParallellDirection`) - a separate subsystem, not a
 reaction.
+
+### Direction block: `StaticDirection` + `ParallellDirection`, 2026-09-18
+
+Not a reaction but the third block of a model file, and after the three
+batches above it was the only thing still stopping `bozorg_etal_2014` from
+loading: 43 rules across that repository, and every one of them is this pair.
+
+The subsystem is small. A model declares at most one direction as two rules -
+how it changes during the run, and what happens to it when a cell divides -
+and the solvers already called `initiateDirection`/`updateDirection` as
+structural no-ops, so this adds the two rule types, a registry for each, the
+parse, and the division hook.
+
+Both rules are no-ops, and so are legacy's. The direction is stored in
+`cellData`, which division already copies to the daughter, so "both daughters
+keep the mother's direction" needs no code. `ParallellDirection` does have one
+branch that does work - re-picking each cell's "directional wall" - but that
+list is only ever populated by `WallDirection`, a different update rule that
+is not ported, so the branch is unreachable. Porting `WallDirection` is what
+would require writing it, and the comment in `direction.cpp` says so.
+
+Validated by showing the block changes nothing, which is the claim being made:
+
+- In **both** binaries, the `growth_and_division` tutorial with the block
+  appended is byte-identical to the same model without it.
+- Comparing legacy against this build on `random.model` gives exactly the same
+  residual (1.938e-02, same first index) with the block and without it. That
+  residual is the model's random division direction, not the direction block:
+  the two simulators draw different random streams and so cut cells
+  differently. Adding the block contributes exactly zero.
+- An unported rule (`WallDirection`) is still refused by name at read time, so
+  a model that needs real direction machinery fails loudly instead of running
+  with a direction that silently never moves. This is the part worth keeping
+  an eye on if more rules are added.
+
+The division hook is called from inside `divideCell`, after the topology is
+final but before the size-dependent variable split - legacy's call site. It
+makes no difference to these two no-op rules, but it is where a real rule
+would need to be to see the geometry legacy gives it.
