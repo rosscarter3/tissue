@@ -261,7 +261,8 @@ public:
     }
   }
 };
-TISSUE_REGISTER_REACTION(FiberModelDeposition, "FiberModel::Deposition")
+TISSUE_REGISTER_REACTION(FiberModelDeposition, "FiberModel::Deposition",
+                         "FiberDeposition")
 
 } // namespace
 } // namespace tissue

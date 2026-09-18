@@ -26,6 +26,11 @@ STATUS = os.path.join(ROOT, "tools", "port", "STATUS.md")
 def legacy_classes():
     """{class name: [registered names]} from the legacy factory."""
     src = open(os.path.join(ROOT, "legacy", "baseReaction.cc"), errors="ignore").read()
+    # Strip line comments first. Several branches are commented out upstream
+    # (FiberModel::Linear and ::Hill, for instance), so the classes behind them
+    # cannot be constructed from any model file; counting them as outstanding
+    # work overstates what is left to port and points at code no model reaches.
+    src = re.sub(r"//[^\n]*", "", src)
     out = collections.defaultdict(list)
     # Each branch is "else if (<conditions>) return new Class(...)". Take every
     # name tested since the previous `new`, so the aliases of a chained
