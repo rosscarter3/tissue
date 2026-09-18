@@ -975,3 +975,59 @@ Legacy behaviour kept deliberately:
   difference is visible in results, so both are reproduced as written.
 
 Next blocker for the `bozorg_etal_2014` models is `CalculateAngleVectors`.
+
+### `legacy/calculate.cc`, 2026-09-18
+
+All five classes. This file was three of the benchmark's top blockers at once:
+`CalculateAngleVectors` (45 models), `TemplateVolumeChange` (30, an alias for
+`Calculate::TissueVolumeChange`), and `Calculate::VertexVelocity`, which is
+what supplies the velocity that `UpdateMTDirectionEquilibrium` and
+`FiberModel` gate on - the three batches only work together.
+
+It also settles a question the benchmark raised. 18 of the models this build
+could not run failed on `maxVelocity`, and legacy fails on them too: legacy
+*removed* `Calculate::MaxVelocity`/`maxVelocity` and now exits telling the
+author to use `Calculate::VertexVelocity`. Those models are stale for both
+simulators, not a gap in this port. This build refuses the old names the same
+way, and for the same reason - the quantity is a mean, never was a maximum.
+
+Exact (0.000e+00, or 1e-15 float-ordering noise) against legacy over 12 of 14
+configurations in 2D and 3D (`tests/port/calculate.sh`).
+
+The two exceptions are both `TissueVolumeChange`, and the cause is measured
+rather than assumed. Of the three quantities it stores, the two that are
+functions of the state alone - the accumulated vertex displacement and the
+summed vertex speed - match legacy exactly at every print. The third is stored
+as a difference against its own previous value, so it reports the gap between
+two consecutive *derivative evaluations*; legacy performs one more evaluation
+before printing than this build does, so its gap spans a different pair.
+
+Measured with Euler at four step sizes from 5e-4 to 4e-3, the offset is
+exactly linear in h (rel/h constant at 2.28), which is a one-evaluation lag,
+not an arithmetic difference. Under `RK5Adaptive` it is 1.6e-9 and shows only
+at intermediate prints - the last stage there lands on the accepted end-of-step
+state, so the two agree once the tissue settles. This is README item 5 seen
+through one extra level of differencing, and the harness runs those two cases
+at 1e-8 with the reason written next to them.
+
+Other legacy behaviour kept:
+
+- `Calculate::AngleVector` range-checks its axis parameter against 0, 1 and 2
+  and then exits with status 0 and "The code should be modified for 3d" if it
+  is given 1 or 2, so only axis 0 has ever run. This rejects 1 and 2 at
+  construction instead, which names the offending rule instead of exiting
+  silently part-way through a simulation.
+- Its pi is the 7-digit `3.141592` while `AngleVectorXYplane`, ten lines away,
+  uses `3.14159265`. Both are kept as they are, per class.
+- `AngleVectorXYplane` is documented as storing `abs(cos(angle))` and stores
+  `atan(z/|xy|)`, an angle in radians. The code is what models were written
+  against.
+- `AngleVectors` and `AngleVector` normalise their *input* vectors in place,
+  so they rewrite the directions they are asked to measure.
+- Neither `TissueVolumeChange` nor its alias measures a volume: the first
+  quantity is a sum of vertex displacements.
+
+With this batch every *reaction* in `bozorg_etal_2014/scripts/fig3/BC` is
+recognised. Those models are now blocked on the direction *block*
+(`StaticDirection`, `ParallellDirection`) - a separate subsystem, not a
+reaction.

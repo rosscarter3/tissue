@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**209 names registered here; 142 classes outstanding.**
+**218 names registered here; 137 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -22,7 +22,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/grn.cc` | 6 |
-| `legacy/calculate.cc` | 5 |
 | `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
@@ -174,14 +173,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `HillGeneralOne_TwoInputs` — `HillGeneralOne_TwoInputs`
 - `HillGeneralThree` — `HillGeneralThree`
 - `HillGeneralTwo` — `HillGeneralTwo`
-
-### `legacy/calculate.cc` (5)
-
-- `Calculate::AngleVector` — `AngleVector`, `Calculate::AngleVector`
-- `Calculate::AngleVectorXYplane` — `Calculate::AngleVectorXYplane`, `CalculateAngleVectorXYplane`
-- `Calculate::AngleVectors` — `Calculate::AngleVectors`, `CalculateAngleVectors`
-- `Calculate::TissueVolumeChange` — `Calculate::TissueVolumeChange`, `TemplateVolumeChange`
-- `Calculate::VertexVelocity` — `Calculate::VertexVelocity`
 
 ### `legacy/growth.cc` (4)
 
