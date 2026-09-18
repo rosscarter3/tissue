@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**181 names registered here; 168 classes outstanding.**
+**188 names registered here; 161 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -16,7 +16,7 @@ Method and the log of validated batches are in `NOTES.md`.
 | legacy source | outstanding |
 |---|---|
 | `legacy/adhocReaction.cc` | 40 |
-| `legacy/network.cc` | 37 |
+| `legacy/network.cc` | 30 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
@@ -76,7 +76,7 @@ Method and the log of validated batches are in `NOTES.md`.
 - `restrictVertexRadially` — `restrictVertexRadially`
 - `scaleTemplate` — `scaleTemplate`
 
-### `legacy/network.cc` (37)
+### `legacy/network.cc` (30)
 
 - `AuxinExoBistability` — `AuxinExoBistability`, `AuxinPINBistabilityModelCellNew`
 - `AuxinFluxModel` — `AuxinFluxModel`
@@ -106,13 +106,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `IntracellularPartitioning` — `IntracellularPartitioning`
 - `LinPolarizationFast` — `LinPolarizationFast`
 - `LinPolarizationFastExact` — `LinPolarizationFastExact`
-- `SimpleROPModel` — `SimpleROPModel`
-- `SimpleROPModel2` — `SimpleROPModel2`
-- `SimpleROPModel3` — `SimpleROPModel3`
-- `SimpleROPModel4` — `SimpleROPModel4`
-- `SimpleROPModel5` — `SimpleROPModel5`
-- `SimpleROPModel6` — `SimpleROPModel6`
-- `SimpleROPModel7` — `SimpleROPModel7`
 - `UpExternalGradientModel` — `UpExternalGradientModel`
 - `UpInternalGradientModel` — `UpInternalGradientModel`, `UpInternalGradientModel`
 

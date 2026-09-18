@@ -243,5 +243,328 @@ public:
 TISSUE_REGISTER_REACTION(AuxinTransportCellCellNoGeometry,
                          "AuxinTransportCellCellNoGeometry")
 
+
+// --- the SimpleROPModel family ----------------------------------------------
+//
+// Seven variants of one ROP/PIN polarisation model. PIN cycles between the
+// cell's cytoplasmic pool and each membrane; what makes a membrane accumulate
+// PIN is a Hill function of the PIN on the *opposite* face of the same wall,
+// which is the positive feedback that polarises neighbouring cells against
+// each other. The first three carry auxin in a wall compartment; the last
+// four move it cell to cell directly and make PIN production saturate in
+// auxin.
+//
+// They share the traversal and differ only in a term or two each, so the
+// per-membrane chemistry is written out in each rather than hidden behind
+// flags - the differences are the point.
+//
+// Common index layout: level 0 = (cell auxin, cell PIN); level 1 = (paired
+// wall auxin, paired membrane PIN), with the wall auxin unused in models 4-7.
+
+// Hill function of the opposite membrane's PIN.
+inline double ropHill(double pOther, double K, double n) {
+  const double x = std::pow(pOther, n);
+  return x / (std::pow(K, n) + x);
+}
+
+#define ROP_CHECK(NAME, NPARAM, NLEVEL1)                                       \
+  if (i.size() != 2 || i[0].size() != 2 || i[1].size() != NLEVEL1)             \
+    throw std::runtime_error(NAME ": level 0 = (cell auxin, cell PIN); "       \
+                                  "level 1 = paired wall variables.");         \
+  configure(NAME, p, i, NPARAM, {2, NLEVEL1},                                  \
+            {"c_IAA", "d_IAA", "p_IAAH(in)", "p_IAAH(out)", "p_IAA-",          \
+             "D_IAA", "c_PIN", "d_PIN", "endo_PIN", "exo_PIN", "K_hill",       \
+             "n_hill", "endo_PIN_back", "p_13", "p_14", "p_15"});
+
+// Auxin lives in the wall: it is secreted into the wall compartment, diffuses
+// across to the opposite face, and PIN is removed from the membrane in
+// proportion to the cell's PIN pool times the wall auxin on that face.
+class SimpleROPModel : public Reaction {
+public:
+  SimpleROPModel(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel", 13, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) - parameter(7) * cellData[c][pI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        double fac = parameter(3) * cellData[c][aI] -
+                     parameter(2) * wallData[w][awI + own] +
+                     parameter(4) * cellData[c][aI] * wallData[w][pwI + own];
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(5) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(5) * wallData[w][awI + own];
+        fac = parameter(12) * wallData[w][pwI + own] +
+              parameter(8) * wallData[w][pwI + own] *
+                  ropHill(wallData[w][pwI + other], parameter(10),
+                          parameter(11)) -
+              parameter(9) * cellData[c][pI] * wallData[w][awI + own];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel, "SimpleROPModel")
+
+// SimpleROPModel with the PIN removal no longer proportional to the wall
+// auxin on that face - the only difference between the two.
+class SimpleROPModel2 : public Reaction {
+public:
+  SimpleROPModel2(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel2", 13, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) - parameter(7) * cellData[c][pI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        double fac = parameter(3) * cellData[c][aI] -
+                     parameter(2) * wallData[w][awI + own] +
+                     parameter(4) * cellData[c][aI] * wallData[w][pwI + own];
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(5) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(5) * wallData[w][awI + own];
+        fac = parameter(12) * wallData[w][pwI + own] +
+              parameter(8) * wallData[w][pwI + own] *
+                  ropHill(wallData[w][pwI + other], parameter(10),
+                          parameter(11)) -
+              parameter(9) * cellData[c][pI];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel2, "SimpleROPModel2")
+
+// As SimpleROPModel2, with the constant PIN return term written last rather
+// than first. Algebraically the same reaction; kept separate because legacy
+// registers both names.
+class SimpleROPModel3 : public Reaction {
+public:
+  SimpleROPModel3(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel3", 13, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t awI = variableIndex(1, 0), pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) - parameter(7) * cellData[c][pI];
+      forEachInteriorWall(T, c, [&](size_t, size_t w, size_t, size_t side) {
+        const size_t own = side, other = 1 - side;
+        double fac = parameter(3) * cellData[c][aI] -
+                     parameter(2) * wallData[w][awI + own] +
+                     parameter(4) * cellData[c][aI] * wallData[w][pwI + own];
+        wallDerivs[w][awI + own] += fac;
+        cellDerivs[c][aI] -= fac;
+        wallDerivs[w][awI + own] -= parameter(5) * wallData[w][awI + own];
+        wallDerivs[w][awI + other] += parameter(5) * wallData[w][awI + own];
+        fac = parameter(8) * wallData[w][pwI + own] *
+                  ropHill(wallData[w][pwI + other], parameter(10),
+                          parameter(11)) -
+              parameter(9) * cellData[c][pI] +
+              parameter(12) * wallData[w][pwI + own];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+      });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel3, "SimpleROPModel3")
+
+// From here the wall auxin compartment is dropped: auxin moves straight from
+// cell to cell, carried by the membrane PIN, and PIN production saturates in
+// the cell's own auxin. Level 1 still takes two indices, but the first (the
+// wall auxin) is no longer read.
+class SimpleROPModel4 : public Reaction {
+public:
+  SimpleROPModel4(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel4", 13, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      forEachInteriorWall(
+          T, c, [&](size_t, size_t w, size_t neigh, size_t side) {
+            const size_t own = side, other = 1 - side;
+            double fac =
+                parameter(2) * cellData[c][aI] +
+                parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+            cellDerivs[c][aI] -= fac;
+            cellDerivs[neigh][aI] += fac;
+            fac = parameter(8) * wallData[w][pwI + own] *
+                      ropHill(wallData[w][pwI + other], parameter(10),
+                              parameter(11)) -
+                  parameter(9) * cellData[c][pI] +
+                  parameter(12) * wallData[w][pwI + own];
+            wallDerivs[w][pwI + own] -= fac;
+            cellDerivs[c][pI] += fac;
+          });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel4, "SimpleROPModel4")
+
+// SimpleROPModel4 with a second, self-limiting removal term: PIN is taken off
+// a membrane faster the more PIN that membrane already carries.
+class SimpleROPModel5 : public Reaction {
+public:
+  SimpleROPModel5(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel5", 16, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      forEachInteriorWall(
+          T, c, [&](size_t, size_t w, size_t neigh, size_t side) {
+            const size_t own = side, other = 1 - side;
+            double fac =
+                parameter(2) * cellData[c][aI] +
+                parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+            cellDerivs[c][aI] -= fac;
+            cellDerivs[neigh][aI] += fac;
+            fac = parameter(8) * wallData[w][pwI + own] *
+                      ropHill(wallData[w][pwI + other], parameter(10),
+                              parameter(11)) -
+                  parameter(9) * cellData[c][pI] +
+                  parameter(12) * wallData[w][pwI + own] -
+                  parameter(13) * cellData[c][pI] *
+                      ropHill(wallData[w][pwI + own], parameter(15),
+                              parameter(14));
+            wallDerivs[w][pwI + own] -= fac;
+            cellDerivs[c][pI] += fac;
+          });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel5, "SimpleROPModel5")
+
+// SimpleROPModel4 that also cycles PIN on the cell's *boundary* membranes,
+// where there is no neighbour to transport to and no opposite face to feed
+// back from. Legacy reads the cell1 face there whichever side the cell is on,
+// which is reproduced.
+class SimpleROPModel6 : public Reaction {
+public:
+  SimpleROPModel6(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel6", 13, 2)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      const CellTopo &cell = T.cell(c);
+      for (size_t n = 0; n < cell.numWall(); ++n) {
+        const size_t w = cell.walls[n];
+        if (!interiorWall(T, w)) { // boundary membrane: cycling only
+          const double fac = -parameter(9) * cellData[c][pI] +
+                             parameter(12) * wallData[w][pwI];
+          wallDerivs[w][pwI] -= fac;
+          cellDerivs[c][pI] += fac;
+          continue;
+        }
+        const size_t neigh = T.wall(w).otherCell(c);
+        const size_t own = T.wall(w).cell1 == c ? 0 : 1, other = 1 - own;
+        double fac = parameter(2) * cellData[c][aI] +
+                     parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+        cellDerivs[c][aI] -= fac;
+        cellDerivs[neigh][aI] += fac;
+        fac = parameter(8) * wallData[w][pwI + own] *
+                  ropHill(wallData[w][pwI + other], parameter(10),
+                          parameter(11)) -
+              parameter(9) * cellData[c][pI] +
+              parameter(12) * wallData[w][pwI + own];
+        wallDerivs[w][pwI + own] -= fac;
+        cellDerivs[c][pI] += fac;
+      }
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel6, "SimpleROPModel6")
+
+// SimpleROPModel4 gated by a wall marker: walls flagged 1 run the polarising
+// model, walls flagged 0 instead leak auxin and PIN at fixed rates.
+//
+// The leak branch has a legacy slip that is harmless and reproduced: on the
+// cell1 side it sets the neighbour to `cell1`, which is the cell itself, so
+// the two derivative contributions cancel exactly and nothing moves. Only the
+// cell2 side of a flagged-0 wall actually leaks.
+class SimpleROPModel7 : public Reaction {
+public:
+  SimpleROPModel7(const ParameterList &p, const IndexLevels &i) {
+    ROP_CHECK("SimpleROPModel7", 15, 3)
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData, Matrix &,
+              Matrix &cellDerivs, Matrix &wallDerivs, Matrix &) override {
+    const size_t aI = variableIndex(0, 0), pI = variableIndex(0, 1);
+    const size_t pwI = variableIndex(1, 1), mwI = variableIndex(1, 2);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      cellDerivs[c][aI] += parameter(0) - parameter(1) * cellData[c][aI];
+      cellDerivs[c][pI] += parameter(6) * cellData[c][aI] /
+                               (parameter(4) + cellData[c][aI]) -
+                           parameter(7) * cellData[c][pI];
+      forEachInteriorWall(
+          T, c, [&](size_t, size_t w, size_t neigh, size_t side) {
+            const size_t own = side, other = 1 - side;
+            if (wallData[w][mwI] == 1) {
+              double fac =
+                  parameter(2) * cellData[c][aI] +
+                  parameter(3) * cellData[c][aI] * wallData[w][pwI + own];
+              cellDerivs[c][aI] -= fac;
+              cellDerivs[neigh][aI] += fac;
+              fac = parameter(8) * wallData[w][pwI + own] *
+                        ropHill(wallData[w][pwI + other], parameter(10),
+                                parameter(11)) -
+                    parameter(9) * cellData[c][pI] +
+                    parameter(12) * wallData[w][pwI + own];
+              wallDerivs[w][pwI + own] -= fac;
+              cellDerivs[c][pI] += fac;
+            } else if (wallData[w][mwI] == 0) {
+              // Legacy sends the cell1 side's leak to cell1 - itself - so it
+              // cancels; only the cell2 side moves anything.
+              const size_t target = side == 1 ? neigh : c;
+              const double fa = parameter(13) * cellData[c][aI];
+              const double fp = parameter(14) * cellData[c][pI];
+              cellDerivs[c][aI] -= fa;
+              cellDerivs[c][pI] -= fp;
+              cellDerivs[target][aI] += fa;
+              cellDerivs[target][pI] += fp;
+            }
+          });
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SimpleROPModel7, "SimpleROPModel7")
+
 } // namespace
 } // namespace tissue

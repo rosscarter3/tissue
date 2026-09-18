@@ -750,3 +750,41 @@ differs from legacy at the **t=0 print only** - the same derivs-side-effect
 timing as the transport, spring and MT reactions. Measured on the interior
 wall of the two-cell fixture: legacy 0.230822 / 0.280055 at t=0 where v2 still
 shows the seeded values, and both 0.238324 / 0.296522 at every print after.
+
+### `legacy/network.cc`: the SimpleROPModel family - 7 classes, 2026-09-18
+
+Seven variants of one ROP/PIN polarisation model, all 0.000e+00 against
+legacy. PIN cycles between the cell's cytoplasmic pool and each membrane, and
+what makes a membrane accumulate PIN is a Hill function of the PIN on the
+*opposite* face of the same wall - the positive feedback that polarises
+neighbouring cells against each other.
+
+They divide in two. Models 1-3 carry auxin in a wall compartment, secreting it
+into the wall and diffusing it across to the opposite face; models 4-7 move
+auxin straight from cell to cell and make PIN production saturate in the
+cell's own auxin. Level 1 still takes two indices in 4-7, but the first (the
+wall auxin) is no longer read.
+
+Within each half the differences are one term each, so the per-membrane
+chemistry is written out in every variant rather than hidden behind flags:
+
+- 2 differs from 1 only in that PIN removal is no longer proportional to the
+  wall auxin on that face.
+- 3 differs from 2 only in writing the constant return term last rather than
+  first - algebraically the same reaction, and legacy registers both names.
+- 5 adds a self-limiting removal: PIN comes off a membrane faster the more it
+  already carries.
+- 6 also cycles PIN on *boundary* membranes, where there is no neighbour to
+  transport to and no opposite face to feed back from; legacy reads the cell1
+  face there whichever side the cell is on, which is reproduced.
+- 7 gates everything on a wall marker: walls flagged 1 run the polarising
+  model, walls flagged 0 leak auxin and PIN at fixed rates instead. Its leak
+  branch has a slip that is harmless and reproduced - on the cell1 side it
+  sends the leak to `cell1`, which is the cell itself, so the two
+  contributions cancel and only the cell2 side of a flagged-0 wall actually
+  moves anything.
+
+Testing 7 needed a fixture carrying real 0/1 markers: with the seeded values
+neither branch fires and the comparison passes without exercising the
+reaction at all. Both branches are covered now, including an all-zero variant
+that runs only the leak path.
