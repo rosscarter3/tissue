@@ -195,4 +195,5 @@ def main():
         print(f"  wrote {args.out}")
 
 
-main()
+if __name__ == "__main__":
+    main()
