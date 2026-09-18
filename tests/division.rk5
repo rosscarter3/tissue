@@ -1,0 +1,6 @@
+# Short run for the division regression tests: printing to stdout rather than
+# VTK, and just far enough for cells to actually divide.
+RK5Adaptive
+0 2          # start time, end time
+0 2          # print flag (0 = stdout), number of prints
+0.5 1e-5     # max step, error tolerance
