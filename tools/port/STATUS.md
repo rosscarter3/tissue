@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**199 names registered here; 152 classes outstanding.**
+**202 names registered here; 151 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -24,10 +24,10 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/directionReaction.cc` | 6 |
 | `legacy/grn.cc` | 6 |
 | `legacy/calculate.cc` | 5 |
-| `legacy/fiberModel.cc` | 4 |
 | `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
 | `legacy/initiation.cc` | 4 |
+| `legacy/fiberModel.cc` | 3 |
 | `legacy/degradation.cc` | 2 |
 | `legacy/hypocotyl3D.cc` | 1 |
 
@@ -193,13 +193,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Calculate::TissueVolumeChange` — `Calculate::TissueVolumeChange`, `TemplateVolumeChange`
 - `Calculate::VertexVelocity` — `Calculate::VertexVelocity`
 
-### `legacy/fiberModel.cc` (4)
-
-- `FiberModel::Deposition` — `FiberDeposition`, `FiberModel::Deposition`
-- `FiberModel::General` — `FiberModel`, `FiberModel::General`
-- `FiberModel::Linear` — `FiberModel::Linear`
-- `Pressure3D::Linear` — `Pressure3D::Linear`, `VertexFromCellPlaneLinear`
-
 ### `legacy/growth.cc` (4)
 
 - `Hypocotyl3D::StrainTRBS` — `Hypocotyl3D::StrainTRBS`
@@ -220,6 +213,12 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Initiation::FaceArea2D` — `Initiation::FaceArea2D`
 - `Initiation::RandomBoolean` — `Initiation::RandomBoolean`
 - `Initiation::RandomBooleanBiased` — `Initiation::RandomBooleanBiased`
+
+### `legacy/fiberModel.cc` (3)
+
+- `FiberModel::Deposition` — `FiberDeposition`, `FiberModel::Deposition`
+- `FiberModel::Linear` — `FiberModel::Linear`
+- `Pressure3D::Linear` — `Pressure3D::Linear`, `VertexFromCellPlaneLinear`
 
 ### `legacy/degradation.cc` (2)
 

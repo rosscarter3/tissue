@@ -874,3 +874,56 @@ build still shows the init value, and both report 0.12 at every print after.
 One legacy quirk kept: under `areaFlag 2` the *first* ramp is never advanced -
 `update` only steps `timeFactor1` for flags 0 and 1 - so the main force term
 stays at zero for the whole run and only the z-only term does anything.
+
+### `legacy/fiberModel.cc`, 2026-09-18
+
+Ported next because the benchmark sweep put `FiberModel` at the top of the
+blocking list: 26 of the 32 models that legacy runs and this build cannot are
+blocked by it, all in `publications/bozorg_etal_2014`.
+
+Only two of the file's six classes are ported, because only two are reachable:
+`baseReaction.cc` registers `General` (also under the bare name `FiberModel`,
+which is the spelling every model in the corpus uses) and `Deposition`, while
+the entries for `Linear`, `LinearEquilibrium`, `Hill` and `HillEquilibrium`
+are commented out upstream. Those four have never been constructible from a
+model file, so there is nothing to validate them against and nothing using
+them; porting them would be writing new code, not porting.
+
+Both act entirely in `update()`, so a model containing only a FiberModel rule
+moves no vertex and the comparison is of the cell-variable table alone.
+Exact (0.000e+00) against legacy over 17 configurations: both gradual branches
+with the velocity gate admitting one cell and then both, the direct branch,
+all three initiation flags, Deposition with its gate open and closed, its
+`init_flag 3` Hill branch, a cell below its stress floor, and both no-ops.
+
+Two traps in building that fixture, both of which had made a case vacuous:
+
+- The gradual branches also stop at `Y_M + Y_F`, and the seeded cell sat
+  exactly at that ceiling, so it was excluded whatever the velocity gate said
+  and the two thresholds gave identical output. Dropping the cell's `Y_L`
+  below the ceiling makes the gate the only thing separating the cells.
+- `Deposition` compares a cell's maximal stress against a window hard-coded in
+  legacy as `[8, 14]`, and `seed_init.py` spreads its values over `(0.05,
+  0.95)` - so every cell fell below the floor, every share was zero and the
+  redistribution never ran. `tests/port/cellvar_init.py` (new) writes an init
+  with cell variables chosen per cell, which is what puts one cell inside the
+  window and one above or below it.
+
+Legacy behaviour reproduced rather than repaired, in each case because the
+published results came out of the code as written:
+
+- `General`'s direct branch (`linear-hill_flag=2`) omits the matrix term `Y_M`
+  that every other branch and the documented equation include, so it writes a
+  fiber contribution where the other branches write a modulus. It also takes a
+  second index at level 1 (`FiberL_index`, which the class documentation says
+  receives the update) and never writes it - the result goes to
+  `Young_L_index` like the rest.
+- `Deposition` multiplies by `k_rate` but not by the step `h`, so its approach
+  to the target depends on how often `update()` is called rather than on
+  simulated time, and its stress window is not exposed as a parameter.
+- `Deposition`'s `init_flag` 2 and 3 seed the global `rand()` from the clock,
+  so those two flags were never reproducible run to run, in legacy either.
+  Kept as-is rather than given a seeded generator; the comparison above uses
+  flags 0, 1 and 3, and flag 3's randomness is in `initiate` only.
+
+Next blocker for these models is `UpdateMTDirectionEquilibrium`.
