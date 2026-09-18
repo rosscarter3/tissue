@@ -419,6 +419,169 @@ public:
 TISSUE_REGISTER_REACTION(Pressure3DCenterTriangulation,
                          "Pressure3D::CenterTriangulation")
 
+// Pressure on a center-triangulated shell that *ramps in* over a set time
+// rather than being applied at full strength from the start, which is how the
+// published models inflate a tissue without kicking it. Per CT triangle the
+// force is k_force * A * n_hat, distributed to all three nodes (not divided
+// between them - each gets the whole thing, as legacy has it).
+//
+//   areaFlag 0: A = 1/3, i.e. no area weighting at all
+//   areaFlag 1: A = Area/2
+//   areaFlag 2: A = Area/2, and only the z component is applied, through a
+//               second ramp
+//
+// With a fourth parameter the pressure ramps from p3 to p0 instead of 0 to p0,
+// and the current value is written back into a cell variable named by a second
+// index.
+//
+// Two legacy quirks kept. Under areaFlag 2 the *first* ramp is never advanced
+// - `update` only steps timeFactor1 for flags 0 and 1 - so the main force term
+// stays at zero for the whole run and only the z-only term does anything.
+// And the ramp state is per-reaction rather than per-cell, so it is shared by
+// every cell, which is the intent.
+class Pressure3DCenterTriangulationLinear : public Reaction {
+public:
+  Pressure3DCenterTriangulationLinear(const ParameterList &p,
+                                      const IndexLevels &i) {
+    if (p.size() != 3 && p.size() != 4)
+      throw std::runtime_error(
+          "Pressure3D::CenterTriangulation::Linear: uses three or four "
+          "parameters (k_force, areaFlag, deltaT, [k_force_start]).");
+    if (p[1] != 0.0 && p[1] != 1.0 && p[1] != 2.0)
+      throw std::runtime_error("Pressure3D::CenterTriangulation::Linear: "
+                               "areaFlag must be 0, 1 or 2.");
+    if (p[2] < 0.0)
+      throw std::runtime_error("Pressure3D::CenterTriangulation::Linear: "
+                               "deltaT must not be negative.");
+    if (i.size() != 1 || i[0].empty())
+      throw std::runtime_error(
+          "Pressure3D::CenterTriangulation::Linear: one index level - the "
+          "start of the center-triangulation cell variables, and with four "
+          "parameters a second index to report the current pressure in.");
+    configure("Pressure3D::CenterTriangulation::Linear", p, i, p.size(),
+              {i[0].size()},
+              p.size() == 4 ? std::vector<std::string>{"k_force", "areaFlag",
+                                                       "deltaT", "k_force_0"}
+                            : std::vector<std::string>{"k_force", "areaFlag",
+                                                       "deltaT"});
+  }
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(0, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
+  }
+  void update(Tissue &, Matrix &, Matrix &, Matrix &, double h) override {
+    if (parameter(1) == 0.0 || parameter(1) == 1.0) {
+      if (timeFactor1_ < 1.0)
+        timeFactor1_ += h / parameter(2);
+      if (timeFactor1_ > 1.0)
+        timeFactor1_ = 1.0;
+    }
+    if (parameter(1) == 2.0) {
+      if (timeFactor2_ < 1.0)
+        timeFactor2_ += h / parameter(2);
+      if (timeFactor2_ > 1.0)
+        timeFactor2_ = 1.0;
+    }
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "Pressure3D::CenterTriangulation::Linear requires a 3D tissue.");
+    const size_t comIndex = variableIndex(0, 0);
+    const bool ramped = numParameter() == 4;
+    const double pressure =
+        ramped ? parameter(3) + timeFactor1_ * (parameter(0) - parameter(3))
+               : timeFactor1_ * parameter(0);
+    if (ramped && numVariableIndex(0) > 1)
+      for (size_t c = 0; c < T.numCell(); ++c)
+        cellData[c][variableIndex(0, 1)] = pressure;
+
+    parallelScatter1(
+        T.numCell(), vertexDerivs, [&](size_t b, size_t e, Matrix &vOut) {
+          for (size_t c = b; c < e; ++c) {
+            const CellTopo &cell = T.cell(c);
+            const size_t n = cell.numWall();
+            if (cell.numVertex() != n)
+              throw std::runtime_error(
+                  "Pressure3D::CenterTriangulation::Linear: needs the same "
+                  "number of vertices and walls.");
+            for (size_t k = 0; k < n; ++k) {
+              const size_t v2 = cell.vertices[k];
+              const size_t v3 = cell.vertices[(k + 1) % n];
+              double pos[3][3];
+              for (size_t d = 0; d < 3; ++d) {
+                pos[0][d] = cellData[c][comIndex + d];
+                pos[1][d] = vertexData[v2][d];
+                pos[2][d] = vertexData[v3][d];
+              }
+              auto dist = [&](int a, int b2) {
+                double s2 = 0;
+                for (size_t d = 0; d < 3; ++d) {
+                  const double diff = pos[a][d] - pos[b2][d];
+                  s2 += diff * diff;
+                }
+                return std::sqrt(s2);
+              };
+              const double l0 = dist(0, 1), l1 = dist(1, 2), l2 = dist(0, 2);
+              const double area =
+                  0.25 * std::sqrt((l0 + l1 + l2) * (-l0 + l1 + l2) *
+                                   (l0 - l1 + l2) * (l0 + l1 - l2));
+              // Unit normal of the triangle, from its own frame.
+              double X[3], B[3], nrm[3];
+              double tA = 0, tB = 0;
+              for (size_t d = 0; d < 3; ++d) {
+                X[d] = pos[2][d] - pos[1][d];
+                B[d] = pos[0][d] - pos[1][d];
+                tA += X[d] * X[d];
+                tB += B[d] * B[d];
+              }
+              tA = std::sqrt(tA);
+              tB = std::sqrt(tB);
+              for (size_t d = 0; d < 3; ++d) {
+                X[d] /= tA;
+                B[d] /= tB;
+              }
+              nrm[0] = X[1] * B[2] - X[2] * B[1];
+              nrm[1] = X[2] * B[0] - X[0] * B[2];
+              nrm[2] = X[0] * B[1] - X[1] * B[0];
+              const double nn = std::sqrt(nrm[0] * nrm[0] + nrm[1] * nrm[1] +
+                                          nrm[2] * nrm[2]);
+              for (size_t d = 0; d < 3; ++d)
+                nrm[d] /= nn;
+
+              const double A = (parameter(1) == 1.0 || parameter(1) == 2.0)
+                                   ? area / 2
+                                   : 1.0 / 3;
+              if (parameter(1) == 0.0 || parameter(1) == 1.0) {
+                const double coeff = pressure * A;
+                for (size_t d = 0; d < 3; ++d) {
+                  cellDerivs[c][comIndex + d] += coeff * nrm[d];
+                  vOut[v2][d] += coeff * nrm[d];
+                  vOut[v3][d] += coeff * nrm[d];
+                }
+              }
+              if (parameter(1) == 2.0) {
+                const double coeff = timeFactor2_ * parameter(0) * A;
+                cellDerivs[c][comIndex + 2] += coeff * nrm[2];
+                vOut[v2][2] += coeff * nrm[2];
+                vOut[v3][2] += coeff * nrm[2];
+              }
+            }
+          }
+        });
+  }
+
+private:
+  double timeFactor1_ = 0.0, timeFactor2_ = 0.0;
+};
+TISSUE_REGISTER_REACTION(Pressure3DCenterTriangulationLinear,
+                         "Pressure3D::CenterTriangulation::Linear",
+                         "CenterTriangulation::Pressure3D::Linear",
+                         "VertexFromCellPlaneLinearCenterTriangulation")
+
 // Dynamic anisotropic wall material of Walia, Carter et al. (2024), Eq. 3:
 // the fiber (cellulose/CMT) part of the wall stiffness, Y_f, redistributes
 // between the principal stress directions according to the current stress

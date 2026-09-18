@@ -849,3 +849,28 @@ to tell which form was intended. It is therefore reproduced as written and
 flagged here rather than repaired. Both simulators show the same 25% swing,
 which is the evidence that the port is faithful; whether the model should
 behave that way is a question for whoever uses it.
+
+### `Pressure3D::CenterTriangulation::Linear`, 2026-09-18
+
+Ported out of order, ahead of the rest of `mechanical.cc`, because the
+benchmark sweep showed it was the single reaction blocking **all 118 models**
+of `publications/eng_et_al_2021` - every one of them was otherwise already
+supported. It is also needed by `bozorg_etal_2016` and `3Dhypocotyl`.
+
+Pressure on a center-triangulated shell that ramps in over a set time rather
+than being applied at full strength from the start, which is how those models
+inflate a tissue without kicking it. Per CT triangle the force is
+`k_force * A * n_hat`, given to all three nodes - each gets the whole thing,
+not a third of it. `areaFlag` selects `A`: 1/3 (no area weighting at all),
+`Area/2`, or `Area/2` with only the z component applied through a second ramp.
+A fourth parameter ramps from `p3` to `p0` instead of from zero and reports the
+current pressure into a cell variable.
+
+Exact against legacy for all three area flags. The four-parameter form differs
+at the **t=0 print only**, since it writes that cell variable from `derivs`:
+measured, legacy reports 0.1 (the ramp's starting pressure) at t=0 where this
+build still shows the init value, and both report 0.12 at every print after.
+
+One legacy quirk kept: under `areaFlag 2` the *first* ramp is never advanced -
+`update` only steps `timeFactor1` for flags 0 and 1 - so the main force term
+stays at zero for the whole run and only the z-only term does anything.
