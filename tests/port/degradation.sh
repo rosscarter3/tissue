@@ -21,7 +21,12 @@ printf "%-28s " "TwoGeometric";  mk "Degradation::TwoGeometric 1 2 1 1
 0.2
 5
 1"; run
-printf "%-28s " "OneWall";       mk "Degradation::OneWall 1 1 1
+# OneWall is the only one of the six acting on wall variables, so under
+# RK5Adaptive it runs into the legacy RK5 wall defect (README item 1) and is
+# expected to MISMATCH. Under Euler it matches to 0.000e+00, which is what
+# shows the port is faithful and the difference is legacy's bug - see
+# NOTES.md. Every other case here should match exactly.
+printf "%-28s " "OneWall (MISMATCH expected)"; mk "Degradation::OneWall 1 1 1
 0.3
 0"; run
 printf "%-28s " "OneBoundary";   mk "Degradation::OneBoundary 1 1 1
