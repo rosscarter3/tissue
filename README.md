@@ -351,12 +351,27 @@ division already copies to the daughter.
 
 Print flags: 0, 1, 2 (VTK), 3, 4, 5 (gnuplot), 77, 107.
 
-This covers every model shipped in `examples/tutorials`. A model using an
-unported reaction/rule fails fast with a clear message naming it. The legacy
-catalog (~150 further reaction classes, direction machinery, PLY output,
-special-purpose print flags) can be ported incrementally: each reaction is a
-self-contained class registered with `TISSUE_REGISTER_REACTION`, typically
-20-60 lines.
+This covers every model shipped in `examples/tutorials`, and most of the
+published models in the benchmark corpus - see `tools/bench/`, which reports
+what is left and, for each, whether legacy can run it either. A model using an unported reaction or rule fails fast with a
+message naming it, and one using a reaction legacy itself withdrew says so
+and names the replacement rather than implying this port is behind.
+
+The rest of the legacy catalog (see `tools/port/STATUS.md` for the current
+count, the remaining direction rules, PLY output and special-purpose print
+flags) can be ported incrementally: each reaction is a self-contained class
+registered with `TISSUE_REGISTER_REACTION`, typically 20-60 lines.
+
+A note on how that porting is validated, because it is the part that is easy
+to get wrong. Every batch is compared against the legacy binary on a
+purpose-built fixture, and the comparison is worth nothing until the fixture
+is shown to *exercise* the reaction: a clamp on a tissue at equilibrium, an
+averaging rule on a symmetric template, a concentration factor that happens
+to be 1.0, or a run that produces NaN in both binaries will all report an
+exact match while testing nothing. Several did. Each harness in `tests/port/`
+therefore also checks that its cases differ from a control and from each
+other, and `tools/port/NOTES.md` records the ones that were caught - along
+with the porting bugs those checks exposed.
 
 ## Architecture
 
