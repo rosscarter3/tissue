@@ -162,11 +162,14 @@ public:
           "Hypocotyl3D::VertexFromTRBScenterTriangulationMT: MF flag -1 reads "
           "cell variable 37 (the tissue layer), but this tissue has fewer "
           "cell variables.");
-    if (!Hypocotyl && mf == 0 && cellData.cols() <= kAdHocFlagIndex)
-      throw std::runtime_error(
-          "VertexFromTRBScenterTriangulationMT: MF flag 0 reads cell variable "
-          "40 (a hard-coded legacy switch that halves the fibre modulus when "
-          "it equals 100), but this tissue has fewer cell variables.");
+    // MF flag 0 reads cell variable 40, a hard-coded legacy switch that
+    // halves the fibre modulus where it equals 100. A tissue with fewer cell
+    // variables cannot set it, so the switch is simply off - which is both
+    // the only well-defined reading and what legacy's out-of-bounds read
+    // gives in practice, since stray heap bytes are not going to be exactly
+    // 100.0. Refusing the model instead would block published models that
+    // legacy runs (12 in the benchmark corpus alone), so the use site below
+    // checks the width rather than the constructor rejecting.
     if ((mf >= 6 && mf <= 9) && cellData.cols() <= kAdHocConcIndex)
       throw std::runtime_error(
           "VertexFromTRBScenterTriangulationMT: MF flags 6-9 read cell "
@@ -544,6 +547,7 @@ private:
       m.youngL = youngMatrix + youngFiber;
       m.youngT = youngMatrix;
       if (!Hypocotyl && !inUpdate &&
+          cellData.cols() > kAdHocFlagIndex &&
           cellData[c][kAdHocFlagIndex] == 100) { // ad-hoc switch
         m.youngL = youngMatrix + youngFiber / 2;
         m.youngT = youngMatrix + youngFiber / 2;

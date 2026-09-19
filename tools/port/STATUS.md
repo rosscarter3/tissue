@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**258 names registered here; 111 classes outstanding.**
+**260 names registered here; 110 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -17,7 +17,7 @@ Method and the log of validated batches are in `NOTES.md`.
 |---|---|
 | `legacy/adhocReaction.cc` | 29 |
 | `legacy/network.cc` | 22 |
-| `legacy/force.cc` | 15 |
+| `legacy/force.cc` | 14 |
 | `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/mechanical.cc` | 12 |
 | `legacy/grn.cc` | 6 |
@@ -86,7 +86,7 @@ Method and the log of validated batches are in `NOTES.md`.
 - `LinPolarizationFast` — `LinPolarizationFast`
 - `LinPolarizationFastExact` — `LinPolarizationFastExact`
 
-### `legacy/force.cc` (15)
+### `legacy/force.cc` (14)
 
 - `Force::Axial` — `Force::Axial`
 - `Force::Ball` — `Force::Ball`, `VertexFromBall`
@@ -101,7 +101,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Force::Parabolid` — `Force::Parabolid`, `VertexFromParabolid`
 - `Force::SphereCylinderRadius` — `Force::SphereCylinderRadius`, `SphereCylinderForceFromRadius`
 - `Force::Vector` — `Force::Vector`, `VertexFromForce`
-- `Force::VectorLinear` — `Force::VectorLinear`, `VertexFromForceLinear`
 - `GrowthForce::EpidermalRadial` — `GrowthForce::EpidermalRadial`, `MoveEpidermalVertexRadially`
 
 ### `legacy/mechanicalSpring.cc` (13)

@@ -1412,3 +1412,44 @@ One more vacuous case caught: `resetFlag` only decides what happens to cells
 output pointed at a variable that starts at zero, both settings leave a zero
 behind and the parameter looks inert. The harness writes into a variable that
 is 1 in the below-threshold cell instead.
+
+### `Force::VectorLinear`, and the index-40 guard, 2026-09-19
+
+`Force::VectorLinear` (`VertexFromForceLinear`) was the last genuine coverage
+gap the benchmark found - 12 models, all in `bozorg_etal_2014`. A constant
+force on a named list of vertices, ramped linearly from zero over deltaT.
+Exact (1e-12) against legacy over 9 configurations
+(`tests/port/force_vector.sh`).
+
+One legacy quirk reproduced, and it is a real bug rather than a convention:
+the loop guard is `numParameter() > d`, which counts **deltaT as a force
+component**. With two parameters (F_x, deltaT) in a 2D tissue, deltaT is
+applied as F_y; with three in a 3D tissue, as F_z. Only the form whose
+component count matches the tissue's dimension escapes it. Kept, because the
+published runs were made with it and those models were tuned against whatever
+force they actually received; the harness covers all three combinations.
+
+The harness uses fixed-step Euler, not `RK5Adaptive`, and the reason is worth
+recording because it is not the usual tolerance story. Pulling on two vertices
+of a mesh whose springs sit at their resting length is stiff, and under the
+adaptive solver the comparison reported 1e-6 to 1e-4 differences that grew
+when the tolerance was *tightened* - 3.6e-3 at 1e-10. Measured separately:
+the force alone matches exactly under every solver, the spring alone matches
+exactly, and the two together match exactly over 2000 fixed Euler steps at
+1e-12. So the derivative is identical and the divergence is entirely the
+error controller in a stiff configuration.
+
+Porting it exposed the next thing behind it. `VertexFromTRBScenterTriangulationMT`
+under MF flag 0 reads cell variable 40, a hard-coded legacy switch halving the
+fibre modulus where it equals 100. This build refused any tissue too narrow to
+hold it - but legacy runs those models, reading past the end of the row, and
+`bozorg_etal_2014`'s templates have 35 cell variables. Refusing blocked 12
+published models on undefined behaviour in the *other* simulator.
+
+A tissue that cannot hold the variable cannot set it, so "switch off" is the
+only well-defined reading, and it is what legacy's out-of-bounds read gives in
+practice - stray heap bytes are not going to be exactly 100.0. The check moved
+from the constructor to the use site. Behaviour on a tissue that does have the
+variable is unchanged, and the MT harness still reports the same four
+documented neighbour-weighting mismatches and nothing else. The two models now
+run, and agree with legacy to 0.000e+00.
