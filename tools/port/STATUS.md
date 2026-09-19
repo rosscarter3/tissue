@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**232 names registered here; 126 classes outstanding.**
+**254 names registered here; 115 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -20,7 +20,6 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/force.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/mechanical.cc` | 12 |
-| `legacy/boolean.cc` | 11 |
 | `legacy/grn.cc` | 6 |
 | `legacy/growth.cc` | 4 |
 | `legacy/growthForce.cc` | 4 |
@@ -139,20 +138,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
 - `TargetAreaFromPressure` — `TargetAreaFromPressure`
 - `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
-
-### `legacy/boolean.cc` (11)
-
-- `Boolean::AndGate` — `AndGate`, `Boolean::AndGate`
-- `Boolean::AndGateCount` — `AndGateCount`, `Boolean::AndGateCount`
-- `Boolean::AndNotGate` — `AndNotGate`, `Boolean::AndNotGate`
-- `Boolean::AndSpecialGate` — `AndSpecialGate`, `Boolean::AndSpecialGate`
-- `Boolean::AndSpecialGate2` — `AndSpecialGate2`, `Boolean::AndSpecialGate2`
-- `Boolean::AndSpecialGate3` — `AndSpecialGate3`, `Boolean::AndSpecialGate3`
-- `Boolean::AndThresholdsGate` — `AndThresholdsGate`, `Boolean::AndThresholdGate`
-- `Boolean::Count` — `Boolean::Count`, `Count`
-- `Boolean::FlagCount` — `Boolean::FlagCount`, `FlagCount`
-- `Boolean::OrGateCount` — `Boolean::OrGateCount`, `OrGateCount`
-- `Boolean::OrSpecialGateCount` — `Boolean::OrSpecialGateCount`, `OrSpecialGateCount`
 
 ### `legacy/grn.cc` (6)
 

@@ -1338,3 +1338,46 @@ init with the resting lengths scaled *and* varied wall to wall. The variation
 matters on its own: with a uniform scale a regular template still gives every
 vertex in a group the same velocity, so the mean equals each of them and an
 averaging reaction is still a no-op.
+
+### `legacy/boolean.cc`, 2026-09-19
+
+All eleven classes: the flag gates (`AndGate`, `AndNotGate`, three
+`AndSpecial` variants, `AndThresholdGate`) and the counters (`Count`,
+`FlagCount`, `AndGateCount`, `OrGateCount`, `OrSpecialGateCount`). Not
+blocking anything in the corpus - the benchmark's per-reaction blockers are
+all cleared - but small, self-contained and exactly the sort of thing a model
+reaches for when it needs a cell to remember a discrete state.
+
+Exact (1e-12) against legacy over 17 configurations
+(`tests/port/boolean.sh`).
+
+All eleven act only in `update()`, which is what keeps a flag from being
+smeared across the stages of an adaptive step, and none contributes to the
+derivatives.
+
+Legacy behaviour kept:
+
+- The comparisons are `==` against 1 and 0 on **doubles**. Exact for flags
+  these reactions write themselves, and reproduced rather than given a
+  tolerance: a model whose inputs are not exactly 0 or 1 behaves differently
+  and changing that silently would change results.
+- `gatetype` is only offered by `AndGate` and `AndNotGate`; 0 clears the
+  output when the condition is false, anything else latches. Of the
+  three-input gates, `AndSpecialGate` always clears and the other two always
+  latch - not a choice the model file gets.
+- The counters add one per `update()`, so they count *solver steps*, not
+  time; an adaptive solver takes a different number for the same simulated
+  duration.
+- Every constructor calls `setId("add")`, so all eleven report the same id in
+  legacy. Only diagnostics use it; this build uses the real names.
+- The class is spelled `AndThresholdsGate` and registered as
+  `Boolean::AndThresholdGate` with the alias `AndThresholdsGate`. Both
+  spellings accepted.
+
+Two fixture notes. These gates need cell variables that are *exactly* 0 or 1,
+so `seed_init.py`'s (0.05, 0.95) values would make every condition false and
+every case pass while testing nothing - `cellvar_init.py` sets the flags
+directly. And the two three-input gates were originally given different
+indices, under which they produce identical output on this fixture and look
+interchangeable; they now share indices, so the only difference between them
+is the condition and the clearing, which is what the test is for.
