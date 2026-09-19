@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**228 names registered here; 129 classes outstanding.**
+**230 names registered here; 128 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -18,8 +18,8 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/adhocReaction.cc` | 34 |
 | `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
-| `legacy/mechanical.cc` | 13 |
 | `legacy/mechanicalSpring.cc` | 13 |
+| `legacy/mechanical.cc` | 12 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/grn.cc` | 6 |
 | `legacy/growth.cc` | 4 |
@@ -111,22 +111,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Force::VectorLinear` — `Force::VectorLinear`, `VertexFromForceLinear`
 - `GrowthForce::EpidermalRadial` — `GrowthForce::EpidermalRadial`, `MoveEpidermalVertexRadially`
 
-### `legacy/mechanical.cc` (13)
-
-- `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
-- `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
-- `PerpendicularWallPressure` — `PerpendicularWallPressure`
-- `Pressure3D::ConcentrationHill` — `Pressure3D::ConcentrationHill`, `VertexFromCellPlaneConcentrationHill`
-- `Pressure3D::Constant` — `Pressure3D::Constant`, `VertexFromCellPlane`
-- `Pressure3D::Normalized` — `Pressure3D::Normalized`, `VertexFromCellPlaneNormalized`
-- `Pressure3D::NormalizedSpatial` — `Pressure3D::NormalizedSpatial`, `VertexFromCellPlaneNormalizedSpatial`
-- `Pressure3D::Spatial` — `Pressure3D::Spatial`, `VertexFromCellPlaneSpatial`
-- `Pressure3D::SphereCylinder` — `Pressure3D::SphereCylinder`, `VertexFromCellPlaneSphereCylinder`
-- `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
-- `Pressure3D::Triangular` — `Pressure3D::Triangular`, `VertexFromCellPlaneTriangular`
-- `TargetAreaFromPressure` — `TargetAreaFromPressure`
-- `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
-
 ### `legacy/mechanicalSpring.cc` (13)
 
 - `VertexFromDoubleWallSpring` — `VertexFromDoubleWallSpring`
@@ -142,6 +126,21 @@ Method and the log of validated batches are in `NOTES.md`.
 - `WallMechanics::ViscoElastic` — `WallMechanics::ViscoElastic`
 - `cellcellRepulsion` — `cellcellRepulsion`
 - `vertexFromSubstrate` — `vertexFromSubstrate`
+
+### `legacy/mechanical.cc` (12)
+
+- `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
+- `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
+- `PerpendicularWallPressure` — `PerpendicularWallPressure`
+- `Pressure3D::ConcentrationHill` — `Pressure3D::ConcentrationHill`, `VertexFromCellPlaneConcentrationHill`
+- `Pressure3D::Constant` — `Pressure3D::Constant`, `VertexFromCellPlane`
+- `Pressure3D::Normalized` — `Pressure3D::Normalized`, `VertexFromCellPlaneNormalized`
+- `Pressure3D::NormalizedSpatial` — `Pressure3D::NormalizedSpatial`, `VertexFromCellPlaneNormalizedSpatial`
+- `Pressure3D::Spatial` — `Pressure3D::Spatial`, `VertexFromCellPlaneSpatial`
+- `Pressure3D::SphereCylinder` — `Pressure3D::SphereCylinder`, `VertexFromCellPlaneSphereCylinder`
+- `Pressure3D::SphereCylinderConcentrationHill` — `Pressure3D::SphereCylinderConcentrationHill`, `VertexFromCellPlaneSphereCylinderConcentrationHill`
+- `TargetAreaFromPressure` — `TargetAreaFromPressure`
+- `VertexFromCellPowerdiagram` — `VertexFromCellPowerdiagram`
 
 ### `legacy/boolean.cc` (11)
 

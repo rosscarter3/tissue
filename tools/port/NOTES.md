@@ -1218,3 +1218,31 @@ Three fixture problems, all of the same family as the previous batches:
 
 The general point, worth keeping: when a comparison fails, check whether the
 solver tolerance is looser than the difference before suspecting the port.
+
+### `Pressure3D::Triangular`, 2026-09-19
+
+Pressure on a triangular face, pushing all three vertices along the face
+normal. The last of the benchmark's per-reaction blockers (1 model in
+`bozorg_etal_2014`). Exact against legacy over 8 configurations, appended to
+`tests/port/pressure_ct.sh`; it needs triangular faces, so those cases use
+`tri3D.init` rather than the square mesh the rest of that file uses.
+
+Mostly dead code in legacy, reproduced as written because the coefficients
+are what the published runs used:
+
+- The six-parameter form (areaFlag 2 and 3) was meant to raise the pressure
+  as the enclosed volume fell. The line accumulating that volume is commented
+  out, so `totalVolume` is identically zero and the whole expression collapses
+  to a constant, `(Vfactor - Pfactor) * k_force / (Vfactor - 1)`. `V0` is
+  therefore unused.
+- `Zplane` is unused in every form; its only use is commented out too.
+- Each branch opens with a loop that computes and normalises every cell's
+  normal and then does nothing with it. Its only surviving effect is
+  validating that the cells are triangular, which this build does directly.
+
+Both vertices - all three here - take the whole coefficient rather than a
+share, as in the centre-triangulation pair above.
+
+One place this build is stricter: legacy accepts areaFlag 2 or 3 with three
+parameters and then reads `parameter(4)` and `parameter(5)` out of range.
+This rejects that combination at construction instead.

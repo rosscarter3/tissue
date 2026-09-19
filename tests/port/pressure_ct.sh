@@ -115,3 +115,46 @@ mk 2 "VertexFromCellPressurecenterTriangulationLinear 3 1 1
 # expanding freely - closer to how these are used.
 printf "%-50s " "  ... against a wall spring"
 printf '3 0 0\n\nCenterTriangulation::Initiate 0 1 1\n10\n\nVertexFromWallSpring 2 1 1\n6.0\n0.6\n\n0\n\nCenterTriangulation::VertexFromCellPressureLinear 3 1 1\n0.8\n0\n1\n\n10\n' > single.model; tightrun
+
+# --- Pressure3D::Triangular ---------------------------------------------------
+# Triangular faces only, so this uses tri3D.init (two triangles sharing an
+# edge) rather than the square mesh above. No CenterTriangulation::Initiate:
+# this form reads no cell variables at all.
+trirun() { printf '1 0 0\n\n%s\n' "$1" > single.model
+           python3 $T/tools/port/compare.py single.model tri3D.init s.rk5 --tol=1e-9 2>&1 | tail -1; }
+
+for flag in 0 1; do
+  printf "%-50s " "Pressure3D::Triangular areaFlag=$flag"
+  trirun "Pressure3D::Triangular 3 0
+0.7
+$flag
+0.0"
+done
+
+# areaFlag 2 and 3 take the six-parameter form. Its volume feedback is dead in
+# legacy (the accumulation is commented out), so Vfactor and Pfactor only
+# rescale a constant and V0 does nothing; two settings check that rescaling.
+for flag in 2 3; do
+  for pf in 0.5 3.0; do
+    printf "%-50s " "  ... areaFlag=$flag Pfactor=$pf"
+    trirun "Pressure3D::Triangular 6 0
+0.7
+$flag
+0.0
+2.0
+4.0
+$pf"
+  done
+done
+
+printf "%-50s " "  ... alias VertexFromCellPlaneTriangular"
+trirun "VertexFromCellPlaneTriangular 3 0
+0.7
+1
+0.0"
+
+printf "%-50s " "  ... negative k_force"
+trirun "Pressure3D::Triangular 3 0
+-0.7
+1
+0.0"

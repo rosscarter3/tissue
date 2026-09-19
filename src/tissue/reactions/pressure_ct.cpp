@@ -191,5 +191,109 @@ TISSUE_REGISTER_REACTION(CenterTriangulationVertexFromCellPressureLinear,
                          "CenterTriangulation::VertexFromCellPressureLinear",
                          "VertexFromCellPressurecenterTriangulationLinear")
 
+///
+/// Pressure on a triangular face, pushing all three vertices along the
+/// face normal. Ported from legacy mechanical.cc (Pressure3D::Triangular).
+///
+///   Pressure3D::Triangular 3 0
+///     k_force, areaFlag (0 = no area weighting, 1 = weighted), Zplane
+///   Pressure3D::Triangular 6 0
+///     k_force, areaFlag (2 or 3), Zplane, V0, Vfactor, Pfactor
+///
+/// The six-parameter form was meant to raise the pressure as the enclosed
+/// volume fell, but the line accumulating that volume is commented out in
+/// legacy, so the volume term is identically zero and the form reduces to a
+/// constant pressure scaled by (Vfactor - Pfactor) / (Vfactor - 1). V0 is
+/// then unused, and Zplane is unused in every form. Reproduced as written:
+/// these are the coefficients the published runs used.
+class Pressure3DTriangular : public Reaction {
+public:
+  Pressure3DTriangular(const ParameterList &p, const IndexLevels &i) {
+    if (!i.empty())
+      throw std::runtime_error("Pressure3D::Triangular: uses no indices.");
+    if (p.size() != 3 && p.size() != 6)
+      throw std::runtime_error(
+          "Pressure3D::Triangular: three parameters (k_force, areaFlag 0/1, "
+          "Zplane) or six (k_force, areaFlag 2/3, Zplane, V0, Vfactor, "
+          "Pfactor).");
+    std::vector<std::string> ids{"k_force", "areaFlag", "Zplane"};
+    if (p.size() == 6) {
+      ids.push_back("V0");
+      ids.push_back("Vfactor");
+      ids.push_back("Pfactor");
+    }
+    configure("Pressure3D::Triangular", p, i, p.size(), {}, std::move(ids));
+    const double flag = parameter(1);
+    if (flag != 0.0 && flag != 1.0 && flag != 2.0 && flag != 3.0)
+      throw std::runtime_error(
+          "Pressure3D::Triangular: areaFlag must be 0 or 2 (no area "
+          "weighting) or 1 or 3 (area weighted).");
+    if ((flag >= 2.0) != (p.size() == 6))
+      throw std::runtime_error(
+          "Pressure3D::Triangular: areaFlag 2 and 3 need the six-parameter "
+          "form, 0 and 1 the three-parameter one.");
+  }
+  void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "Pressure3D::Triangular: only implemented for three dimensions.");
+    const double flag = parameter(1);
+    const bool areaWeighted = flag == 1.0 || flag == 3.0;
+    // The volume term is dead in legacy (see above), so the six-parameter
+    // pressure is this constant.
+    const double pressure =
+        numParameter() == 6
+            ? (parameter(4) - parameter(5)) * parameter(0) / (parameter(4) - 1.0)
+            : parameter(0);
+
+    for (size_t n = 0; n < T.numCell(); ++n) {
+      const CellTopo &cell = T.cell(n);
+      if (cell.numVertex() != 3)
+        throw std::runtime_error(
+            "Pressure3D::Triangular: only implemented for triangular cells; "
+            "cell " + std::to_string(n) + " has " +
+            std::to_string(cell.numVertex()) + " vertices.");
+      const size_t v0 = cell.vertices[0];
+      const size_t v1 = cell.vertices[1];
+      const size_t v2 = cell.vertices[2];
+
+      // Normal as legacy builds it: (v1 - v0) x (v2 - v1).
+      double e0[3], e1[3], normal[3];
+      for (size_t d = 0; d < 3; ++d) {
+        e0[d] = vertexData[v1][d] - vertexData[v0][d];
+        e1[d] = vertexData[v2][d] - vertexData[v1][d];
+      }
+      normal[0] = e0[1] * e1[2] - e0[2] * e1[1];
+      normal[1] = e0[2] * e1[0] - e0[0] * e1[2];
+      normal[2] = e0[0] * e1[1] - e0[1] * e1[0];
+      double norm = 0.0;
+      for (size_t d = 0; d < 3; ++d)
+        norm += normal[d] * normal[d];
+      // Legacy skips the normalisation when the squared norm is already
+      // exactly 1.0, which is the same result either way.
+      if (norm != 1.0) {
+        if (!(norm > 0.0))
+          throw std::runtime_error(
+              "Pressure3D::Triangular: degenerate triangle in cell " +
+              std::to_string(n) + " (no well-defined normal).");
+        const double inv = 1.0 / std::sqrt(norm);
+        for (size_t d = 0; d < 3; ++d)
+          normal[d] *= inv;
+      }
+
+      double coeff = pressure;
+      if (areaWeighted)
+        coeff *= T.cellVolume(n, vertexData) / cell.numVertex();
+      // Each of the three vertices takes the whole coefficient.
+      for (size_t k = 0; k < 3; ++k)
+        for (size_t d = 0; d < 3; ++d)
+          vertexDerivs[cell.vertices[k]][d] += coeff * normal[d];
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(Pressure3DTriangular, "Pressure3D::Triangular",
+                         "VertexFromCellPlaneTriangular")
+
 } // namespace
 } // namespace tissue
