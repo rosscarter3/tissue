@@ -1297,3 +1297,44 @@ solver's own error at its 1e-6 tolerance, not the port. The harness uses a
 single fixed Euler step, which takes the solver out of the question and
 compares the derivative directly. That is what made the 5.5e-4 signal legible
 among the 1e-6 noise.
+
+### `Hypocotyl3D::limitZdis`, 2026-09-19
+
+Holds each end of a growing cylinder flat in z: every vertex on an end takes
+that end's mean z velocity, so the end translates rather than deforming.
+
+Hard-coded to one paper's template (Bou Daher et al. 2018), and legacy's own
+error message says so. The cell variables that label a cell (37 and 38), the
+label values it looks for, and the z = -50 plane separating the two ends are
+all constants in the source, not parameters. Kept, because the models using
+it are that paper's; this build checks the cell row is wide enough and says
+what it is looking for when it is not, rather than reading past the end.
+
+Exact (1e-12) against legacy over 4 configurations
+(`tests/port/hypocotyl.sh`), on the shipped 770-cell template - there is no
+smaller fixture that exercises it, since the labels and the z plane are
+fixed. The shipped *models* cannot be used: they set `doubleEdge_flag=2`,
+which legacy now rejects, so the harness pairs the reaction with a wall
+spring instead.
+
+Two legacy behaviours kept:
+
+- The two indices the class requires are read by nothing, in either build.
+  The class documentation describes a copy-from/copy-to pair belonging to
+  some other reaction. They are accepted so existing model files load, and
+  one case passes different values to show they do not matter.
+- A vertex shared by two qualifying cells is added to the list twice, so it
+  counts twice in the mean. That weighting changes the result, so it is not
+  de-duplicated.
+
+The fixture needed the same fix as the last two batches, and this time it
+became a tool: `tests/port/restlength_init.py`. Nearly every shipped init has
+each wall's resting length equal to its actual length, so a spring-only model
+starts at equilibrium and nothing moves - and a reaction that acts on vertex
+derivatives then averages zeros and matches legacy while doing nothing. That
+has now been the hidden cause of a vacuous harness three times
+(`constraints.sh`, `const_stress_boundary.sh`, here), so the script writes an
+init with the resting lengths scaled *and* varied wall to wall. The variation
+matters on its own: with a uniform scale a regular template still gives every
+vertex in a group the same velocity, so the mean equals each of them and an
+averaging reaction is still a no-op.
