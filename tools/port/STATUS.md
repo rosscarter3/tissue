@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**218 names registered here; 137 classes outstanding.**
+**224 names registered here; 131 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -15,7 +15,7 @@ Method and the log of validated batches are in `NOTES.md`.
 
 | legacy source | outstanding |
 |---|---|
-| `legacy/adhocReaction.cc` | 40 |
+| `legacy/adhocReaction.cc` | 34 |
 | `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanical.cc` | 15 |
@@ -31,7 +31,7 @@ Method and the log of validated batches are in `NOTES.md`.
 
 ## Outstanding, by source
 
-### `legacy/adhocReaction.cc` (40)
+### `legacy/adhocReaction.cc` (34)
 
 - `CalculatePCAPlane` — `CalculatePCAPlane`
 - `CalculateVertexStressDirection` — `CalculateVertexStressDirection`
@@ -54,16 +54,10 @@ Method and the log of validated batches are in `NOTES.md`.
 - `ThresholdSwitch` — `ThresholdSwitch`
 - `VertexFromConstStressBoundary` — `VertexFromConstStressBoundary`
 - `VertexFromRotationalForceLinear` — `VertexFromRotationalForceLinear`
-- `VertexNoUpdateBoundary` — `VertexNoUpdateBoundary`
 - `VertexNoUpdateBoundary3D` — `VertexNoUpdateBoundary3D`
 - `VertexNoUpdateBoundaryPtemplate` — `VertexNoUpdateBoundaryPtemplate`
 - `VertexNoUpdateBoundaryPtemplateStatic` — `VertexNoUpdateBoundaryPtemplateStatic`
 - `VertexNoUpdateBoundaryPtemplateStatic3D` — `VertexNoUpdateBoundaryPtemplateStatic3D`
-- `VertexNoUpdateFromIndexHoldX` — `VertexNoUpdateFromIndexHoldX`
-- `VertexNoUpdateFromIndexHoldY` — `VertexNoUpdateFromIndexHoldY`
-- `VertexNoUpdateFromIndexHoldZ` — `VertexNoUpdateFromIndexHoldZ`
-- `VertexNoUpdateFromList` — `VertexNoUpdateFromList`
-- `VertexNoUpdateFromPosition` — `VertexNoUpdateFromPosition`
 - `VertexRandTip` — `VertexRandTip`
 - `VertexTranslateToMax` — `VertexTranslateToMax`
 - `cellPolarity3D` — `cellPolarity3D`

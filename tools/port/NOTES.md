@@ -1120,3 +1120,52 @@ Three things were wrong in how this was first reported and are now fixed:
 The general lesson for this corpus: a legacy timeout is never evidence of a
 speedup until legacy has been shown to terminate on a smaller version of the
 same problem.
+
+### The `VertexNoUpdate*` clamps, 2026-09-19
+
+Six of the family: `FromPosition`, `FromIndexHoldX/Y/Z`, `FromList` and
+`Boundary`. `FromIndex` was already ported. `VertexNoUpdateBoundary` is the
+one the benchmark wanted (3 models in `bozorg_etal_2016`); the rest are its
+near neighbours and came cheaply.
+
+**Not** ported, and named here so the gap is explicit: the four geometric
+variants `BoundaryPtemplate`, `BoundaryPtemplateStatic`,
+`BoundaryPtemplateStatic3D` and `Boundary3D`. Those do not clamp a coordinate
+but project out the component of the derivative normal to the boundary edge,
+using the cell's stored centre of mass, and the Static ones cache the normals
+at `initiate`. They are a different and much larger job, and they block
+nothing in the corpus.
+
+Exact against legacy over 16 configurations in 2D and 3D
+(`tests/port/constraints.sh`), with one annotated exception below.
+
+The fixture is the whole story here, twice over.
+
+First, the signature. `VertexNoUpdateFromList` takes **no** variable indices;
+the port initially demanded one, and every model using it would have been
+rejected. The harness caught it immediately because legacy refused the model
+outright and produced no output at all - which is worth noting as the easiest
+kind of mismatch to read, and the reason to compare against legacy rather
+than to eyeball plausible-looking numbers.
+
+Second, and worse: the first version of the harness was **entirely vacuous**.
+A clamp only zeroes derivatives, so it needs something pushing the vertices,
+and the natural pairing is a wall spring reading wall variable 0. But
+variable 0 holds each wall's resting length, so on a seeded init the springs
+are already at equilibrium, no vertex moves, and all sixteen cases "matched"
+legacy while clamping a tissue that was going nowhere. Pointing the spring at
+wall variable 1 - a seeded value unrelated to the geometry - puts the springs
+out of equilibrium. Each clamped run is now checked against the unclamped one
+and against a neighbouring configuration, so the axis, the direction and the
+axis-subset all have to change the output.
+
+That change immediately surfaced something the vacuous version could not:
+`FromPosition` with direction +1 and threshold 1.5 differs from legacy in
+exactly one printed value, one unit in the last of six significant digits
+(0.131243 against 0.131242), in a wall variable rather than a vertex. It is a
+print-rounding boundary and not a divergence: the same comparison is exact at
+solver tolerances 1e-5, 1e-7 and 1e-9, and only the harness's 1e-6 lands on
+it. That case runs at 2e-6 with the reason written beside it.
+
+One place this build is deliberately louder than legacy: `HoldZ` on a 2D
+tissue indexes past the end of the vertex row in legacy. This throws instead.
