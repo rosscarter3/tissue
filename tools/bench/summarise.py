@@ -76,14 +76,44 @@ def main():
     print(f"  total wall time {tl:.0f}s -> {tn:.0f}s ({tl/tn:.2f}x)")
 
     if skipped:
-        reasons = {}
+        # Which side failed matters. A legacy timeout next to a successful run
+        # here is not a speedup of any size: legacy has a documented infinite
+        # loop in Division::ShortestPath2D (README item 3), so those rows are
+        # timing a hang. Keep them in their own bucket so nobody reads a ratio
+        # into them.
+        buckets = {"this build could not run it": {},
+                   "legacy could not run it": {},
+                   "legacy did not finish (a hang is not a speedup)": {},
+                   "neither could run it": {}}
+
+        def label(err):
+            return (err or "?").split(":")[-1].strip()[:70]
+
         for r in skipped:
-            why = r.get("new_err") or r.get("legacy_err") or "?"
-            why = why.split(":")[-1].strip()[:70]
-            reasons[why] = reasons.get(why, 0) + 1
+            newErr, oldErr = r.get("new_err"), r.get("legacy_err")
+            # benchmark.py does not bother running legacy once this build has
+            # failed for a reason other than a timeout, and records a sentinel
+            # rather than a real error. That is not evidence about legacy.
+            if oldErr and oldErr.startswith("skipped"):
+                oldErr = None
+            if newErr and oldErr:
+                key, why = "neither could run it", label(newErr)
+            elif newErr:
+                key, why = "this build could not run it", label(newErr)
+            elif oldErr == "timeout":
+                key, why = ("legacy did not finish (a hang is not a speedup)",
+                            f"v2 finished in {r['new']:.2f}s")
+            else:
+                key, why = "legacy could not run it", label(oldErr)
+            buckets[key][why] = buckets[key].get(why, 0) + 1
+
         print(f"\n{len(skipped)} not compared:")
-        for why, n in sorted(reasons.items(), key=lambda x: -x[1]):
-            print(f"  {n:4d}  {why}")
+        for key, reasons in buckets.items():
+            if not reasons:
+                continue
+            print(f"  {sum(reasons.values()):4d}  {key}")
+            for why, n in sorted(reasons.items(), key=lambda x: -x[1]):
+                print(f"        {n:4d}  {why}")
 
 
 if __name__ == "__main__":

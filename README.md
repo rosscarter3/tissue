@@ -180,10 +180,21 @@ differ from legacy for affected models — in v2's favor:
 2. **RK4 vertex k3 bug** (`rungeKutta.cc:804`): legacy drops the k3 term from
    the vertex weighted sum. Fixed.
 3. **`Division::ShortestPath2D` infinite loop**: when the division point lies
-   exactly on a wall's supporting line, the legacy wall-pair orientation loop
-   cycles forever — the shipped `shortestPath.model` tutorial reproducibly
-   hangs the legacy simulator. v2 bounds the loop and skips the degenerate
-   pair (with a warning).
+   exactly on a wall's supporting line, neither of legacy's two re-orientation
+   tests fires (they are strict inequalities), the third test swaps the two
+   walls, and the loop repeats on the same pair forever — the shipped
+   `shortestPath.model` tutorial reproducibly hangs the legacy simulator. v2
+   bounds the loop and skips the degenerate pair (with a warning).
+
+   Measured, because it is easy to mistake for v2 being fast. The hang depends
+   on the division threshold, which decides how small cells get: on
+   `meristem.init` legacy and v2 agree exactly (0.000e+00 over 35953 values)
+   and run within 1.1–1.3× of each other at `V_threshold` 40 and 20, and at 10
+   and below legacy never returns. A stack sample of a legacy process left for
+   16 hours on the shipped threshold of 1.2 put 100% of samples inside
+   `getCandidates`, in that loop; v2 finishes the same run in 0.88s. Any
+   benchmark comparing the two on these models is timing a hang, not a
+   speedup.
 4. **`WallGrowth::Strain` 4-parameter form**: legacy reads `parameter(4)` and
    `variableIndex(0,1)` out of range (undefined behavior). v2 skips the
    equilibrium gate in that form instead.

@@ -1070,3 +1070,53 @@ The division hook is called from inside `divideCell`, after the topology is
 final but before the size-dependent variable split - legacy's call site. It
 makes no difference to these two no-op rules, but it is where a real rule
 would need to be to see the geometry legacy gives it.
+
+### The `shortestPath` benchmark outlier was a legacy hang, 2026-09-19
+
+Worth writing down because the first reading of it was wrong, and the wrong
+reading was flattering.
+
+The benchmark sweep left three `growthanddivision/modelFiles/vertexBased/
+shortestPath*` models uncompared: this build finished them in 3.5-16s and
+legacy exceeded the timeout. Re-run with a 900s budget, legacy still did not
+finish any of the three. That looks like a speedup of at least 57x, and it is
+not a speedup at all.
+
+What it is: README item 3, legacy's unbounded wall-pair orientation loop in
+`Division::ShortestPath2D`. Established in this order, and each step matters:
+
+- **Same answers where legacy terminates.** Raising `V_threshold` from the
+  shipped 1.2 to 40 leaves only a few cells above it. There the two agree
+  exactly - 0.000e+00 over 35953 values on `meristem.init` - and the cell
+  counts match step for step (268 at t=2, 278 at t=20). So the division search
+  itself is a faithful port; nothing about *what* is computed differs.
+- **Comparable speed where legacy terminates.** At `V_threshold` 40 and 20
+  legacy runs at 1.3x and 1.1x of this build. It is not slow at this.
+- **A cliff, not a slope.** At 10 and below legacy never returns. A slope
+  would be a performance difference; a cliff is a hang.
+- **Confirmed directly.** A legacy process left on the shipped threshold of
+  1.2 ran for 16 hours without reaching its second print. `sample` put 100%
+  of samples inside `getCandidates`, in the `do/while(flippedVectors)` loop.
+  This build does the same run in 0.88s, reaching 7680 cells from 267.
+
+The loop cannot terminate when the division point lies on a wall's supporting
+line: both re-orientation tests are strict inequalities, so neither fires at
+exactly zero, and the third test then swaps the two walls and repeats on the
+same pair. v2 bounds it at 8 iterations and skips the pair.
+
+Three things were wrong in how this was first reported and are now fixed:
+
+- The throwaway classifier called these three "v2 gaps". They are the
+  opposite: this build runs them and legacy does not.
+- `summarise.py` lumped them in with genuine failures. It now buckets
+  not-compared rows by *which side* failed, and names the hang case
+  explicitly so no one reads a ratio into it. The same pass fixed a worse
+  mislabel: 68 rows were being reported as "neither could run it" when
+  `benchmark.py` had simply not bothered running legacy after this build
+  failed, and recorded a sentinel rather than a real error.
+- `benchmark.py` itself was never at fault - it only divides when both times
+  exist. The ">57x" was prose, not arithmetic.
+
+The general lesson for this corpus: a legacy timeout is never evidence of a
+speedup until legacy has been shown to terminate on a smaller version of the
+same problem.
