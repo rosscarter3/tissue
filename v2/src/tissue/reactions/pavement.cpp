@@ -41,7 +41,10 @@
 //
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "tissue/core/tissue.h"
@@ -233,6 +236,116 @@ private:
   std::vector<char> valid_;
 };
 TISSUE_REGISTER_REACTION(CmtCurvatureRecruitment, "CMT::CurvatureRecruitment")
+
+// ---------------------------------------------------------------------------
+// CMT::FromFile
+//
+// The same microtubule occupancy `m`, but read from a file instead of
+// computed from a cue. This is the hook that lets an external microtubule
+// simulation drive the mechanics: tubulaton runs inside the cell geometry,
+// its filament array is reduced to a per-wall occupancy, and that is written
+// here. Everything downstream - WallMechanics::SpringModulated,
+// WallGrowth::StrainWallInhibited - is unchanged, which is the point. Swap
+// CMT::CurvatureRecruitment for CMT::FromFile and the only thing that differs
+// between the two models is where `m` came from.
+//
+// That is what makes an alignment rule a variable rather than a rewrite: the
+// rules compared in ../../../../ALIGNMENT.md all end at this same variable,
+// so any difference in the result is a difference in the rule and not in the
+// hundred other things a second model would change.
+//
+// The file is called `cmt` and is read from the working directory. A fixed
+// name is legacy's convention for this (SisterVertex::InitiateFromFile reads
+// `sister` the same way) because a model rule carries numbers, not strings;
+// in practice every run already has its own directory.
+//
+// Format - whitespace, `#` comments, and deliberately dull:
+//
+//     # anything after a hash is ignored
+//     <count> <columns>
+//     <value> [...]        x count
+//
+// Column 0 is the occupancy. `count` must equal the number of walls, and the
+// reaction says so if it does not rather than reading whatever is there: a
+// silently mismatched file would put one wall's microtubules on another's.
+//
+//     CMT::FromFile 1 1 1
+//       reread_flag   # 0 = read once before the run; 1 = re-read every update
+//       m_index       # the wall variable to write
+//
+// reread_flag 1 is for the alternating loop, where tubulaton rewrites `cmt`
+// between growth steps and tissue must pick it up without restarting.
+//
+class CmtFromFile : public Reaction {
+public:
+  CmtFromFile(const ParameterList &p, const IndexLevels &i) {
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "CMT::FromFile: level 0 = the wall variable to write the "
+          "microtubule occupancy into.");
+    configure("CMT::FromFile", p, i, 1, {1}, {"reread_flag"});
+  }
+
+  void initiate(Tissue &T, Matrix &, Matrix &wallData, Matrix &, Matrix &,
+                Matrix &, Matrix &) override {
+    load(T, wallData);
+  }
+  void derivs(Tissue &, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
+              Matrix &) override {}
+  void update(Tissue &T, Matrix &, Matrix &wallData, Matrix &,
+              double) override {
+    if (parameter(0) != 0.0)
+      load(T, wallData);
+  }
+
+private:
+  void load(Tissue &T, Matrix &wallData) {
+    std::ifstream in("cmt");
+    if (!in)
+      throw std::runtime_error(
+          "CMT::FromFile: cannot open 'cmt' in the working directory. The "
+          "filename is fixed, as for SisterVertex::InitiateFromFile.");
+    // Strip comments first, then read numbers: simpler than interleaving the
+    // two, and the header is just the first two numbers in the file.
+    std::ostringstream body;
+    std::string line;
+    while (std::getline(in, line)) {
+      const size_t hash = line.find('#');
+      body << (hash == std::string::npos ? line : line.substr(0, hash)) << ' ';
+    }
+    std::istringstream num(body.str());
+    double countValue = 0.0, columnValue = 0.0;
+    if (!(num >> countValue >> columnValue))
+      throw std::runtime_error(
+          "CMT::FromFile: 'cmt' has no '<count> <columns>' header.");
+    const size_t count = static_cast<size_t>(countValue);
+    const size_t columns = static_cast<size_t>(columnValue);
+    if (count != T.numWall())
+      throw std::runtime_error(
+          "CMT::FromFile: 'cmt' describes " + std::to_string(count) +
+          " walls but the tissue has " + std::to_string(T.numWall()) +
+          ". Refusing to read it: a mismatched file would put one wall's "
+          "microtubules on another's.");
+    if (columns == 0)
+      throw std::runtime_error("CMT::FromFile: 'cmt' declares zero columns.");
+    const size_t mIndex = variableIndex(0, 0);
+    for (size_t w = 0; w < count; ++w) {
+      double first = 0.0;
+      for (size_t c = 0; c < columns; ++c) {
+        double x;
+        if (!(num >> x))
+          throw std::runtime_error(
+              "CMT::FromFile: 'cmt' ends early - expected " +
+              std::to_string(count * columns) + " values.");
+        if (c == 0)
+          first = x;
+      }
+      wallData[w][mIndex] = first;
+    }
+  }
+
+};
+TISSUE_REGISTER_REACTION(CmtFromFile, "CMT::FromFile")
 
 // ---------------------------------------------------------------------------
 // WallMechanics::SpringModulated
