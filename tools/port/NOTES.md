@@ -1381,3 +1381,34 @@ directly. And the two three-input gates were originally given different
 indices, under which they produce identical output on this fixture and look
 interchangeable; they now share indices, so the only difference between them
 is the condition and the clearing, which is what the test is for.
+
+### Threshold and flag bookkeeping, 2026-09-19
+
+`ThresholdSwitch`, `ThresholdReset`, `FlagAddValue` and `CopyVariable` from
+`adhocReaction.cc` - the deterministic half of that file's flag machinery,
+and a natural companion to the Boolean gates. Appended to
+`tests/port/boolean.sh`; exact (1e-12) over 11 further configurations.
+
+**Not** ported, and named so the gap is explicit: `ThresholdNoisyReset`,
+`ThresholdResetAndCount`, `FlagNoisyReset` and `ThresholdAndFlagNoisyReset`
+all draw from the random number generator, and this build's stream does not
+reproduce legacy's - the divergence on `random.model` in the benchmark is the
+same thing - so they cannot be validated the way everything else here has
+been. Porting them would mean shipping code whose agreement with legacy has
+not been demonstrated. `DebugReaction` is also left: it changes no state and
+only prints a PCA plane normal to stderr, which needs machinery that is not
+ported and that nothing else wants.
+
+`ThresholdReset` writes zero in **both** of its branches, so `resetFlag` 0
+clears the target everywhere and any other value clears it only above the
+threshold. The shape - a second branch guarded on the parameter, writing the
+same value as the first - reads like a copy of `ThresholdSwitch` that was not
+finished, but it is what the published runs did and there is no way to tell
+what the other value should have been, so it is reproduced rather than
+guessed at.
+
+One more vacuous case caught: `resetFlag` only decides what happens to cells
+*below* the threshold, and only the value 0 writes anything there. With the
+output pointed at a variable that starts at zero, both settings leave a zero
+behind and the parameter looks inert. The harness writes into a variable that
+is 1 in the below-threshold cell instead.

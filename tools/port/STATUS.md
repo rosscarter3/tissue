@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**254 names registered here; 115 classes outstanding.**
+**258 names registered here; 111 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -15,7 +15,7 @@ Method and the log of validated batches are in `NOTES.md`.
 
 | legacy source | outstanding |
 |---|---|
-| `legacy/adhocReaction.cc` | 33 |
+| `legacy/adhocReaction.cc` | 29 |
 | `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
@@ -29,15 +29,13 @@ Method and the log of validated batches are in `NOTES.md`.
 
 ## Outstanding, by source
 
-### `legacy/adhocReaction.cc` (33)
+### `legacy/adhocReaction.cc` (29)
 
 - `CalculatePCAPlane` — `CalculatePCAPlane`
 - `CalculateVertexStressDirection` — `CalculateVertexStressDirection`
 - `CenterCellCOM` — `CenterCellCOM`
-- `CopyVariable` — `CopyVariable`
 - `CreationPrimordiaTime` — `CreationPrimordiaTime`
 - `DebugReaction` — `DebugReaction`
-- `FlagAddValue` — `FlagAddValue`
 - `FlagNoisyReset` — `FlagNoisyReset`
 - `InflationDeflationStresses` — `InflationDeflationStresses`
 - `InitiateTargetArea` — `InitiateTargetArea`
@@ -47,9 +45,7 @@ Method and the log of validated batches are in `NOTES.md`.
 - `StrainTest` — `StrainTest`
 - `ThresholdAndFlagNoisyReset` — `ThresholdAndFlagNoisyReset`
 - `ThresholdNoisyReset` — `ThresholdNoisyReset`
-- `ThresholdReset` — `ThresholdReset`
 - `ThresholdResetAndCount` — `ThresholdResetAndCount`
-- `ThresholdSwitch` — `ThresholdSwitch`
 - `VertexFromRotationalForceLinear` — `VertexFromRotationalForceLinear`
 - `VertexNoUpdateBoundary3D` — `VertexNoUpdateBoundary3D`
 - `VertexNoUpdateBoundaryPtemplate` — `VertexNoUpdateBoundaryPtemplate`

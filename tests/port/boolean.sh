@@ -100,3 +100,53 @@ printf "%-46s " "Boolean::OrSpecialGateCount"
 mk "Boolean::OrSpecialGateCount 0 2 2 1
 2 6
 7"; run
+
+# --- threshold and flag bookkeeping (adhocReaction.cc) ------------------------
+# Same fixture: flags in 0-4, concentrations in 5-6, output in 7.
+# resetFlag only decides what happens to cells *below* the threshold, and only
+# 0 writes anything there. Writing into variable 7, which starts at zero, both
+# settings leave a zero behind and the parameter looks inert. Variable 4 is 1
+# in the below-threshold cell, so the two settings are distinguishable.
+for rf in 0 1; do
+  printf "%-46s " "ThresholdSwitch resetFlag=$rf"
+  mk "ThresholdSwitch 2 2 1 1
+0.5
+$rf
+5
+4"; run
+  printf "%-46s " "ThresholdReset resetFlag=$rf"
+  mk "ThresholdReset 2 2 1 1
+0.5
+$rf
+5
+4"; run
+done
+
+printf "%-46s " "  ... ThresholdSwitch over a live flag"
+mk "ThresholdSwitch 2 2 1 1
+0.5
+0
+6
+1"; run
+
+printf "%-46s " "FlagAddValue"
+mk "FlagAddValue 1 2 1 1
+0.25
+1
+7"; run
+
+printf "%-46s " "  ... negative value, different flag"
+mk "FlagAddValue 1 2 1 1
+-2.5
+4
+7"; run
+
+printf "%-46s " "CopyVariable"
+mk "CopyVariable 0 2 1 1
+5
+7"; run
+
+printf "%-46s " "  ... copying a flag onto a concentration"
+mk "CopyVariable 0 2 1 1
+0
+6"; run
