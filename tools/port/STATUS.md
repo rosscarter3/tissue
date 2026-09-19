@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**224 names registered here; 131 classes outstanding.**
+**228 names registered here; 129 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -18,7 +18,7 @@ Method and the log of validated batches are in `NOTES.md`.
 | `legacy/adhocReaction.cc` | 34 |
 | `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
-| `legacy/mechanical.cc` | 15 |
+| `legacy/mechanical.cc` | 13 |
 | `legacy/mechanicalSpring.cc` | 13 |
 | `legacy/boolean.cc` | 11 |
 | `legacy/grn.cc` | 6 |
@@ -111,10 +111,8 @@ Method and the log of validated batches are in `NOTES.md`.
 - `Force::VectorLinear` — `Force::VectorLinear`, `VertexFromForceLinear`
 - `GrowthForce::EpidermalRadial` — `GrowthForce::EpidermalRadial`, `MoveEpidermalVertexRadially`
 
-### `legacy/mechanical.cc` (15)
+### `legacy/mechanical.cc` (13)
 
-- `CenterTriangulation::VertexFromCellPressure` — `CenterTriangulation::VertexFromCellPressure`, `VertexFromCellPressurecenterTriangulation`
-- `CenterTriangulation::VertexFromCellPressureLinear` — `CenterTriangulation::VertexFromCellPressureLinear`, `VertexFromCellPressurecenterTriangulationLinear`
 - `Force::SphereCylinder` — `Force::SphereCylinder`, `SphereCylinderForce`
 - `GrowthForce::SphereCylinder` — `GrowthForce::SphereCylinder`, `MoveVertexSphereCylinder`
 - `PerpendicularWallPressure` — `PerpendicularWallPressure`

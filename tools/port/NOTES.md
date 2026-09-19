@@ -1169,3 +1169,52 @@ it. That case runs at 2e-6 with the reason written beside it.
 
 One place this build is deliberately louder than legacy: `HoldZ` on a 2D
 tissue indexes past the end of the vertex row in legacy. This throws instead.
+
+### `CenterTriangulation::VertexFromCellPressure` and `...Linear`, 2026-09-19
+
+The centre-triangulated turgor pair from `mechanical.cc`;
+`...PressureLinear` is the benchmark blocker (3 models in `bozorg_etal_2016`).
+Unlike the 2D forms already ported, these treat a cell as a fan of triangles
+around a stored centre and push each edge outwards, perpendicular to the edge
+and within its triangle's plane. 3D only. The two share that geometry, so it
+is one helper and the reactions differ only in how the pressure is computed:
+a constant optionally scaled by a concentration, or a linear ramp from zero.
+
+Exact (0.000e+00) against legacy over 11 configurations
+(`tests/port/pressure_ct.sh`), covering both volume-normalisation settings,
+concentration scaling, deflation, two ramp rates against the run length, both
+legacy aliases, and the pair working against a wall spring.
+
+Two legacy quirks kept:
+
+- A concentration index of **0** means "no concentration", so cell variable 0
+  cannot be used as the concentration. A model written against legacy that
+  names index 0 means "constant", and this build reads it the same way.
+- Both vertices of an edge receive the *whole* force rather than half each.
+
+One thing dropped rather than reproduced: legacy's `update()` accumulates the
+elapsed time in a function-level `static`, shared by every instance of the
+class. It only ever feeds a branch that was disabled with `if (true)`, so it
+changes nothing; the ramp here is a plain member.
+
+Three fixture problems, all of the same family as the previous batches:
+
+- The concentration case was **vacuous** on the obvious init. In
+  `twoSquare3D.init` cell variable 3 is 1.0 in both cells, so scaling by it
+  multiplies by one; the case passed while testing nothing. `ct3d.init` sets
+  0.4 and 0.9 instead.
+- Deflation is the ill-conditioned direction. The cell shrinks towards its own
+  centre, so the centre-to-midpoint vector the force is built from shrinks
+  towards zero and normalising it amplifies everything. At K = -0.8 the cell
+  has collapsed by t = 2 and this build needs 176k accepted and 63k
+  **rejected** steps to get there - the error controller failing repeatedly is
+  the tell. The two agree exactly at 1e-12 up to t = 1 and then part, so this
+  is the solver, not the arithmetic. The harness uses -0.1, which keeps the
+  geometry valid for the whole run and still exercises the sign.
+- The spring case needed a tighter solver for the same underlying reason. At
+  the harness's 1e-6 error tolerance the answer is only good to about 1e-6, so
+  once the two step sequences part company the results differ by roughly that
+  much (measured: 4.7e-6). At 1e-9 they agree to 1e-12.
+
+The general point, worth keeping: when a comparison fails, check whether the
+solver tolerance is looser than the difference before suspecting the port.
