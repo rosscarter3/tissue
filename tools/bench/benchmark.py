@@ -139,6 +139,11 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--keep-output", action="store_true")
     ap.add_argument("--filter", default="")
+    ap.add_argument("--classify", action="store_true",
+                    help="when this build cannot run a model, try legacy too, "
+                         "so the failure is attributed to one side or both")
+    ap.add_argument("--classify-timeout", type=float, default=20.0,
+                    help="budget for those legacy attempts (default 20s)")
     args = ap.parse_args()
 
     for b, n in ((LEGACY, "bin/simulator"), (NEW, "build/simulator")):
@@ -167,7 +172,18 @@ def main():
                 break
         row["fraction"] = fraction
         if tnew is None and enew != "timeout":
-            told, eold = None, "skipped (this build cannot run the model)"
+            if args.classify:
+                # Run legacy anyway, briefly, so the failure can be attributed.
+                # Several of these models are stale for legacy too - templates
+                # with unsubstituted variable names, or reactions legacy itself
+                # withdrew - and calling those coverage gaps overstates what is
+                # left to port.
+                told, eold = run(LEGACY, model, init, used, cwd,
+                                 args.classify_timeout)
+                if told is not None:
+                    told, eold = None, "ran (this build could not)"
+            else:
+                told, eold = None, "skipped (this build cannot run the model)"
         else:
             told, eold = run(LEGACY, model, init, used, cwd, args.timeout)
         row.update(new=tnew, new_err=enew, legacy=told, legacy_err=eold)

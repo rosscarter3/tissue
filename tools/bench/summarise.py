@@ -96,6 +96,9 @@ def main():
             # rather than a real error. That is not evidence about legacy.
             if oldErr and oldErr.startswith("skipped"):
                 oldErr = None
+            # --classify marks the models legacy ran and this build could not.
+            if oldErr and oldErr.startswith("ran ("):
+                oldErr = None
             if newErr and oldErr:
                 key, why = "neither could run it", label(newErr)
             elif newErr:

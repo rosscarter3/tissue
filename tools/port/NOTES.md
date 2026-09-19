@@ -1246,3 +1246,54 @@ share, as in the centre-triangulation pair above.
 One place this build is stricter: legacy accepts areaFlag 2 or 3 with three
 parameters and then reads `parameter(4)` and `parameter(5)` out of range.
 This rejects that combination at construction instead.
+
+### `VertexFromConstStressBoundary`, 2026-09-19
+
+The last of the benchmark's per-reaction blockers (6 models in
+`bozorg_etal_2016`). It stretches a rectangular template at fixed stress:
+each of the four sides is held flat and moved rigidly, every vertex on a side
+taking the same velocity - the mean of what the mechanics gave that side plus
+the applied stress times the template's current width or height. 3D only; it
+also zeroes the z velocity of every boundary vertex to keep the template
+planar.
+
+Most of legacy's 370 lines are dead. `initiate` measures the gap between
+neighbouring vertices along each side into two parallel arrays; the only code
+reading them is commented out, so they are not computed here. `update` is
+live but narrow: it only considers vertices created since the last call, and
+only against where the sides are now.
+
+Exact (0.000e+00, tolerance 1e-12) against legacy over 7 configurations
+(`tests/port/const_stress_boundary.sh`).
+
+**A real bug, found by the fixture rather than by reading the code.** Legacy
+computes all four side means *before* writing any of them back; the port
+computed and applied each side in turn. Those differ only when a vertex
+belongs to two sides along the same axis, which needs a `vertex_sensitivity`
+wide enough for the sides to overlap - not something a rectangular template
+ever does, which is exactly why the case earned its place in the harness. One
+fixed Euler step differed by 5.5e-4 with overlapping sides and was exact
+without them. Fixed by taking the four means first.
+
+Getting to the point where that was visible took three fixture corrections,
+each hiding the next:
+
+1. The reaction *assigns* velocities, so it needs a force to absorb. On the
+   unmodified `twoSquare3D.init` the resting lengths equal the edge lengths,
+   the springs are balanced and there is nothing to average.
+2. Pointing the spring at another wall variable to get that imbalance gives
+   **NaN**: variables 1 onwards are all zero in that init, so the spring
+   divides by a zero resting length. Both binaries produced NaN and all seven
+   cases "matched". Editing the resting lengths is the fix - but with a line
+   range, since a plain `sed` on `^1.0` also rewrites a vertex position and
+   quietly moves the template's corner off x = 1.
+3. One resting length for every wall is still not enough. The template is
+   symmetric, so every vertex on a side gets the same velocity anyway, the
+   mean equals each of them, and the averaging is a no-op. Seven differing
+   lengths break that.
+
+Also: comparing under `RK5Adaptive` reported ~1e-6 differences that were the
+solver's own error at its 1e-6 tolerance, not the port. The harness uses a
+single fixed Euler step, which takes the solver out of the question and
+compares the derivative directly. That is what made the 5.5e-4 signal legible
+among the 1e-6 noise.

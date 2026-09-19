@@ -7,7 +7,7 @@ original sources and is the reference for this port. A class counts as
 ported only when every name the legacy factory registers for it resolves
 here, so a missing alias still shows as outstanding.
 
-**230 names registered here; 128 classes outstanding.**
+**231 names registered here; 127 classes outstanding.**
 Every reaction used by the shipped tutorials is ported, so `examples/`
 all run.
 
@@ -15,7 +15,7 @@ Method and the log of validated batches are in `NOTES.md`.
 
 | legacy source | outstanding |
 |---|---|
-| `legacy/adhocReaction.cc` | 34 |
+| `legacy/adhocReaction.cc` | 33 |
 | `legacy/network.cc` | 22 |
 | `legacy/force.cc` | 15 |
 | `legacy/mechanicalSpring.cc` | 13 |
@@ -31,7 +31,7 @@ Method and the log of validated batches are in `NOTES.md`.
 
 ## Outstanding, by source
 
-### `legacy/adhocReaction.cc` (34)
+### `legacy/adhocReaction.cc` (33)
 
 - `CalculatePCAPlane` — `CalculatePCAPlane`
 - `CalculateVertexStressDirection` — `CalculateVertexStressDirection`
@@ -52,7 +52,6 @@ Method and the log of validated batches are in `NOTES.md`.
 - `ThresholdReset` — `ThresholdReset`
 - `ThresholdResetAndCount` — `ThresholdResetAndCount`
 - `ThresholdSwitch` — `ThresholdSwitch`
-- `VertexFromConstStressBoundary` — `VertexFromConstStressBoundary`
 - `VertexFromRotationalForceLinear` — `VertexFromRotationalForceLinear`
 - `VertexNoUpdateBoundary3D` — `VertexNoUpdateBoundary3D`
 - `VertexNoUpdateBoundaryPtemplate` — `VertexNoUpdateBoundaryPtemplate`
