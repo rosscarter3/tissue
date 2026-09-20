@@ -2147,15 +2147,28 @@ private:
         std::max<size_t>(1, static_cast<size_t>((hi[1] - lo[1]) / cell) + 1);
     std::vector<std::vector<size_t>> grid(nx * ny);
 
-    auto cellsOf = [&](size_t w, size_t &i0, size_t &i1, size_t &j0,
-                       size_t &j1) {
+    // Both the insertion box and the query box are inflated by reach, so the
+    // list actually holds every pair within about 2*reach -- six times d_min
+    // at the default margin, and 313k pairs against 119k for a single
+    // inflation on an 11980-wall mesh. That is not free: every one of those
+    // pairs is distance-tested on every derivative evaluation, and dropping
+    // the extras runs 1.25x faster overall.
+    //
+    // It is kept because the extras are not redundant. Inflating one side
+    // only is bit-identical until the first neighbour-list rebuild and
+    // diverges immediately after it: between rebuilds a pair can close from
+    // outside the narrower radius to inside d_min, and the wider list is
+    // what catches it. The margin parameter is the place to trade this off
+    // knowingly; note when setting it that the radius it buys is doubled.
+    auto cellsOf = [&](size_t w, double grow, size_t &i0, size_t &i1,
+                       size_t &j0, size_t &j1) {
       const Wall &wall = T.wall(w);
       const double x1 = vertexData[wall.vertex1][0];
       const double y1 = vertexData[wall.vertex1][1];
       const double x2 = vertexData[wall.vertex2][0];
       const double y2 = vertexData[wall.vertex2][1];
-      const double xa = std::min(x1, x2) - reach, xb = std::max(x1, x2) + reach;
-      const double ya = std::min(y1, y2) - reach, yb = std::max(y1, y2) + reach;
+      const double xa = std::min(x1, x2) - grow, xb = std::max(x1, x2) + grow;
+      const double ya = std::min(y1, y2) - grow, yb = std::max(y1, y2) + grow;
       auto clampIdx = [](double v, size_t m) {
         long idx = static_cast<long>(v);
         if (idx < 0)
@@ -2172,7 +2185,7 @@ private:
 
     for (size_t w = 0; w < n; ++w) {
       size_t i0, i1, j0, j1;
-      cellsOf(w, i0, i1, j0, j1);
+      cellsOf(w, reach, i0, i1, j0, j1);
       for (size_t i = i0; i <= i1; ++i)
         for (size_t j = j0; j <= j1; ++j)
           grid[i * ny + j].push_back(w);
@@ -2182,7 +2195,7 @@ private:
     std::vector<size_t> touched;
     for (size_t w = 0; w < n; ++w) {
       size_t i0, i1, j0, j1;
-      cellsOf(w, i0, i1, j0, j1);
+      cellsOf(w, reach, i0, i1, j0, j1);
       const Wall &wa = T.wall(w);
       touched.clear();
       for (size_t i = i0; i <= i1; ++i)

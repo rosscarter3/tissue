@@ -10,6 +10,7 @@
 
 #include "tissue/compartment/compartment_change.h"
 #include "tissue/core/random.h"
+#include "tissue/parallel/thread_pool.h"
 #include "tissue/reactions/reaction.h"
 
 namespace tissue {
@@ -480,97 +481,164 @@ void Tissue::sortWallAndVertex(size_t cellI) {
 
 // --- connectivity check ----------------------------------------------------------
 
+namespace {
+// Error sink for checkConnectivity's parallel loops. Each partition appends
+// to its own list, tagged with the index that produced the message, so the
+// report can be replayed in the order a serial pass would have produced it
+// however the loop was split. A clean tissue appends nothing, so the happy
+// path allocates nothing.
+struct ConnErrors {
+  std::vector<std::vector<std::pair<size_t, std::string>>> parts;
+  explicit ConnErrors(size_t n) : parts(n) {}
+  void add(size_t part, size_t index, std::string msg) {
+    parts[part].emplace_back(index, std::move(msg));
+  }
+  // Partition order first, then a stable sort by index: within one partition
+  // indices already ascend, so this is exactly the serial order.
+  std::vector<std::pair<size_t, std::string>> merged() const {
+    std::vector<std::pair<size_t, std::string>> all;
+    for (const auto &p : parts)
+      all.insert(all.end(), p.begin(), p.end());
+    std::stable_sort(all.begin(), all.end(),
+                     [](const auto &a, const auto &b) { return a.first < b.first; });
+    return all;
+  }
+};
+
+// The per-cell checks below are quadratic in the cell's own size (hasVertex
+// and the touches-exactly-2-walls count are both linear scans over the cell),
+// so a cell costs microseconds, not nanoseconds, on a finely resampled mesh.
+// The pool's default grain assumes the opposite and would run these serially.
+constexpr size_t kCellGrain = 16;
+constexpr size_t kFlatGrain = 4096;
+} // namespace
+
+// Runs after every accepted step, so it is on the hot path even though it is
+// pure validation: on an 11980-wall per-face mesh the serial version was 14%
+// of total wall time, almost all of it in the quadratic per-cell loop. It is
+// const and reads only topology, so the loops parallelise directly; the
+// checks themselves are unchanged.
 void Tissue::checkConnectivity(int verbose) const {
-  size_t errors = 0;
-  auto report = [&](const std::string &msg) {
-    ++errors;
-    if (verbose)
-      std::cerr << "Tissue::checkConnectivity() " << msg << std::endl;
-  };
+  const size_t parts = ThreadPool::instance().numThreads();
+  ConnErrors cellErr(parts), wallErr(parts), vertErr(parts), sortErr(parts);
 
   // Cells reference valid walls/vertices; no duplicated vertices.
-  for (size_t i = 0; i < numCell(); ++i) {
-    const CellTopo &c = cells_[i];
-    for (size_t w : c.walls)
-      if (w >= numWall())
-        report("cell " + std::to_string(i) + " references bad wall index");
-    for (size_t k = 0; k < c.vertices.size(); ++k) {
-      if (c.vertices[k] >= numVertex())
-        report("cell " + std::to_string(i) + " references bad vertex index");
-      for (size_t l = k + 1; l < c.vertices.size(); ++l)
-        if (c.vertices[k] == c.vertices[l])
-          report("cell " + std::to_string(i) + " lists duplicate vertex");
-    }
-  }
+  ThreadPool::instance().parallelFor(
+      numCell(), kCellGrain, [&](size_t b, size_t e, size_t p) {
+        for (size_t i = b; i < e; ++i) {
+          const CellTopo &c = cells_[i];
+          for (size_t w : c.walls)
+            if (w >= numWall())
+              cellErr.add(p, i, "cell " + std::to_string(i) +
+                                    " references bad wall index");
+          for (size_t k = 0; k < c.vertices.size(); ++k) {
+            if (c.vertices[k] >= numVertex())
+              cellErr.add(p, i, "cell " + std::to_string(i) +
+                                    " references bad vertex index");
+            for (size_t l = k + 1; l < c.vertices.size(); ++l)
+              if (c.vertices[k] == c.vertices[l])
+                cellErr.add(p, i, "cell " + std::to_string(i) +
+                                      " lists duplicate vertex");
+          }
+        }
+      });
   // Walls: cells in range or background, distinct; vertices in range, distinct.
-  for (size_t i = 0; i < numWall(); ++i) {
-    const Wall &w = walls_[i];
-    if (!isBackground(w.cell1) && w.cell1 >= numCell())
-      report("wall " + std::to_string(i) + " has bad cell1");
-    if (!isBackground(w.cell2) && w.cell2 >= numCell())
-      report("wall " + std::to_string(i) + " has bad cell2");
-    if (w.cell1 == w.cell2)
-      report("wall " + std::to_string(i) + " connects a cell to itself");
-    if (w.vertex1 >= numVertex() || w.vertex2 >= numVertex())
-      report("wall " + std::to_string(i) + " has bad vertex");
-    if (w.vertex1 == w.vertex2)
-      report("wall " + std::to_string(i) + " has equal vertices");
-  }
+  ThreadPool::instance().parallelFor(
+      numWall(), kFlatGrain, [&](size_t b, size_t e, size_t p) {
+        for (size_t i = b; i < e; ++i) {
+          const Wall &w = walls_[i];
+          if (!isBackground(w.cell1) && w.cell1 >= numCell())
+            wallErr.add(p, i, "wall " + std::to_string(i) + " has bad cell1");
+          if (!isBackground(w.cell2) && w.cell2 >= numCell())
+            wallErr.add(p, i, "wall " + std::to_string(i) + " has bad cell2");
+          if (w.cell1 == w.cell2)
+            wallErr.add(p, i,
+                        "wall " + std::to_string(i) + " connects a cell to itself");
+          if (w.vertex1 >= numVertex() || w.vertex2 >= numVertex())
+            wallErr.add(p, i, "wall " + std::to_string(i) + " has bad vertex");
+          if (w.vertex1 == w.vertex2)
+            wallErr.add(p, i, "wall " + std::to_string(i) + " has equal vertices");
+        }
+      });
   // Vertices: cells in range, never background, no duplicates; same for walls.
-  for (size_t i = 0; i < numVertex(); ++i) {
-    const VertexTopo &v = vertices_[i];
-    for (size_t k = 0; k < v.cells.size(); ++k) {
-      if (isBackground(v.cells[k]))
-        report("vertex " + std::to_string(i) + " lists background cell");
-      else if (v.cells[k] >= numCell())
-        report("vertex " + std::to_string(i) + " references bad cell");
-      for (size_t l = k + 1; l < v.cells.size(); ++l)
-        if (v.cells[k] == v.cells[l])
-          report("vertex " + std::to_string(i) + " lists duplicate cell");
-    }
-    for (size_t k = 0; k < v.walls.size(); ++k) {
-      if (v.walls[k] >= numWall())
-        report("vertex " + std::to_string(i) + " references bad wall");
-      for (size_t l = k + 1; l < v.walls.size(); ++l)
-        if (v.walls[k] == v.walls[l])
-          report("vertex " + std::to_string(i) + " lists duplicate wall");
-    }
-  }
+  ThreadPool::instance().parallelFor(
+      numVertex(), kFlatGrain, [&](size_t b, size_t e, size_t p) {
+        for (size_t i = b; i < e; ++i) {
+          const VertexTopo &v = vertices_[i];
+          for (size_t k = 0; k < v.cells.size(); ++k) {
+            if (isBackground(v.cells[k]))
+              vertErr.add(p, i, "vertex " + std::to_string(i) +
+                                    " lists background cell");
+            else if (v.cells[k] >= numCell())
+              vertErr.add(p, i, "vertex " + std::to_string(i) +
+                                    " references bad cell");
+            for (size_t l = k + 1; l < v.cells.size(); ++l)
+              if (v.cells[k] == v.cells[l])
+                vertErr.add(p, i, "vertex " + std::to_string(i) +
+                                      " lists duplicate cell");
+          }
+          for (size_t k = 0; k < v.walls.size(); ++k) {
+            if (v.walls[k] >= numWall())
+              vertErr.add(p, i, "vertex " + std::to_string(i) +
+                                    " references bad wall");
+            for (size_t l = k + 1; l < v.walls.size(); ++l)
+              if (v.walls[k] == v.walls[l])
+                vertErr.add(p, i, "vertex " + std::to_string(i) +
+                                      " lists duplicate wall");
+          }
+        }
+      });
   // Per cell: numWall==numVertex; wall endpoints are cell vertices; every
   // cell vertex touches exactly 2 of the cell's walls; sorting invariant.
-  for (size_t i = 0; i < numCell(); ++i) {
-    const CellTopo &c = cells_[i];
-    if (c.numWall() != c.numVertex())
-      report("cell " + std::to_string(i) + " has numWall != numVertex");
-    for (size_t w : c.walls) {
-      if (!c.hasVertex(walls_[w].vertex1) || !c.hasVertex(walls_[w].vertex2))
-        report("cell " + std::to_string(i) +
-               " wall endpoint is not a cell vertex");
+  ThreadPool::instance().parallelFor(
+      numCell(), kCellGrain, [&](size_t b, size_t e, size_t p) {
+        for (size_t i = b; i < e; ++i) {
+          const CellTopo &c = cells_[i];
+          if (c.numWall() != c.numVertex())
+            sortErr.add(p, i,
+                        "cell " + std::to_string(i) + " has numWall != numVertex");
+          for (size_t w : c.walls) {
+            if (!c.hasVertex(walls_[w].vertex1) || !c.hasVertex(walls_[w].vertex2))
+              sortErr.add(p, i, "cell " + std::to_string(i) +
+                                    " wall endpoint is not a cell vertex");
+          }
+          for (size_t v : c.vertices) {
+            size_t count = 0;
+            for (size_t w : c.walls)
+              if (walls_[w].hasVertex(v))
+                ++count;
+            if (count != 2)
+              sortErr.add(p, i, "cell " + std::to_string(i) + " vertex " +
+                                    std::to_string(v) +
+                                    " does not touch exactly 2 cell walls");
+          }
+          const size_t n = c.numWall();
+          for (size_t k = 0; k < n; ++k) {
+            const Wall &w = walls_[c.walls[k]];
+            int sort =
+                (w.cell1 == i) ? w.cellSort1 : (w.cell2 == i) ? w.cellSort2 : 0;
+            size_t vk = c.vertices[k];
+            size_t vk1 = c.vertices[(k + 1) % n];
+            if (sort == -1) {
+              if (!(vk1 == w.vertex1 && vk == w.vertex2))
+                sortErr.add(p, i, "cell " + std::to_string(i) +
+                                      " sorting invariant broken");
+            } else if (sort == 1) {
+              if (!(vk == w.vertex1 && vk1 == w.vertex2))
+                sortErr.add(p, i, "cell " + std::to_string(i) +
+                                      " sorting invariant broken");
+            }
+          }
+        }
+      });
+
+  size_t errors = 0;
+  for (const ConnErrors *e : {&cellErr, &wallErr, &vertErr, &sortErr})
+    for (const auto &[index, msg] : e->merged()) {
+      ++errors;
+      if (verbose)
+        std::cerr << "Tissue::checkConnectivity() " << msg << std::endl;
     }
-    for (size_t v : c.vertices) {
-      size_t count = 0;
-      for (size_t w : c.walls)
-        if (walls_[w].hasVertex(v))
-          ++count;
-      if (count != 2)
-        report("cell " + std::to_string(i) + " vertex " + std::to_string(v) +
-               " does not touch exactly 2 cell walls");
-    }
-    const size_t n = c.numWall();
-    for (size_t k = 0; k < n; ++k) {
-      const Wall &w = walls_[c.walls[k]];
-      int sort = (w.cell1 == i) ? w.cellSort1 : (w.cell2 == i) ? w.cellSort2 : 0;
-      size_t vk = c.vertices[k];
-      size_t vk1 = c.vertices[(k + 1) % n];
-      if (sort == -1) {
-        if (!(vk1 == w.vertex1 && vk == w.vertex2))
-          report("cell " + std::to_string(i) + " sorting invariant broken");
-      } else if (sort == 1) {
-        if (!(vk == w.vertex1 && vk1 == w.vertex2))
-          report("cell " + std::to_string(i) + " sorting invariant broken");
-      }
-    }
-  }
   if (errors) {
     std::cerr << "Tissue::checkConnectivity() " << errors
               << " errors found; aborting." << std::endl;
