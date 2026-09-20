@@ -1016,7 +1016,19 @@ public:
                 Matrix &, Matrix &) override {
     const size_t dim = vertexData.cols();
     boundary_.clear();
+    // A per-face mesh gives every wall cell2 = background, so the test below
+    // would call every vertex a boundary vertex and this reaction would
+    // overwrite every derivative -- the tissue then only dilates rigidly and
+    // looks frozen. In such a mesh an interior vertex is one that has a
+    // sister; the true tissue boundary is the vertices with none.
+    std::vector<char> hasSister(T.numVertex(), 0);
+    for (size_t i = 0; i < T.numSisterVertex(); ++i) {
+      hasSister[T.sisterVertex(i, 0)] = 1;
+      hasSister[T.sisterVertex(i, 1)] = 1;
+    }
     for (size_t v = 0; v < T.numVertex(); ++v) {
+      if (hasSister[v])
+        continue;
       bool onBoundary = false;
       for (size_t w : T.vertex(v).walls)
         if (Tissue::isBackground(T.wall(w).cell1) ||
@@ -1381,7 +1393,23 @@ TISSUE_REGISTER_REACTION(WallMechanicsBendingSpontaneous,
 //
 // The rest curvature follows the actual curvature, with a rate:
 //
-//   dkappa0/dt = k_plastic (kappa - kappa0) / (1 + gamma_m m)
+//   dkappa0/dt = k_plastic (amplify * kappa - kappa0) / (1 + gamma_m m)
+//
+// amplify = 1 is pure plasticity: the rest curvature relaxes to whatever
+// curvature the wall is held at, the elastic restoring moment decays to
+// zero, and the wall neither pulls back nor pushes on. That turns out not to
+// be enough. Removing the restoring moment lets a lobe stay where it is
+// without the neck paying to hold it, but it does not make the lobe advance,
+// and the arc-length budget is untouched -- so the neck still pays for
+// getting there. Measured, it makes necks very slightly thinner, because a
+// wall with no restoring moment is also a wall that buckles more easily.
+//
+// amplify > 1 is the part that matters. Material laid down on the convex
+// face of a wall that is already bent does not merely record the bend, it
+// drives it: the rest curvature overshoots the actual curvature and the wall
+// carries an active bending moment pushing it further. That is what makes a
+// lobe advance into the neighbour rather than be carved out of the cell, and
+// it is the half of differential synthesis a relaxation term cannot express.
 //
 // This is what differential synthesis does, stated at the level a vertex
 // model can represent. A wall that is held bent has its outer face longer
@@ -1397,10 +1425,14 @@ TISSUE_REGISTER_REACTION(WallMechanicsBendingSpontaneous,
 class WallGrowthCurvaturePlasticity : public Reaction {
 public:
   WallGrowthCurvaturePlasticity(const ParameterList &p, const IndexLevels &i) {
-    if (p.size() < 1 || p.size() > 2)
+    if (p.size() < 1 || p.size() > 3)
       throw std::runtime_error(
-          "WallGrowth::CurvaturePlasticity: uses one or two parameters "
-          "(k_plastic, [gamma_m, default 0]).");
+          "WallGrowth::CurvaturePlasticity: uses one to three parameters "
+          "(k_plastic, [gamma_m, default 0], [amplify, default 1]).");
+    if (p.size() == 3 && p[2] < 0.0)
+      throw std::runtime_error(
+          "WallGrowth::CurvaturePlasticity: amplify (parameter 3) must be "
+          "non-negative.");
     if (p[0] < 0.0)
       throw std::runtime_error(
           "WallGrowth::CurvaturePlasticity: k_plastic must be non-negative.");
@@ -1411,8 +1443,10 @@ public:
           "level 1 = wall rest-curvature index, "
           "optional level 2 = wall reinforcement index.");
     std::vector<std::string> ids{"k_plastic"};
-    if (p.size() == 2)
+    if (p.size() >= 2)
       ids.push_back("gamma_m");
+    if (p.size() >= 3)
+      ids.push_back("amplify");
     const std::vector<size_t> counts =
         i.size() == 3 ? std::vector<size_t>{1, 1, 1}
                       : std::vector<size_t>{1, 1};
@@ -1427,7 +1461,8 @@ public:
     const bool useM = numVariableIndexLevel() == 3;
     const size_t mIndex = useM ? variableIndex(2, 0) : 0;
     const double kPlastic = parameter(0);
-    const double gammaM = numParameter() == 2 ? parameter(1) : 0.0;
+    const double gammaM = numParameter() >= 2 ? parameter(1) : 0.0;
+    const double amplify = numParameter() >= 3 ? parameter(2) : 1.0;
     if (kPlastic == 0.0)
       return;
     const auto centre = cellCentres(T, vertexData);
@@ -1452,14 +1487,444 @@ public:
           continue;
         kappa /= double(n);
         const double m = useM ? wallData[w][mIndex] : 0.0;
-        wallDerivs[w][k0Index] +=
-            kPlastic * (kappa - wallData[w][k0Index]) / (1.0 + gammaM * m);
+        wallDerivs[w][k0Index] += kPlastic *
+            (amplify * kappa - wallData[w][k0Index]) / (1.0 + gammaM * m);
       }
     });
   }
 };
 TISSUE_REGISTER_REACTION(WallGrowthCurvaturePlasticity,
                          "WallGrowth::CurvaturePlasticity")
+
+// ---------------------------------------------------------------------------
+// WallMechanics::ActiveWallExpansion
+//
+// A turgor-independent outward force on the wall, set by a signed per-wall
+// variable and directed along the wall normal.
+//
+// Why this is not the rest-curvature reaction above. Haas et al. (2020,
+// Science 367:1003) show that de-esterified homogalacturonan nanofilaments
+// expand, and that the wall reshapes an epidermal cell with the turgor
+// removed -- the wall is not a passive material being inflated, it pushes.
+// Rest curvature expresses the geometry an asymmetric swelling would leave
+// behind: it is a couple, and a couple bends a wall in place. Swelling is a
+// force, and a force translates the wall, so the lobe advances into the
+// neighbour instead of being folded out of the cell's own boundary. Measured
+// here, the couple makes necks 3-12% thinner and the whole point is that it
+// never moved material outward.
+//
+// The force on a segment is
+//
+//   F = k_push * p * l * n,    n the unit normal, l the segment length
+//
+// split between its two vertices, with n pointing away from cell1 so a
+// positive p drives the wall into cell2. Like turgor, it is unbalanced on a
+// single wall and balanced over a cell; unlike turgor it is local, signed,
+// and does not scale with the cell's area.
+//
+// p is read rather than computed, so the patterning is a separate question
+// from the mechanics. Pointing it at the variable
+// WallGrowth::CurvaturePlasticity maintains gives a swelling that follows
+// the wall's own curvature, which is the geometric feedback; pointing it at
+// a variable driven by anything else -- a polarity field, a prescribed
+// pattern, a pectin chemistry -- tests that instead without touching this
+// reaction.
+class WallMechanicsActiveWallExpansion : public Reaction {
+public:
+  WallMechanicsActiveWallExpansion(const ParameterList &p,
+                                   const IndexLevels &i) {
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "WallMechanics::ActiveWallExpansion: level 0 = the signed per-wall "
+          "variable driving the expansion (positive pushes into cell2).");
+    if (p.size() < 1 || p.size() > 3)
+      throw std::runtime_error(
+          "WallMechanics::ActiveWallExpansion: uses one to three parameters "
+          "(k_push, [p_offset, default 0], [subtract_cell_mean, default 0]). "
+          "The offset is subtracted from the driver before use, so a variable "
+          "that is positive everywhere -- a morphogen about its steady state, "
+          "say -- can drive a signed push. subtract_cell_mean = 1 uses the "
+          "mean of the driver over the cell's own walls instead, which "
+          "matters more than it sounds: a normal force applied around a "
+          "closed loop with a non-zero mean mostly INFLATES the loop, exactly "
+          "like extra turgor, and only the variation along it changes shape. "
+          "Measured with a fixed offset, the push grew to dominate every "
+          "other force (1.36x their sum) while correlating with neither wall "
+          "strain (-0.05) nor wall growth (-0.06): almost all of it went into "
+          "isotropic inflation that the area-elastic term then fought.");
+    std::vector<std::string> ids{"k_push"};
+    if (p.size() >= 2)
+      ids.push_back("p_offset");
+    if (p.size() >= 3)
+      ids.push_back("subtract_cell_mean");
+    configure("WallMechanics::ActiveWallExpansion", p, i, p.size(), {1},
+              std::move(ids));
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 2)
+      throw std::runtime_error(
+          "WallMechanics::ActiveWallExpansion requires 2D.");
+    const size_t pIndex = variableIndex(0, 0);
+    const double kPush = parameter(0);
+    const double pOff = numParameter() >= 2 ? parameter(1) : 0.0;
+    const bool perCellMean = numParameter() >= 3 && parameter(2) != 0.0;
+    if (kPush == 0.0)
+      return;
+    const auto centre = cellCentres(T, vertexData);
+
+    // Per-cell mean of the driver, so the push has no net inflating part.
+    std::vector<double> cellMean;
+    if (perCellMean) {
+      cellMean.assign(T.numCell(), 0.0);
+      std::vector<double> len(T.numCell(), 0.0);
+      for (size_t w = 0; w < T.numWall(); ++w) {
+        const double l = T.wallLengthFromVertices(w, vertexData);
+        for (size_t c : {T.wall(w).cell1, T.wall(w).cell2}) {
+          if (c == kBackground)
+            continue;
+          cellMean[c] += wallData[w][pIndex] * l;
+          len[c] += l;
+        }
+      }
+      for (size_t c = 0; c < T.numCell(); ++c)
+        if (len[c] > 0.0)
+          cellMean[c] /= len[c];
+    }
+
+    parallelScatter1(
+        T.numWall(), vertexDerivs, [&](size_t begin, size_t end, Matrix &out) {
+          for (size_t w = begin; w < end; ++w) {
+            size_t ref = T.wall(w).cell1;
+            if (ref == kBackground)
+              continue;   // a free edge has no neighbour to advance into
+            const double p = wallData[w][pIndex] -
+                             (perCellMean ? cellMean[ref] : pOff);
+            if (p == 0.0)
+              continue;
+            const size_t v1 = T.wall(w).vertex1;
+            const size_t v2 = T.wall(w).vertex2;
+            const double tx = vertexData[v2][0] - vertexData[v1][0];
+            const double ty = vertexData[v2][1] - vertexData[v1][1];
+            const double len = std::sqrt(tx * tx + ty * ty);
+            if (len <= 0.0)
+              continue;
+            // Normal, oriented away from cell1's centroid.
+            double nx = -ty / len, ny = tx / len;
+            const double mx = 0.5 * (vertexData[v1][0] + vertexData[v2][0]);
+            const double my = 0.5 * (vertexData[v1][1] + vertexData[v2][1]);
+            if (nx * (mx - centre[ref][0]) + ny * (my - centre[ref][1]) < 0.0) {
+              nx = -nx;
+              ny = -ny;
+            }
+            const double f = 0.5 * kPush * p * len;
+            out[v1][0] += f * nx;
+            out[v1][1] += f * ny;
+            out[v2][0] += f * nx;
+            out[v2][1] += f * ny;
+          }
+        });
+  }
+};
+TISSUE_REGISTER_REACTION(WallMechanicsActiveWallExpansion,
+                         "WallMechanics::ActiveWallExpansion")
+
+// ---------------------------------------------------------------------------
+// WallPattern::Turing
+//
+// An activator-inhibitor system living on the wall chain, so that a cell can
+// pattern its own boundary without reference to the boundary's shape.
+//
+// Why. Every spatial pattern in this model currently comes from curvature:
+// the reinforcement is recruited by it, the rest curvature follows it, the
+// active expansion reads it, and nothing is upstream of it. Three mechanisms
+// built to widen necks -- a passive couple, an active couple, and an active
+// force -- all made them narrower, and what they share is that driver. A
+// curvature-driven feedback amplifies the curvature already present, which
+// sharpens a feature instead of broadening it, and sharpening is the failure.
+//
+// In a real cell the pattern does not come from the shape. De-esterified
+// homogalacturonan is enriched at necks *before* the cortical microtubules
+// are, and ROP2/ROP6 mutual antagonism is the documented candidate for
+// placing the domains. Both are reaction-diffusion in character: local
+// self-activation with longer-range inhibition, which selects a wavelength
+// from kinetics and diffusion rather than from the geometry it then imposes.
+//
+// Schnakenberg kinetics, which is the smallest system that Turing-patterns:
+//
+//   du/dt = Du L(u) + a - u + u^2 v
+//   dv/dt = Dv L(v) + b     - u^2 v
+//
+// with L the discrete Laplacian along the chain of walls. Patterns need
+// Dv >> Du; the selected wavelength then scales as sqrt(Dv), which is the
+// knob that sets lobe spacing here, in place of the bending modulus.
+//
+// Junction handling, which turned out to matter more than the kinetics.
+//
+// With no flux at junctions (junction_flux = 0) the pattern is not free: a
+// no-flux boundary pins the phase, and the measured result is an activator
+// depleted at junctions (u = 0.75 within 1 um) and peaking at mid-wall
+// (u = 1.23 at 6-10 um, half the selected wavelength away). The pattern
+// then places its peaks exactly where the cell's existing junction geometry
+// dictates, which defeats the purpose of using a driver independent of the
+// geometry.
+//
+// junction_flux > 0 couples every wall meeting at a vertex to the mean of
+// the others, so the pattern can choose its own phase across a junction.
+// This blurs cell identity, because a wall is shared and one variable cannot
+// carry two cells' morphogens -- the same shared-wall limit that defeated
+// expressing differential synthesis as two resting lengths. It is a
+// simplification, and the honest version needs a per-cell-side variable.
+class WallPatternTuring : public Reaction {
+public:
+  WallPatternTuring(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() < 4 || p.size() > 5)
+      throw std::runtime_error(
+          "WallPattern::Turing: uses four or five parameters "
+          "(D_u, D_v, a, b, [junction_flux, default 0]).");
+    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+      throw std::runtime_error(
+          "WallPattern::Turing: level 0 = activator wall index, "
+          "level 1 = inhibitor wall index.");
+    std::vector<std::string> ids{"D_u", "D_v", "a", "b"};
+    if (p.size() == 5)
+      ids.push_back("junction_flux");
+    configure("WallPattern::Turing", p, i, p.size(), {1, 1},
+              std::move(ids));
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &wallDerivs, Matrix &) override {
+    const size_t uI = variableIndex(0, 0);
+    const size_t vI = variableIndex(1, 0);
+    const double Du = parameter(0), Dv = parameter(1);
+    const double a = parameter(2), b = parameter(3);
+    const double jflux = numParameter() == 5 ? parameter(4) : 0.0;
+
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        const double u = wallData[w][uI], v = wallData[w][vI];
+        double lapU = 0.0, lapV = 0.0;
+        // neighbours: the other wall at each of this wall's vertices, when
+        // that vertex joins exactly two walls of the same chain
+        for (size_t vtx : {T.wall(w).vertex1, T.wall(w).vertex2}) {
+          const auto &ws = T.vertex(vtx).walls;
+          if (ws.size() == 2) {
+            size_t other = kBackground;
+            for (size_t x : ws)
+              if (x != w)
+                other = x;
+            if (other == kBackground)
+              continue;
+            const double h =
+                0.5 * (T.wallLengthFromVertices(w, vertexData) +
+                       T.wallLengthFromVertices(other, vertexData));
+            if (h <= 0.0)
+              continue;
+            lapU += (wallData[other][uI] - u) / (h * h);
+            lapV += (wallData[other][vI] - v) / (h * h);
+          } else if (jflux > 0.0 && ws.size() > 2) {
+            // junction: exchange with the mean of the other walls meeting
+            // here, weighted so that jflux = 1 matches the strength of an
+            // ordinary neighbour exchange
+            double mu = 0.0, mv = 0.0, hsum = 0.0;
+            size_t n = 0;
+            for (size_t x : ws) {
+              if (x == w)
+                continue;
+              mu += wallData[x][uI];
+              mv += wallData[x][vI];
+              hsum += T.wallLengthFromVertices(x, vertexData);
+              ++n;
+            }
+            if (!n)
+              continue;
+            const double h =
+                0.5 * (T.wallLengthFromVertices(w, vertexData) + hsum / n);
+            if (h <= 0.0)
+              continue;
+            lapU += jflux * (mu / n - u) / (h * h);
+            lapV += jflux * (mv / n - v) / (h * h);
+          }
+        }
+        const double uuv = u * u * v;
+        wallDerivs[w][uI] += Du * lapU + a - u + uuv;
+        wallDerivs[w][vI] += Dv * lapV + b - uuv;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(WallPatternTuring, "WallPattern::Turing")
+
+// ---------------------------------------------------------------------------
+// CMT::Spread
+//
+// Lets the reinforcement diffuse along the wall, so that it carries a length
+// scale.
+//
+// Every recruitment law here is pointwise: m on a wall segment is set by that
+// segment's own curvature, or its own strain. A pointwise law can reinforce
+// an arbitrarily sharp feature, and that is the signature of the model's
+// failure -- three mechanisms built to broaden necks all sharpened them
+// instead, and the shapes end up as a round body carrying thin appendages.
+//
+// A microtubule cannot do that. It is a stiff filament several microns long
+// -- 4.4 um mean in the calibrated arrays here -- and it reinforces the wall
+// along its whole length, so it cannot reinforce a neck half a micron across
+// while leaving the wall on either side unreinforced. It bridges the neck.
+// The filament length is a minimum feature size for reinforcement, and
+// nothing in a pointwise law expresses that.
+//
+//   dm/dt += D_m * L(m)
+//
+// with L the discrete Laplacian along the chain, as in WallPattern::Turing.
+// Against the turnover k_off of the recruitment reaction this sets a length
+// scale sqrt(D_m / k_off), which should be set to the mean filament length
+// rather than fitted: at k_off = 0.2 /h and 4.4 um, D_m = 3.9 um^2/h.
+//
+// This is a reduced stand-in for running the filament model in the loop. It
+// captures the one property of an array that a pointwise law cannot -- that
+// reinforcement has a minimum spatial extent -- and none of the others:
+// orientation, bundling, severing at crossovers, or the array's own response
+// to stress. If it broadens the necks, the filament length is the missing
+// ingredient and the full coupling is worth its cost; if it does not, the
+// coupling would be unlikely to help for this reason and the search should
+// go elsewhere.
+class CMTSpread : public Reaction {
+public:
+  CMTSpread(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 1)
+      throw std::runtime_error("CMT::Spread: uses one parameter (D_m).");
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "CMT::Spread: level 0 = wall reinforcement index.");
+    configure("CMT::Spread", p, i, 1, {1}, {"D_m"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &wallDerivs, Matrix &) override {
+    const size_t mI = variableIndex(0, 0);
+    const double Dm = parameter(0);
+    if (Dm == 0.0)
+      return;
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        const double m = wallData[w][mI];
+        double lap = 0.0;
+        for (size_t vtx : {T.wall(w).vertex1, T.wall(w).vertex2}) {
+          const auto &ws = T.vertex(vtx).walls;
+          if (ws.size() != 2)
+            continue;   // a junction is where one filament's reach ends
+          size_t other = kBackground;
+          for (size_t x : ws)
+            if (x != w)
+              other = x;
+          if (other == kBackground)
+            continue;
+          const double h =
+              0.5 * (T.wallLengthFromVertices(w, vertexData) +
+                     T.wallLengthFromVertices(other, vertexData));
+          if (h <= 0.0)
+            continue;
+          lap += (wallData[other][mI] - m) / (h * h);
+        }
+        wallDerivs[w][mI] += Dm * lap;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CMTSpread, "CMT::Spread")
+
+// ---------------------------------------------------------------------------
+// CMT::SignedCurvatureRecruitment
+//
+// Recruitment driven by curvature *as the owning cell sees it*, so that the
+// two faces of a wall can reinforce differently.
+//
+// On a shared-wall mesh this reaction is meaningless: one wall has one m, and
+// the two cells cannot disagree about it. On a per-face mesh each wall
+// belongs to exactly one cell, and the same physical wall is concave for one
+// cell and convex for the other. That sign is the only input the two faces
+// do not share -- geometry, length, strain and unsigned curvature are all
+// identical by construction -- so it is the whole of what a per-face mesh
+// buys, and without it the two faces evolve identically and the mesh is
+// wasted. Measured on the first per-face run: m differed across the faces by
+// exactly zero.
+//
+// The asymmetry is measured, not assumed. Running tubulaton in these cell
+// geometries gives cortical density relative to the cell's mean of
+//
+//   convex (lobe tip)  0.670 +/- 0.109
+//   concave (neck)     1.191 +/- 0.220
+//
+// so a stiff filament is depleted about 1.8x on convex cortex relative to
+// concave. The shared-wall model could only represent the sum of the two
+// faces, g(kappa) + g(-kappa), which is even in kappa and throws the
+// asymmetry away; that is why its recruitment had to be written as a
+// function of |kappa|.
+//
+//   dm/dt = k_on * S * (1 - m) - k_off * m
+//   S     = 1 / (1 + exp(-kappa_signed / kappa_half))
+//
+// A logistic rather than a Hill, because the cue is signed and a Hill in
+// |kappa| cannot express "more on one side than the other". S -> 1 on
+// strongly concave wall, -> 0 on strongly convex, and 0.5 on flat, so
+// kappa_half sets how sharply the two faces separate. Positive curvature is
+// measured away from the owning cell's centroid, i.e. convex for that cell,
+// so the sign is negated here to make concave the recruiting side.
+class CMTSignedCurvatureRecruitment : public Reaction {
+public:
+  CMTSignedCurvatureRecruitment(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 3)
+      throw std::runtime_error(
+          "CMT::SignedCurvatureRecruitment: uses three parameters "
+          "(k_on, k_off, kappa_half).");
+    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+      throw std::runtime_error(
+          "CMT::SignedCurvatureRecruitment: level 0 = wall bend flag, "
+          "level 1 = wall reinforcement index.");
+    configure("CMT::SignedCurvatureRecruitment", p, i, 3, {1, 1},
+              {"k_on", "k_off", "kappa_half"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &wallDerivs, Matrix &) override {
+    const size_t flagIndex = variableIndex(0, 0);
+    const size_t mIndex = variableIndex(1, 0);
+    const double kOn = parameter(0), kOff = parameter(1);
+    const double kHalf = parameter(2);
+    if (kHalf <= 0.0)
+      throw std::runtime_error(
+          "CMT::SignedCurvatureRecruitment: kappa_half must be positive.");
+    const auto centre = cellCentres(T, vertexData);
+
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      ChainGeom g;
+      for (size_t w = begin; w < end; ++w) {
+        if (wallData[w][flagIndex] == 0.0)
+          continue;
+        double kappa = 0.0;
+        size_t n = 0;
+        for (size_t v : {T.wall(w).vertex1, T.wall(w).vertex2}) {
+          if (!chainGeometry(T, wallData, vertexData, v, flagIndex, centre, g))
+            continue;
+          kappa += 2.0 * g.sDotU / (g.h * g.h);
+          ++n;
+        }
+        const double m = wallData[w][mIndex];
+        double S = 0.5;
+        if (n) {
+          kappa /= double(n);
+          S = 1.0 / (1.0 + std::exp(kappa / kHalf));   // concave recruits
+        }
+        wallDerivs[w][mIndex] += kOn * S * (1.0 - m) - kOff * m;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CMTSignedCurvatureRecruitment,
+                         "CMT::SignedCurvatureRecruitment")
 
 
 // ---------------------------------------------------------------------------
@@ -1537,31 +2002,84 @@ public:
           "WallMechanics::SelfAvoidance requires a 2D tissue.");
     const double k = parameter(0);
     const double dMin = parameter(1);
-    for (const auto &pr : pairs_) {
-      const Wall &wa = T.wall(pr.first);
-      const Wall &wb = T.wall(pr.second);
-      const size_t a1 = wa.vertex1, a2 = wa.vertex2;
-      const size_t b1 = wb.vertex1, b2 = wb.vertex2;
-      double sc, tc, nx, ny;
-      const double d = segmentDistance(vertexData, a1, a2, b1, b2, sc, tc,
-                                       nx, ny);
-      if (d >= dMin || d <= 0.0)
-        continue;
-      const double f = k * (dMin - d);
-      const double fx = f * nx, fy = f * ny;
-      vertexDerivs[a1][0] += (1.0 - sc) * fx;
-      vertexDerivs[a1][1] += (1.0 - sc) * fy;
-      vertexDerivs[a2][0] += sc * fx;
-      vertexDerivs[a2][1] += sc * fy;
-      vertexDerivs[b1][0] -= (1.0 - tc) * fx;
-      vertexDerivs[b1][1] -= (1.0 - tc) * fy;
-      vertexDerivs[b2][0] -= tc * fx;
-      vertexDerivs[b2][1] -= tc * fy;
-    }
+    // Walked in parallel with a per-thread scatter buffer. This loop is the
+    // dominant cost of the whole model -- 81% of derivative time on an
+    // 11980-wall mesh -- and it was the only reaction here still running
+    // serially while every other one used the thread pool. The pairs write
+    // into shared vertex rows, so it needs the scattering variant rather
+    // than a plain parallel for.
+    parallelScatter1(
+        pairs_.size(), vertexDerivs,
+        [&](size_t begin, size_t end, Matrix &out) {
+          for (size_t i = begin; i < end; ++i) {
+            const auto &pr = pairs_[i];
+            const Wall &wa = T.wall(pr.first);
+            const Wall &wb = T.wall(pr.second);
+            const size_t a1 = wa.vertex1, a2 = wa.vertex2;
+            const size_t b1 = wb.vertex1, b2 = wb.vertex2;
+            double sc, tc, nx, ny;
+            const double d = segmentDistance(vertexData, a1, a2, b1, b2, sc,
+                                             tc, nx, ny);
+            if (d >= dMin || d <= 0.0)
+              continue;
+            const double f = k * (dMin - d);
+            const double fx = f * nx, fy = f * ny;
+            out[a1][0] += (1.0 - sc) * fx;
+            out[a1][1] += (1.0 - sc) * fy;
+            out[a2][0] += sc * fx;
+            out[a2][1] += sc * fy;
+            out[b1][0] -= (1.0 - tc) * fx;
+            out[b1][1] -= (1.0 - tc) * fy;
+            out[b2][0] -= tc * fx;
+            out[b2][1] -= tc * fy;
+          }
+        });
   }
 
   // Number of candidate pairs currently cached (diagnostic).
   size_t numPairs() const { return pairs_.size(); }
+
+private:
+  // vertex -> its sister partners, built once per refresh
+  std::vector<std::vector<size_t>> sisterOf_;
+
+  void buildSisterMap(const Tissue &T) {
+    sisterOf_.assign(T.numVertex(), {});
+    for (size_t i = 0; i < T.numSisterVertex(); ++i) {
+      const size_t a = T.sisterVertex(i, 0), b = T.sisterVertex(i, 1);
+      if (a < sisterOf_.size() && b < sisterOf_.size()) {
+        sisterOf_[a].push_back(b);
+        sisterOf_[b].push_back(a);
+      }
+    }
+  }
+
+  bool isSister(size_t v, size_t w) const {
+    if (v >= sisterOf_.size())
+      return false;
+    for (size_t x : sisterOf_[v])
+      if (x == w)
+        return true;
+    return false;
+  }
+
+  // Any endpoint paired. Requiring both endpoints catches a wall's exact
+  // sister and nothing else, which is not enough: the sister's neighbours
+  // along the same face are coincident too, about one segment away, and so
+  // sit well inside the search margin. They share exactly one sister
+  // endpoint, so an AND test lets them through and they dominate the pair
+  // list. Two walls sharing any sister endpoint are parts of the same
+  // physical wall seen from the two sides, and are never a collision.
+  bool isSisterWall(const Wall &wa, const Wall &wb) const {
+    if (sisterOf_.empty())
+      return false;
+    return isSister(wa.vertex1, wb.vertex1) ||
+           isSister(wa.vertex1, wb.vertex2) ||
+           isSister(wa.vertex2, wb.vertex1) ||
+           isSister(wa.vertex2, wb.vertex2);
+  }
+
+public:
 
 private:
   // Closest approach between segments a1-a2 and b1-b2, with the barycentric
@@ -1607,6 +2125,7 @@ private:
 
   void rebuild(Tissue &T, Matrix &vertexData) {
     pairs_.clear();
+    buildSisterMap(T);
     if (vertexData.cols() != 2)
       return;
     const size_t n = T.numWall();
@@ -1674,6 +2193,16 @@ private:
             seen[o] = 1;
             touched.push_back(o);
             const Wall &wb = T.wall(o);
+            // Sister walls are the two faces of one physical wall in a
+            // per-face mesh. They do not share vertices -- their vertices
+            // are distinct and coincident -- so the shared-vertex test below
+            // does not catch them, and they sit at separation zero, which is
+            // maximum repulsion. Left in, self-avoidance fights the sister
+            // constraint on every wall in the tissue: measured at 73% of all
+            // derivative time, and physically wrong, since the two faces of
+            // one wall are not two walls colliding.
+            if (isSisterWall(wa, wb))
+              continue;
             // Segments sharing a vertex are neighbours along a wall chain and
             // are always in contact by construction.
             if (wa.vertex1 == wb.vertex1 || wa.vertex1 == wb.vertex2 ||

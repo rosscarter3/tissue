@@ -4,6 +4,7 @@
 // sisterVertex.cc.
 //
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -153,6 +154,113 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(SisterVertexSpring, "SisterVertex::Spring")
+
+
+// Reads sister pairs from a file literally named "sister" in the working
+// directory: a count followed by that many vertex-index pairs. The filename is
+// hard-coded in legacy and kept so existing model directories still work.
+class SisterVertexInitiateFromFile : public Reaction {
+public:
+  SisterVertexInitiateFromFile(const ParameterList &p, const IndexLevels &i) {
+    configure("SisterVertex::InitiateFromFile", p, i, 0, {}, {});
+  }
+  void initiate(Tissue &T, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
+                Matrix &) override {
+    std::ifstream in("sister");
+    if (!in)
+      throw std::runtime_error(
+          "SisterVertex::InitiateFromFile: cannot open file 'sister' (the "
+          "filename is fixed; it is read from the working directory).");
+    size_t n = 0;
+    in >> n;
+    auto &sisters = T.sisterVertices();
+    sisters.resize(n);
+    for (size_t i = 0; i < n; ++i) {
+      size_t v1, v2;
+      if (!(in >> v1 >> v2))
+        throw std::runtime_error("SisterVertex::InitiateFromFile: file 'sister' "
+                                 "ended before " + std::to_string(n) +
+                                 " vertex pairs were read.");
+      sisters[i] = {v1, v2};
+    }
+    std::cerr << "SisterVertex::InitiateFromFile::initiate() read " << n
+              << " sisters from file sister." << std::endl;
+  }
+  void derivs(Tissue &, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
+              Matrix &) override {}
+};
+TISSUE_REGISTER_REACTION(SisterVertexInitiateFromFile,
+                         "SisterVertex::InitiateFromFile")
+
+// As SisterVertex::Spring, but the spring constant is scaled by the mean of a
+// cell variable over the two cells the pair belongs to - so an adhesion
+// molecule expressed per cell can switch the constraint on and off. Each
+// sister vertex is assumed to border exactly one cell (the rest being
+// background), which is what the per-face meshes this is written for give.
+//
+// FIX: legacy's gate reads `cellData[cell1] > 0 || cellData[cell1] > 0`,
+// testing the first cell twice. The pair was therefore silently inert whenever
+// the first vertex's cell was zero, however strongly the second expressed,
+// which made the force depend on the order the pair happened to be listed in.
+// The second test reads cell2 here, matching the comment in legacy ("check if
+// either cell has non-zero value") and the symmetry of the force itself.
+class SisterVertexSpringCellConc : public Reaction {
+public:
+  SisterVertexSpringCellConc(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 1 && p.size() != 2)
+      throw std::runtime_error("SisterVertex::SpringCellConc: uses one or two "
+                               "parameters (k_spring, [lengthFractionBreak]).");
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "SisterVertex::SpringCellConc: one cell variable index.");
+    configure("SisterVertex::SpringCellConc", p, i, p.size(), {1},
+              p.size() == 2
+                  ? std::vector<std::string>{"K_spring", "BreakLength"}
+                  : std::vector<std::string>{"K_spring"});
+  }
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    const size_t cIndex = variableIndex(0, 0);
+    const size_t dimension = vertexData.cols();
+    for (size_t s = 0; s < T.numSisterVertex(); ++s) {
+      const size_t v0 = T.sisterVertex(s, 0);
+      const size_t v1 = T.sisterVertex(s, 1);
+      if (T.vertex(v0).cells.empty() || T.vertex(v1).cells.empty())
+        continue; // no cell to read the concentration from
+      const double c0 = cellData[T.vertex(v0).cells[0]][cIndex];
+      const double c1 = cellData[T.vertex(v1).cells[0]][cIndex];
+      if (c0 <= 0.0 && c1 <= 0.0)
+        continue;
+      const double factor = 0.5 * (c0 + c1) * parameter(0);
+      for (size_t d = 0; d < dimension; ++d) {
+        const double f = -factor * (vertexData[v0][d] - vertexData[v1][d]);
+        vertexDerivs[v0][d] += f;
+        vertexDerivs[v1][d] -= f;
+      }
+    }
+  }
+  void update(Tissue &T, Matrix &, Matrix &, Matrix &vertexData,
+              double) override {
+    if (numParameter() != 2)
+      return;
+    auto &sisters = T.sisterVertices();
+    std::vector<size_t> remove;
+    for (size_t i = 0; i < sisters.size(); ++i)
+      if (distance(vertexData[sisters[i][0]], vertexData[sisters[i][1]]) >
+          parameter(1))
+        remove.push_back(i);
+    // Reverse swap-with-last compaction, matching legacy's survivor ordering.
+    for (size_t k = remove.size(); k-- > 0;) {
+      const size_t i = remove[k];
+      const size_t last = sisters.size() - 1;
+      if (i != last)
+        sisters[i] = sisters[last];
+      sisters.pop_back();
+    }
+  }
+};
+TISSUE_REGISTER_REACTION(SisterVertexSpringCellConc,
+                         "SisterVertex::SpringCellConc")
 
 } // namespace
 } // namespace tissue
