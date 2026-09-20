@@ -1202,6 +1202,267 @@ TISSUE_REGISTER_REACTION(WallMechanicsBending, "WallMechanics::Bending")
 
 
 // ---------------------------------------------------------------------------
+// Differential wall synthesis across a shared wall
+//
+// Why this exists. With one growth rule per wall, a vertex model can only
+// deepen a lobe by taking material from the neck: the cell's area is set by
+// turgor against an area-elastic term whose resting area grows at the same
+// rate for every cell (dA0/dt = k_area A0), so no cell can advance into its
+// neighbour and the perimeter must buckle inward within a fixed budget.
+// Measured against 370 tracked Arabidopsis pavement cells, that model
+// reproduces circularity (0.399 against 0.397), solidity (0.734 against
+// 0.747) and lobe number (4 against 5) at the end of morphogenesis, and
+// misses minimum neck width by a factor of five (0.054 against 0.279) -- the
+// one shape statistic of the four that cannot be written in terms of
+// perimeter and area, and so the one a perimeter-and-area mechanism cannot
+// be expected to get right.
+//
+// What a real cell does instead is deposit wall material on one face of a
+// shared wall and not the other. The two cells do not end up with different
+// lengths of the same wall -- there is only one wall -- they end up with a
+// wall that is *bent*, because material added to the outer face lengthens the
+// outer arc. So differential synthesis appears in a vertex model not as a
+// second resting length but as a non-zero rest curvature.
+//
+// The consequence is the point. An elastic wall bent away from a flat rest
+// state pulls back, and that tension is what a lobe must be held out against
+// -- paid for by the neck. A wall whose rest state *is* the bend exerts no
+// such pull, so the lobe is held out by the material in it rather than by
+// tension stolen from elsewhere.
+//
+// Rest curvature is stored per wall and is signed relative to the wall's
+// cell1: positive means bowed away from cell1, into cell2. Both reactions
+// below take the reference direction from cell1's centroid, so the sign is
+// unambiguous and the two agree.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+// Geometry at an interior chain vertex: the sagitta, the spacing, and a unit
+// reference direction pointing from cell1's centroid towards the vertex.
+// Returns false at chain ends, junctions, and walls with no cell on either
+// side, none of which carry bending.
+struct ChainGeom {
+  double sDotU = 0.0;   // sagitta projected on the reference direction
+  double h = 0.0;       // mean spacing to the two neighbours
+  double u[3] = {0, 0, 0};
+  double s[3] = {0, 0, 0};
+  size_t a = 0, b = 0;
+};
+
+inline bool chainGeometry(const Tissue &T, const Matrix &wallData,
+                          const Matrix &vertexData, size_t v,
+                          size_t flagIndex,
+                          const std::vector<std::array<double, 3>> &centre,
+                          ChainGeom &g) {
+  size_t chain[2];
+  size_t found = 0;
+  for (size_t w : T.vertex(v).walls) {
+    if (wallData[w][flagIndex] != 0.0) {
+      if (found < 2)
+        chain[found] = w;
+      ++found;
+    }
+  }
+  if (found != 2)
+    return false;
+  size_t ref = T.wall(chain[0]).cell1;
+  if (ref == kBackground)
+    ref = T.wall(chain[0]).cell2;
+  if (ref == kBackground)
+    return false;
+
+  g.a = T.wall(chain[0]).otherVertex(v);
+  g.b = T.wall(chain[1]).otherVertex(v);
+  const size_t dim = vertexData.cols();
+  double da = 0.0, db = 0.0, un = 0.0;
+  for (size_t d = 0; d < dim; ++d) {
+    const double ea = vertexData[g.a][d] - vertexData[v][d];
+    const double eb = vertexData[g.b][d] - vertexData[v][d];
+    da += ea * ea;
+    db += eb * eb;
+    g.s[d] = 0.5 * (vertexData[g.a][d] + vertexData[g.b][d]) - vertexData[v][d];
+    g.u[d] = vertexData[v][d] - centre[ref][d];
+    un += g.u[d] * g.u[d];
+  }
+  g.h = 0.5 * (std::sqrt(da) + std::sqrt(db));
+  if (g.h <= 0.0 || un <= 0.0)
+    return false;
+  un = std::sqrt(un);
+  g.sDotU = 0.0;
+  for (size_t d = 0; d < dim; ++d) {
+    g.u[d] /= un;
+    g.sDotU += g.s[d] * g.u[d];
+  }
+  return true;
+}
+
+inline std::vector<std::array<double, 3>>
+cellCentres(const Tissue &T, const Matrix &vertexData) {
+  std::vector<std::array<double, 3>> c(T.numCell(), {0.0, 0.0, 0.0});
+  for (size_t i = 0; i < T.numCell(); ++i) {
+    const Vec3 p = T.cellPosition(i, vertexData);
+    c[i] = {p[0], p[1], p[2]};
+  }
+  return c;
+}
+
+} // namespace
+
+// ---------------------------------------------------------------------------
+// WallMechanics::BendingSpontaneous
+//
+// WallMechanics::Bending with a rest curvature read from a wall variable
+// instead of assumed zero. The energy is
+//
+//   E = sum_v (B/2) (kappa_v - kappa0_v)^2 l_v
+//
+// which, with kappa = 2 |s| / h^2 as in Bending, gives the same three-point
+// stencil displaced by a rest sagitta s0 = (kappa0 h^2 / 2) u:
+//
+//   F_v = 4 B (s_v - s0) / h^3,   F_a = F_b = -F_v / 2
+//
+// At kappa0 = 0 it is Bending exactly, so a model can be switched between
+// them to isolate what the rest curvature does.
+class WallMechanicsBendingSpontaneous : public Reaction {
+public:
+  WallMechanicsBendingSpontaneous(const ParameterList &p,
+                                  const IndexLevels &i) {
+    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+      throw std::runtime_error(
+          "WallMechanics::BendingSpontaneous: level 0 = wall bend flag, "
+          "level 1 = wall rest-curvature index.");
+    configure("WallMechanics::BendingSpontaneous", p, i, 1, {1, 1},
+              {"B_bend"});
+  }
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    const size_t flagIndex = variableIndex(0, 0);
+    const size_t k0Index = variableIndex(1, 0);
+    const double bBend = parameter(0);
+    const size_t dim = vertexData.cols();
+    const auto centre = cellCentres(T, vertexData);
+
+    parallelScatter1(
+        T.numVertex(), vertexDerivs,
+        [&](size_t begin, size_t end, Matrix &out) {
+          ChainGeom g;
+          for (size_t v = begin; v < end; ++v) {
+            if (!chainGeometry(T, wallData, vertexData, v, flagIndex, centre,
+                               g))
+              continue;
+            // rest curvature at the vertex: mean over its two chain walls
+            double k0 = 0.0;
+            size_t n = 0;
+            for (size_t w : T.vertex(v).walls)
+              if (wallData[w][flagIndex] != 0.0) {
+                k0 += wallData[w][k0Index];
+                ++n;
+              }
+            if (n)
+              k0 /= double(n);
+            const double k = 4.0 * bBend / (g.h * g.h * g.h);
+            const double s0 = 0.5 * k0 * g.h * g.h;
+            for (size_t d = 0; d < dim; ++d) {
+              const double f = k * (g.s[d] - s0 * g.u[d]);
+              out[v][d] += f;
+              out[g.a][d] -= 0.5 * f;
+              out[g.b][d] -= 0.5 * f;
+            }
+          }
+        });
+  }
+};
+TISSUE_REGISTER_REACTION(WallMechanicsBendingSpontaneous,
+                         "WallMechanics::BendingSpontaneous")
+
+// ---------------------------------------------------------------------------
+// WallGrowth::CurvaturePlasticity
+//
+// The rest curvature follows the actual curvature, with a rate:
+//
+//   dkappa0/dt = k_plastic (kappa - kappa0) / (1 + gamma_m m)
+//
+// This is what differential synthesis does, stated at the level a vertex
+// model can represent. A wall that is held bent has its outer face longer
+// than its inner one; material deposited there while it is bent takes on that
+// shape, and the bend stops being elastic strain and becomes the wall's
+// resting form. It is the bending analogue of the irreversible extension
+// WallGrowth::StrainWallInhibited already applies to length, and it is
+// inhibited by the same reinforcement variable for the same reason: where
+// microtubules and the cellulose they guide are dense, the wall yields less.
+//
+// Setting k_plastic = 0 recovers a purely elastic wall, so the mechanism can
+// be switched off without changing anything else in the model.
+class WallGrowthCurvaturePlasticity : public Reaction {
+public:
+  WallGrowthCurvaturePlasticity(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() < 1 || p.size() > 2)
+      throw std::runtime_error(
+          "WallGrowth::CurvaturePlasticity: uses one or two parameters "
+          "(k_plastic, [gamma_m, default 0]).");
+    if (p[0] < 0.0)
+      throw std::runtime_error(
+          "WallGrowth::CurvaturePlasticity: k_plastic must be non-negative.");
+    if (i.size() < 2 || i[0].size() != 1 || i[1].size() != 1 ||
+        (i.size() == 3 && i[2].size() != 1) || i.size() > 3)
+      throw std::runtime_error(
+          "WallGrowth::CurvaturePlasticity: level 0 = wall bend flag, "
+          "level 1 = wall rest-curvature index, "
+          "optional level 2 = wall reinforcement index.");
+    std::vector<std::string> ids{"k_plastic"};
+    if (p.size() == 2)
+      ids.push_back("gamma_m");
+    const std::vector<size_t> counts =
+        i.size() == 3 ? std::vector<size_t>{1, 1, 1}
+                      : std::vector<size_t>{1, 1};
+    configure("WallGrowth::CurvaturePlasticity", p, i, p.size(), counts,
+              std::move(ids));
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &wallDerivs, Matrix &) override {
+    const size_t flagIndex = variableIndex(0, 0);
+    const size_t k0Index = variableIndex(1, 0);
+    const bool useM = numVariableIndexLevel() == 3;
+    const size_t mIndex = useM ? variableIndex(2, 0) : 0;
+    const double kPlastic = parameter(0);
+    const double gammaM = numParameter() == 2 ? parameter(1) : 0.0;
+    if (kPlastic == 0.0)
+      return;
+    const auto centre = cellCentres(T, vertexData);
+
+    // Walked per wall, not per vertex, so each wall is written exactly once
+    // and the loop needs no synchronisation.
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      ChainGeom g;
+      for (size_t w = begin; w < end; ++w) {
+        if (wallData[w][flagIndex] == 0.0)
+          continue;
+        double kappa = 0.0;
+        size_t n = 0;
+        for (size_t v : {T.wall(w).vertex1, T.wall(w).vertex2}) {
+          if (!chainGeometry(T, wallData, vertexData, v, flagIndex, centre, g))
+            continue;
+          // kappa = 2 (s . u) / h^2, signed: positive bows away from cell1
+          kappa += 2.0 * g.sDotU / (g.h * g.h);
+          ++n;
+        }
+        if (!n)
+          continue;
+        kappa /= double(n);
+        const double m = useM ? wallData[w][mIndex] : 0.0;
+        wallDerivs[w][k0Index] +=
+            kPlastic * (kappa - wallData[w][k0Index]) / (1.0 + gammaM * m);
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(WallGrowthCurvaturePlasticity,
+                         "WallGrowth::CurvaturePlasticity")
+
+
+// ---------------------------------------------------------------------------
 // WallMechanics::SelfAvoidance
 //
 // Steric exclusion between wall segments. A vertex model has no notion that
