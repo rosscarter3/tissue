@@ -89,6 +89,9 @@ private:
 
   double h1_ = 0.0;  // maximal (and initial) step
   double eps_ = 0.0; // error tolerance
+  // How much the controller is currently allowed to grow the step. Tuned
+  // from the model's own behaviour rather than fixed: see rkqs.
+  double growCap_ = 5.0;
 
   Matrix yScalC_, yScalW_, yScalV_;
   Matrix yTempC_, yTempW_, yTempV_;

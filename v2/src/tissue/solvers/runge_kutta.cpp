@@ -212,6 +212,7 @@ void RK5Adaptive::rkqs(double hTry, double &hDid, double &hNext) {
 
   double h = hTry;
   double errMax;
+  bool rejected = false;
   for (;;) {
     rkck(h);
     errMax = detail::maxErrRatio(yErrC_, yScalC_);
@@ -221,6 +222,7 @@ void RK5Adaptive::rkqs(double hTry, double &hDid, double &hNext) {
     if (errMax <= 1.0)
       break;
     ++numReject_;
+    rejected = true;
     double hTemp = SAFETY * h * std::pow(errMax, PSHRNK);
     if (h >= 0.0)
       h = hTemp > 0.1 * h ? hTemp : 0.1 * h;
@@ -232,27 +234,38 @@ void RK5Adaptive::rkqs(double hTry, double &hDid, double &hNext) {
       std::exit(-1);
     }
   }
-  // Growth cap. Numerical Recipes jumps straight to 5*h whenever the error
-  // is comfortably small, which is right for an accuracy-limited problem and
-  // wrong for this one: these models are stability-limited, so h already
-  // sits at the boundary and a 5x jump is past it by construction. The step
-  // is then rejected and shrunk back, which is why accepted, reduced and
-  // rejected step counts all come out about equal. Capping the growth keeps
-  // the same error test on every accepted step -- accuracy is unchanged --
-  // and simply stops the controller from repeatedly probing a step it
-  // cannot take. Override with TISSUE_HGROW to re-measure.
-  static const double kGrow = [] {
-    if (const char *e = std::getenv("TISSUE_HGROW")) {
-      char *end = nullptr;
-      double v = std::strtod(e, &end);
-      if (end != e && v > 1.0)
-        return v;
-    }
-    return 1.5;
-  }();
-  hNext = errMax > ERRCON ? SAFETY * h * std::pow(errMax, PGROW) : kGrow * h;
-  if (hNext > kGrow * h)
-    hNext = kGrow * h;
+  // Self-tuning growth cap. Numerical Recipes jumps straight to 5*h
+  // whenever the error is comfortably small. That is right for a problem
+  // whose step is set by accuracy and wrong for one whose step is set by
+  // stability, which these tissue models are: h already sits at the
+  // stability boundary, so a 5x jump clears it by construction, is
+  // rejected, and shrinks back. Measured on a 6703-wall leaf, two fifths
+  // of all steps were being rejected that way.
+  //
+  // A fixed small cap fixes that and penalises the accuracy-limited models
+  // that legitimately want to grow, so the cap follows the model instead:
+  // shrink it when a step is rejected, relax it when a step is accepted at
+  // the size asked for. A stability-limited run settles near 1, an
+  // accuracy-limited one drifts back to 5, and neither has to be told
+  // which it is.
+  //
+  // The two rates are not free choices -- their ratio *is* the rejection
+  // rate the loop settles at, since at equilibrium p*ln(kShrink) +
+  // (1-p)*ln(kRelax) = 0. 0.6 against 1.15 settles at 21%, which is what a
+  // first attempt did and barely better than leaving it alone. 0.6 against
+  // 1.03 targets 5.5%: low enough that little work is thrown away, high
+  // enough that the cap keeps testing whether the model has become less
+  // stiff. The floor is above 1 so the step can always recover.
+  constexpr double kShrink = 0.6, kRelax = 1.03;
+  if (rejected) {
+    growCap_ = std::max(1.05, growCap_ * kShrink);
+  } else {
+    growCap_ = std::min(5.0, growCap_ * kRelax);
+  }
+  hNext = errMax > ERRCON ? SAFETY * h * std::pow(errMax, PGROW)
+                          : growCap_ * h;
+  if (hNext > growCap_ * h)
+    hNext = growCap_ * h;
   t_ += (hDid = h);
   cellData_.copyFrom(yTempC_);
   wallData_.copyFrom(yTempW_);

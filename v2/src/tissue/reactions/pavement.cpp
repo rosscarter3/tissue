@@ -41,6 +41,7 @@
 //
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -2132,6 +2133,10 @@ private:
     const double margin =
         numParameter() == 4 ? parameter(3) : 2.0 * parameter(1);
     const double reach = parameter(1) + margin;
+    static const bool oneSided = [] {
+      const char *e = std::getenv("TISSUE_AVOID_ONESIDED");
+      return e && *e && *e != '0';
+    }();
 
     // Uniform grid sized to the search reach, over segment bounding boxes.
     double lo[2] = {1e30, 1e30}, hi[2] = {-1e30, -1e30};
@@ -2150,16 +2155,19 @@ private:
     // Both the insertion box and the query box are inflated by reach, so the
     // list actually holds every pair within about 2*reach -- six times d_min
     // at the default margin, and 313k pairs against 119k for a single
-    // inflation on an 11980-wall mesh. That is not free: every one of those
-    // pairs is distance-tested on every derivative evaluation, and dropping
-    // the extras runs 1.25x faster overall.
+    // inflation on an 11980-wall mesh. Every one of those extras is
+    // distance-tested on every derivative evaluation, and dropping them runs
+    // 1.25x faster.
     //
-    // It is kept because the extras are not redundant. Inflating one side
-    // only is bit-identical until the first neighbour-list rebuild and
-    // diverges immediately after it: between rebuilds a pair can close from
-    // outside the narrower radius to inside d_min, and the wider list is
-    // what catches it. The margin parameter is the place to trade this off
-    // knowingly; note when setting it that the radius it buys is doubled.
+    // TISSUE_AVOID_ONESIDED=1 inflates the query side only. Whether that is
+    // safe is an empirical question and not the one it first appears to be:
+    // the two agree bit-for-bit until the first neighbour-list rebuild and
+    // diverge right after it, which looks like dropped contacts but is also
+    // exactly what a changed pair ordering does to a model whose vertex
+    // trajectories are chaotic. The test that distinguishes them is whether
+    // the scored population statistics move, not whether the coordinates do.
+    // Left off by default until that has been run on a mesh where
+    // self-avoidance is actually load-bearing.
     auto cellsOf = [&](size_t w, double grow, size_t &i0, size_t &i1,
                        size_t &j0, size_t &j1) {
       const Wall &wall = T.wall(w);
@@ -2185,7 +2193,7 @@ private:
 
     for (size_t w = 0; w < n; ++w) {
       size_t i0, i1, j0, j1;
-      cellsOf(w, reach, i0, i1, j0, j1);
+      cellsOf(w, oneSided ? 0.0 : reach, i0, i1, j0, j1);
       for (size_t i = i0; i <= i1; ++i)
         for (size_t j = j0; j <= j1; ++j)
           grid[i * ny + j].push_back(w);
