@@ -191,8 +191,8 @@ void RK5Adaptive::simulate() {
                    vertexDerivs_);
         print();
       }
-      std::cerr << "Simulation done. steps: " << numOk_ << " accepted, "
-                << numBad_ << " clipped-to-print, " << numReject_
+      std::cerr << "Simulation done. steps: " << numOk_ << " accepted at the attempted step, "
+                << numBad_ << " accepted after shrinking, " << numReject_
                 << " rejected; mean h = "
                 << (endTime_ - startTime_) / std::max(1u, numOk_ + numBad_)
                 << std::endl;
@@ -232,7 +232,27 @@ void RK5Adaptive::rkqs(double hTry, double &hDid, double &hNext) {
       std::exit(-1);
     }
   }
-  hNext = errMax > ERRCON ? SAFETY * h * std::pow(errMax, PGROW) : 5.0 * h;
+  // Growth cap. Numerical Recipes jumps straight to 5*h whenever the error
+  // is comfortably small, which is right for an accuracy-limited problem and
+  // wrong for this one: these models are stability-limited, so h already
+  // sits at the boundary and a 5x jump is past it by construction. The step
+  // is then rejected and shrunk back, which is why accepted, reduced and
+  // rejected step counts all come out about equal. Capping the growth keeps
+  // the same error test on every accepted step -- accuracy is unchanged --
+  // and simply stops the controller from repeatedly probing a step it
+  // cannot take. Override with TISSUE_HGROW to re-measure.
+  static const double kGrow = [] {
+    if (const char *e = std::getenv("TISSUE_HGROW")) {
+      char *end = nullptr;
+      double v = std::strtod(e, &end);
+      if (end != e && v > 1.0)
+        return v;
+    }
+    return 1.5;
+  }();
+  hNext = errMax > ERRCON ? SAFETY * h * std::pow(errMax, PGROW) : kGrow * h;
+  if (hNext > kGrow * h)
+    hNext = kGrow * h;
   t_ += (hDid = h);
   cellData_.copyFrom(yTempC_);
   wallData_.copyFrom(yTempW_);
