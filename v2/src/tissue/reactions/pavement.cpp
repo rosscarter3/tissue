@@ -40,7 +40,9 @@
 // noise and by cell size, not prescribed.
 //
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <limits>
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
@@ -2003,6 +2005,272 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(CMTPatternRecruitment, "CMT::PatternRecruitment")
+
+// ---------------------------------------------------------------------------
+// CMT::WidthRecruitment
+//
+// Recruits reinforcement where the cell is LOCALLY WIDE, with the same
+// first-order kinetics as the other cues so the three are interchangeable.
+//
+// Why width. Figure 52 of stage3 showed the model nucleating too few lobes
+// and then deepening them: real cells climb 2,3,4,5,7 lobes as circularity
+// falls while every variant here saturates at four, and the model's
+// perimeter per lobe *rises* from 1.56 to 2.85 while real cells refine from
+// 2.50 to 1.39. A cue with no length scale of its own cannot do otherwise --
+// curvature feedback amplifies whatever the initial condition seeded, and
+// growing the cell just stretches it. Replacing curvature with a Turing
+// pattern supplies a length scale and still does not help, because that
+// length is fixed by diffusion constants and does not grow with the cell.
+//
+// The cell's own width does grow with the cell. Sapala et al. 2018 (eLife
+// 7:e32794) measure that turgor stress on the outer periclinal wall scales
+// with the largest inscribed circle, and argue lobing is how a cell keeps
+// that circle small as it enlarges. That is a mechanism whose length scale
+// is the cell itself: as a region widens, its periclinal stress rises, and
+// splitting it in two is what relieves it. It is also the one piece of
+// physics a strictly 2D model of the periclinal plane leaves out, because
+// the stress in question is carried by the face this model does not have.
+//
+// The local width at a boundary vertex is the radius of the largest circle
+// lying inside the cell and tangent to the boundary there. For a circle of
+// radius r centred at v + r*n (n the inward normal), staying inside requires
+// |q - v - r n|^2 >= r^2 for every other boundary point q, i.e.
+//
+//     r <= |q-v|^2 / (2 (q-v).n)     for every q with (q-v).n > 0
+//
+// so r is the minimum of that over the cell's own boundary. Recruitment is
+// then a Hill function of r, which makes "wide" mean wide relative to
+// w_half rather than in absolute microns.
+//
+// Cost: quadratic in the vertices of one cell, which is nothing at ~50 per
+// cell, but it is quadratic per derivative evaluation if computed there, so
+// it is refreshed on an interval like the self-avoidance neighbour list.
+class CMTWidthRecruitment : public Reaction {
+public:
+  CMTWidthRecruitment(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 5)
+      throw std::runtime_error(
+          "CMT::WidthRecruitment: uses five parameters "
+          "(k_on, k_off, w_half, n_hill, refresh_interval).");
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "CMT::WidthRecruitment: level 0 = wall reinforcement index.");
+    if (p[2] <= 0.0)
+      throw std::runtime_error(
+          "CMT::WidthRecruitment: w_half (parameter 3) must be positive.");
+    configure("CMT::WidthRecruitment", p, i, 5, {1},
+              {"k_on", "k_off", "w_half", "n_hill", "refresh_interval"});
+  }
+
+  void initiate(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+                Matrix &, Matrix &) override {
+    rebuild(T, vertexData);
+    elapsed_ = 0.0;
+  }
+
+  void update(Tissue &T, Matrix &, Matrix &, Matrix &vertexData,
+              double h) override {
+    elapsed_ += h;
+    if (elapsed_ < parameter(4))
+      return;
+    elapsed_ = 0.0;
+    rebuild(T, vertexData);
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &, Matrix &,
+              Matrix &wallDerivs, Matrix &) override {
+    const size_t mI = variableIndex(0, 0);
+    const double kOn = parameter(0), kOff = parameter(1);
+    const double wHalf = parameter(2), nHill = parameter(3);
+    if (width_.size() != T.numWall())
+      return;                       // between a topology change and a refresh
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        const double r = width_[w];
+        double S = 0.0;
+        if (r > 0.0) {
+          const double x = std::pow(r / wHalf, nHill);
+          S = x / (1.0 + x);
+        }
+        const double m = wallData[w][mI];
+        wallDerivs[w][mI] += kOn * S * (1.0 - m) - kOff * m;
+      }
+    });
+  }
+
+private:
+  std::vector<double> width_;   // per wall, the local inscribed radius
+  double elapsed_ = 0.0;
+
+  void rebuild(Tissue &T, Matrix &vertexData) {
+    width_.assign(T.numWall(), 0.0);
+    if (vertexData.cols() != 2)
+      return;
+    std::vector<double> acc(T.numWall(), 0.0);
+    std::vector<int> cnt(T.numWall(), 0);
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      const auto &cell = T.cell(c);
+      const size_t n = cell.vertices.size();
+      if (n < 4)
+        continue;
+      const Vec3 mid = T.cellPosition(c, vertexData);
+      for (size_t k = 0; k < n; ++k) {
+        const size_t v = cell.vertices[k];
+        const double vx = vertexData[v][0], vy = vertexData[v][1];
+        // Inward normal: perpendicular to the local chord, sense fixed by
+        // the cell centre rather than by winding, which a growing mesh does
+        // not reliably preserve.
+        const size_t vp = cell.vertices[(k + n - 1) % n];
+        const size_t vn = cell.vertices[(k + 1) % n];
+        double tx = vertexData[vn][0] - vertexData[vp][0];
+        double ty = vertexData[vn][1] - vertexData[vp][1];
+        const double tl = std::sqrt(tx * tx + ty * ty);
+        if (tl <= 0.0)
+          continue;
+        tx /= tl; ty /= tl;
+        double nx = -ty, ny = tx;
+        if (nx * (mid[0] - vx) + ny * (mid[1] - vy) < 0.0) {
+          nx = -nx; ny = -ny;
+        }
+        double r = std::numeric_limits<double>::max();
+        for (size_t j = 0; j < n; ++j) {
+          if (j == k)
+            continue;
+          const size_t q = cell.vertices[j];
+          const double dx = vertexData[q][0] - vx;
+          const double dy = vertexData[q][1] - vy;
+          const double proj = dx * nx + dy * ny;
+          if (proj <= 1e-12)
+            continue;               // behind the tangent plane, no constraint
+          const double cand = (dx * dx + dy * dy) / (2.0 * proj);
+          if (cand < r)
+            r = cand;
+        }
+        if (r == std::numeric_limits<double>::max())
+          continue;
+        // Carried on the two walls meeting at this vertex, since the
+        // reinforcement variable lives on walls.
+        for (size_t wI : T.vertex(v).walls) {
+          if (wI < acc.size()) {
+            acc[wI] += r;
+            cnt[wI] += 1;
+          }
+        }
+      }
+    }
+    for (size_t w = 0; w < width_.size(); ++w)
+      width_[w] = cnt[w] ? acc[w] / cnt[w] : 0.0;
+  }
+};
+TISSUE_REGISTER_REACTION(CMTWidthRecruitment, "CMT::WidthRecruitment")
+
+// ---------------------------------------------------------------------------
+// WallMechanics::PericlinalFoundation
+//
+// The restoring force the periclinal wall exerts on the anticlinal wall, and
+// the reason a strictly 2D pavement model cannot select a lobe wavelength.
+//
+// Take a sinusoidal wrinkle of amplitude a and wavenumber q on a cell's
+// outline. Its area change is zero to first order -- what goes in at one
+// phase comes out at the next -- so neither turgor nor the area-elastic term
+// resists it at all, at any wavelength. Bending resists it as a^2 q^4 and
+// wall tension as a^2 q^2. Both of those penalise SHORT wavelengths and
+// nothing in the model penalises long ones, so the longest wavelength the
+// cell can hold always wins and the lobe count sits at the smallest number
+// the geometry allows. Measured, it sits at four however the parameters,
+// the cue, the mesh topology or the pattern boundary conditions are changed,
+// against six or seven in tracked real cells.
+//
+// Selecting a wavelength needs a term in u^2 -- a force proportional to
+// displacement rather than to its derivatives. Physically that is the
+// periclinal wall: the anticlinal wall is clamped along the top and bottom
+// faces, so moving it inward at one point has to shear the sheet attached
+// to it, which costs energy locally and in proportion to how far it moved.
+// With such a foundation of stiffness k the energy is
+//
+//     E ~ integral [ B kappa^2 + sigma u'^2 + k u^2 ]
+//
+// and minimising over q gives lambda = 2 pi (B/k)^(1/4), a wavelength set by
+// the wall's own mechanics. Lobe number then grows with perimeter, which is
+// what real cells do: their perimeter per lobe holds near 1.4 sqrt(A0) while
+// perimeter doubles, where this model's rises from 1.56 to 2.85.
+//
+// The reference the displacement is measured from is the attachment the
+// periclinal wall currently rests at. That cannot be the initial outline --
+// the cell grows, and growth is not a wrinkle -- so it relaxes toward the
+// current position with time constant tau. Deformations faster than tau are
+// resisted; the slow expansion of the whole cell is not. tau is therefore a
+// remodelling time for the periclinal attachment, and should sit between the
+// mechanical relaxation time and the growth time.
+class WallMechanicsPericlinalFoundation : public Reaction {
+public:
+  WallMechanicsPericlinalFoundation(const ParameterList &p,
+                                    const IndexLevels &i) {
+    if (p.size() != 2)
+      throw std::runtime_error(
+          "WallMechanics::PericlinalFoundation: uses two parameters "
+          "(k_foundation, tau_remodel).");
+    if (p[1] <= 0.0)
+      throw std::runtime_error(
+          "WallMechanics::PericlinalFoundation: tau_remodel must be "
+          "positive.");
+    configure("WallMechanics::PericlinalFoundation", p, i, 2, {},
+              {"k_foundation", "tau_remodel"});
+  }
+
+  void initiate(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+                Matrix &, Matrix &) override {
+    ref_.assign(vertexData.rows(),
+                std::array<double, 2>{0.0, 0.0});
+    for (size_t v = 0; v < vertexData.rows(); ++v)
+      ref_[v] = {vertexData[v][0], vertexData[v][1]};
+  }
+
+  // The reference remodels between steps rather than inside derivs, so it is
+  // a property of the trajectory and not of whichever Runge-Kutta stage
+  // happens to evaluate it.
+  void update(Tissue &, Matrix &, Matrix &, Matrix &vertexData,
+              double h) override {
+    if (ref_.size() != vertexData.rows()) {
+      initiateFrom(vertexData);
+      return;
+    }
+    const double f = h / parameter(1);
+    const double w = f > 1.0 ? 1.0 : f;
+    for (size_t v = 0; v < vertexData.rows(); ++v) {
+      ref_[v][0] += w * (vertexData[v][0] - ref_[v][0]);
+      ref_[v][1] += w * (vertexData[v][1] - ref_[v][1]);
+    }
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 2)
+      throw std::runtime_error(
+          "WallMechanics::PericlinalFoundation requires a 2D tissue.");
+    if (ref_.size() != vertexData.rows())
+      return;
+    const double k = parameter(0);
+    if (k == 0.0)
+      return;
+    parallelFor(vertexData.rows(), [&](size_t begin, size_t end) {
+      for (size_t v = begin; v < end; ++v) {
+        vertexDerivs[v][0] -= k * (vertexData[v][0] - ref_[v][0]);
+        vertexDerivs[v][1] -= k * (vertexData[v][1] - ref_[v][1]);
+      }
+    });
+  }
+
+private:
+  std::vector<std::array<double, 2>> ref_;
+  void initiateFrom(Matrix &vertexData) {
+    ref_.resize(vertexData.rows());
+    for (size_t v = 0; v < vertexData.rows(); ++v)
+      ref_[v] = {vertexData[v][0], vertexData[v][1]};
+  }
+};
+TISSUE_REGISTER_REACTION(WallMechanicsPericlinalFoundation,
+                         "WallMechanics::PericlinalFoundation")
 
 
 // ---------------------------------------------------------------------------
