@@ -1927,6 +1927,83 @@ public:
 TISSUE_REGISTER_REACTION(CMTSignedCurvatureRecruitment,
                          "CMT::SignedCurvatureRecruitment")
 
+// ---------------------------------------------------------------------------
+// CMT::PatternRecruitment
+//
+// Recruits reinforcement from a patterning variable instead of from local
+// curvature, with the same first-order kinetics as
+// CMT::CurvatureRecruitment so that the two are a controlled comparison:
+// identical downstream mechanics, identical dm/dt, different cue.
+//
+// The reason for wanting that comparison is in stage3's figure 52. A
+// curvature cue is pure positive feedback with no length scale of its own,
+// so the number of lobes is whatever the initial condition seeded and
+// growing the cell only stretches them -- measured, the model's perimeter
+// per lobe rises from 1.56 to 2.85 while real cells refine from 2.50 to
+// 1.39. A reaction-diffusion pattern has an intrinsic wavelength and
+// inserts new peaks as its domain grows, which is the behaviour the data
+// show.
+//
+// Why the cue needs an offset, and why that is not a detail. Feeding a
+// Turing activator straight into the reinforcement slot fails for a
+// reason this model has hit before: the Schnakenberg steady state is
+// u* = a + b, so u carries a large constant term. With u* = 1 the wall is
+// uniformly stiffened (1 + beta*u = 5x) and uniformly growth-arrested
+// (1/(1 + gamma*u) = 0.1) before the pattern contributes anything, and the
+// tissue simply stops -- measured, circularity moved 0.765 to 0.737 in
+// 48 h. The same mistake as driving ActiveWallExpansion with a force of
+// non-zero mean, which inflated instead of shaping. The pattern's
+// *variation* is the signal, so the cue subtracts the field's own mean:
+//
+//     S = clamp((u - mean(u)) / width, 0, 1)
+//
+// Subtracting the running mean rather than the analytic u* also keeps the
+// cue honest if the pattern's mean drifts, which it does once the domain
+// grows.
+class CMTPatternRecruitment : public Reaction {
+public:
+  CMTPatternRecruitment(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 3)
+      throw std::runtime_error(
+          "CMT::PatternRecruitment: uses three parameters "
+          "(k_on, k_off, width).");
+    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+      throw std::runtime_error(
+          "CMT::PatternRecruitment: level 0 = wall pattern index, "
+          "level 1 = wall reinforcement index.");
+    configure("CMT::PatternRecruitment", p, i, 3, {1, 1},
+              {"k_on", "k_off", "width"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &, Matrix &,
+              Matrix &wallDerivs, Matrix &) override {
+    const size_t uIndex = variableIndex(0, 0);
+    const size_t mIndex = variableIndex(1, 0);
+    const double kOn = parameter(0), kOff = parameter(1);
+    const double width = parameter(2);
+    if (width <= 0.0)
+      throw std::runtime_error(
+          "CMT::PatternRecruitment: width must be positive.");
+    const size_t n = T.numWall();
+    if (!n)
+      return;
+    double sum = 0.0;
+    for (size_t w = 0; w < n; ++w)
+      sum += wallData[w][uIndex];
+    const double mean = sum / double(n);
+
+    parallelFor(n, [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        double S = (wallData[w][uIndex] - mean) / width;
+        S = S < 0.0 ? 0.0 : (S > 1.0 ? 1.0 : S);
+        const double m = wallData[w][mIndex];
+        wallDerivs[w][mIndex] += kOn * S * (1.0 - m) - kOff * m;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CMTPatternRecruitment, "CMT::PatternRecruitment")
+
 
 // ---------------------------------------------------------------------------
 // WallMechanics::SelfAvoidance
