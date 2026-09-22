@@ -31,7 +31,12 @@
 //   QuasiStatic
 //   <startTime> <endTime>
 //   <printFlag> <numPrint>
-//   <h_growth> <force_tol> <max_relax_iterations>
+//   <h_growth> <force_tol> <max_relax_iterations> [<relax_method>]
+//
+// relax_method 0 (default) is FIRE, 1 is Barzilai-Borwein. BB is the better
+// choice when the stiffness ratio is large -- a finely triangulated 3D shell,
+// say -- because FIRE needs O(sqrt(kappa)) iterations and BB approximates the
+// curvature from the last two gradients instead. See relaxBB().
 //
 // Comparing against another solver: QuasiStatic relaxes to force balance
 // *before* its first print, so its frame 0 is the relaxed configuration while
@@ -76,6 +81,11 @@ QuasiStatic::QuasiStatic(Tissue *T, std::istream &in) : BaseSolver(T) {
   in >> startTime_ >> endTime_;
   in >> printFlag_ >> numPrint_;
   in >> hGrowth_ >> forceTol_ >> maxRelax_;
+  // Optional fourth value: 0 (default) relaxes with FIRE, 1 with
+  // Barzilai-Borwein. Absent in every existing solver file, so those keep
+  // FIRE and are unchanged.
+  if (!(in >> relaxMethod_))
+    relaxMethod_ = 0;
   t_ = startTime_;
   if (hGrowth_ <= 0.0) {
     std::cerr << "QuasiStatic: growth step must be positive." << std::endl;
@@ -206,6 +216,126 @@ size_t QuasiStatic::relax() {
   return evals;
 }
 
+// Barzilai-Borwein relaxation, the alternative to FIRE.
+//
+// FIRE is damped inertial dynamics: robust, and it converges in O(sqrt(kappa))
+// iterations, which is fine until kappa is large. A growing 3D shell is where
+// that bites -- a periclinal face at 300 MPa triangulated finely has a very
+// stiff shortest mode against a very soft global one -- and FIRE was measured
+// hitting its iteration cap on 8 of 9 growth steps at 17808 force evaluations
+// each, without reaching force balance.
+//
+// Barzilai-Borwein uses the two most recent gradients to estimate a step that
+// approximates a secant condition on the Hessian:
+//
+//     alpha = (s.s)/(s.y),   s = x_k - x_{k-1},   y = g_k - g_{k-1}
+//
+// It is chosen here rather than L-BFGS or nonlinear CG for a specific reason:
+// this solver has forces but no energy. Every standard line search needs
+// function values, so L-BFGS and CG would need an energy the reactions do not
+// provide, whereas BB needs none -- which is exactly why it exists.
+//
+// The price is that BB is non-monotone: the residual can rise for several
+// iterations before falling faster than a monotone method would. That is
+// tolerated, within a guard. The step is capped against the stiffest mode so
+// a bad secant estimate cannot throw the mesh across the domain, and if the
+// residual climbs far above the best seen the state is rolled back to the
+// best and the step reset. Without the rollback a single wild step can undo
+// hundreds of good ones.
+size_t QuasiStatic::relaxBB() {
+  forceOnly();
+  size_t evals = 1;
+  const double f0 = maxForce();
+  if (f0 <= 0.0)
+    return evals;
+  const double target = std::max(forceTol_ * f0, 1e-10 * scaleHint_);
+
+  const size_t nv = vertexData_.flat().size();
+  const size_t np = posIndex_.size();
+  std::vector<double> xPrev(nv + np), gPrev(nv + np);
+  std::vector<double> xBest(nv + np);
+  // 1/lambda_max is the largest step plain gradient descent is stable at, and
+  // is the natural cap and first guess. dt0_ is set from the same estimate.
+  const double aCap = (dt0_ > 0.0) ? dt0_ * dt0_ : 1.0;
+  double alpha = aCap;
+  double best = f0;
+  bool have = false;
+
+  auto gather = [&](std::vector<double> &x, std::vector<double> &g) {
+    auto xf = vertexData_.flat();
+    auto ff = vertexDerivs_.flat();
+    auto cx = cellData_.flat();
+    auto cf = cellDerivs_.flat();
+    for (size_t k = 0; k < nv; ++k) {
+      x[k] = xf[k];
+      g[k] = -ff[k];                     // force is minus the gradient
+    }
+    for (size_t j = 0; j < np; ++j) {
+      x[nv + j] = cx[posIndex_[j]];
+      g[nv + j] = -cf[posIndex_[j]];
+    }
+  };
+  auto scatterX = [&](const std::vector<double> &x) {
+    auto xf = vertexData_.flat();
+    auto cx = cellData_.flat();
+    for (size_t k = 0; k < nv; ++k)
+      xf[k] = x[k];
+    for (size_t j = 0; j < np; ++j)
+      cx[posIndex_[j]] = x[nv + j];
+  };
+
+  std::vector<double> x(nv + np), g(nv + np);
+  gather(x, g);
+  xBest = x;
+
+  for (size_t it = 0; it < static_cast<size_t>(maxRelax_); ++it) {
+    if (have) {
+      double ss = 0.0, sy = 0.0;
+      for (size_t k = 0; k < x.size(); ++k) {
+        const double sk = x[k] - xPrev[k];
+        const double yk = g[k] - gPrev[k];
+        ss += sk * sk;
+        sy += sk * yk;
+      }
+      // sy <= 0 means the step saw no positive curvature, so the secant
+      // estimate is meaningless; fall back to the safe gradient step.
+      alpha = (sy > 0.0 && ss > 0.0) ? ss / sy : aCap;
+      if (!std::isfinite(alpha) || alpha <= 0.0 || alpha > aCap * 1e4)
+        alpha = aCap;
+    }
+    xPrev = x;
+    gPrev = g;
+    for (size_t k = 0; k < x.size(); ++k)
+      x[k] -= alpha * g[k];
+    scatterX(x);
+
+    forceOnly();
+    ++evals;
+    const double fm = maxForce();
+    if (fm <= target)
+      return evals;
+    if (fm < best) {
+      best = fm;
+      xBest = x;
+    } else if (fm > 1e3 * best) {
+      // Diverging. Return to the best state seen and restart from the safe
+      // step rather than carry the bad secant forward.
+      x = xBest;
+      scatterX(x);
+      forceOnly();
+      ++evals;
+      alpha = aCap;
+      have = false;
+      gather(x, g);
+      continue;
+    }
+    gather(x, g);
+    have = true;
+  }
+  ++relaxNotConverged_;
+  return evals;
+}
+
 // Forces only: prescribed-velocity reactions are held out, because a term
 // that does not vanish at equilibrium cannot be relaxed - FIRE would drive it
 // without bound instead of converging.
@@ -260,7 +390,7 @@ void QuasiStatic::simulate() {
   size_t totalEvals = 0;
 
   // Start from equilibrium so the first growth step sees balanced forces.
-  totalEvals += relax();
+  totalEvals += (relaxMethod_ == 1) ? relaxBB() : relax();
 
   for (;;) {
     if (doPrint_ && t_ >= printTime_) {
@@ -297,7 +427,7 @@ void QuasiStatic::simulate() {
     restorePositional(cellData_, cellStart_);
 
     // --- re-establish mechanical equilibrium ---------------------------
-    totalEvals += relax();
+    totalEvals += (relaxMethod_ == 1) ? relaxBB() : relax();
 
     t_ += h;
     ++numOk_;

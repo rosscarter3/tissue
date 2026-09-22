@@ -41,6 +41,7 @@ public:
 
 private:
   size_t relax();
+  size_t relaxBB();   // Barzilai-Borwein alternative; see quasi_static.cpp
   double maxForce() const;
   void calibrateStep();
   static void addScaled(Matrix &y, const Matrix &k, double h);
@@ -56,6 +57,7 @@ private:
   double dt0_ = 0.0, dtMax_ = 0.0, scaleHint_ = 1.0;
   double firstProbe_ = 0.0;  // single-probe estimate, for the diagnostic
   unsigned int relaxNotConverged_ = 0;
+  int relaxMethod_ = 0;   // 0 = FIRE, 1 = Barzilai-Borwein
   Matrix velocity_;
   Matrix vertexVel_;              // prescribed (non-relaxable) velocity
   bool hasPrescribed_ = false;
