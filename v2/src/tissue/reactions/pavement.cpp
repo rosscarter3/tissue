@@ -2165,6 +2165,103 @@ private:
 TISSUE_REGISTER_REACTION(CMTWidthRecruitment, "CMT::WidthRecruitment")
 
 // ---------------------------------------------------------------------------
+// CMT::StressRecruitment
+//
+// Recruits reinforcement where the wall is under elevated tensile stress,
+// with the same first-order kinetics as the other cues so they remain
+// interchangeable and the comparison is controlled.
+//
+// This is the cue the biology actually supports. Sampathkumar et al. 2014
+// (eLife 3:e01967) measure that cortical microtubules align with maximal
+// tensile stress, that stress is elevated and strongly anisotropic in the
+// indenting neck regions, that CMTs are enriched there, and that AFM finds
+// higher-modulus material at the same places; CMTs guide cellulose and
+// cellulose stiffens the wall. Every step downstream of the cue here --
+// reinforcement stiffens the wall (SpringModulated) and restricts its growth
+// (StrainWallInhibited) -- is that chain, and Sapala et al. 2018 independently
+// conclude lobing comes from restriction of growth in the indentations.
+//
+// What was never supported is the CUE. CMT::CurvatureRecruitment keys on
+// local curvature, which is a geometric proxy for stress rather than stress,
+// and the two are not interchangeable: curvature feedback is winner-take-all
+// with no length scale, so it amplifies whichever lobes exist and suppresses
+// new ones between them. Removing it let bending select a wavelength and took
+// the lobe count from a floor of 4 to 6.7 against a real 7. Stress is a
+// mechanical field, not a local shape property: stiffening one wall changes
+// the tension its neighbours carry, so the feedback is not purely local and
+// does not simply lock in the pattern it starts with.
+//
+// Relative, not absolute. Wall tension here is strongly skewed -- median ~2,
+// 95th percentile ~300 -- so a fixed threshold either saturates everywhere or
+// fires nowhere, and the overall tension scale drifts as the tissue grows.
+// The measurements are of enrichment at necks RELATIVE to the rest of the
+// cell, so the cue is relative too: sigma is compared with the tissue's own
+// median. rel_half is then "how many times the typical wall tension counts as
+// elevated", which is a quantity one can argue about from data.
+//
+// Note the limitation this model imposes: a 2D vertex model carries one
+// scalar tension per wall, not a stress tensor, so the anisotropy half of
+// Sampathkumar's observation cannot be represented here. Elevation is what is
+// available, and it is the half that the growth-restriction chain needs.
+class CMTStressRecruitment : public Reaction {
+public:
+  CMTStressRecruitment(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 4)
+      throw std::runtime_error(
+          "CMT::StressRecruitment: uses four parameters "
+          "(k_on, k_off, rel_half, n_hill).");
+    if (i.size() != 2 || i[0].size() != 1 || i[1].size() != 1)
+      throw std::runtime_error(
+          "CMT::StressRecruitment: level 0 = wall stress index, "
+          "level 1 = wall reinforcement index.");
+    if (p[2] <= 0.0)
+      throw std::runtime_error(
+          "CMT::StressRecruitment: rel_half must be positive.");
+    configure("CMT::StressRecruitment", p, i, 4, {1, 1},
+              {"k_on", "k_off", "rel_half", "n_hill"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &, Matrix &,
+              Matrix &wallDerivs, Matrix &) override {
+    const size_t sI = variableIndex(0, 0);
+    const size_t mI = variableIndex(1, 0);
+    const double kOn = parameter(0), kOff = parameter(1);
+    const double relHalf = parameter(2), nHill = parameter(3);
+    const size_t n = T.numWall();
+    if (!n)
+      return;
+    // Median rather than mean: the tension distribution has a long tail and a
+    // handful of walls at a hundred times the typical value would drag a mean
+    // far above anything most of the tissue ever sees.
+    std::vector<double> mag(n);
+    for (size_t w = 0; w < n; ++w)
+      mag[w] = std::fabs(wallData[w][sI]);
+    std::vector<double> tmp(mag);
+    std::nth_element(tmp.begin(), tmp.begin() + n / 2, tmp.end());
+    const double med = tmp[n / 2];
+    if (!(med > 0.0)) {
+      // Before the tissue carries any load there is no "elevated" to detect;
+      // recruiting on an undefined ratio would just seed an arbitrary pattern.
+      parallelFor(n, [&](size_t begin, size_t end) {
+        for (size_t w = begin; w < end; ++w)
+          wallDerivs[w][mI] += -kOff * wallData[w][mI];
+      });
+      return;
+    }
+    const double half = relHalf * med;
+    parallelFor(n, [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        const double x = std::pow(mag[w] / half, nHill);
+        const double S = x / (1.0 + x);
+        const double m = wallData[w][mI];
+        wallDerivs[w][mI] += kOn * S * (1.0 - m) - kOff * m;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CMTStressRecruitment, "CMT::StressRecruitment")
+
+// ---------------------------------------------------------------------------
 // WallMechanics::PericlinalFoundation
 //
 // The restoring force the periclinal wall exerts on the anticlinal wall, and
