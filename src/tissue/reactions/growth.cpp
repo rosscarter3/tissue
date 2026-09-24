@@ -1,4 +1,5 @@
 //
+#include "tissue/parallel/scatter.h"
 // Wall growth reactions: irreversible resting-length growth of walls (edges).
 // Ported from legacy growth.cc.
 //
@@ -460,6 +461,262 @@ TISSUE_REGISTER_REACTION(
     CTWallGrowthStrainWallInhibited,
     "CenterTriangulation::WallGrowth::StrainWallInhibited",
     "WallGrowth::CenterTriangulation::StrainWallInhibited")
+
+// Hold a surface near a plane: the flatness a single modelled face does not
+// otherwise have.
+//
+// An epidermal cell is a flat box -- of order 5 um tall and 30 um wide --
+// with turgor pushing outward on two periclinal faces that the anticlinal
+// wall holds apart. Neither face can dome far, because doing so would have
+// to stretch that wall or displace the neighbour above it.
+//
+// A model that carries only ONE periclinal face has none of that. Measured
+// on a 322-cell leaf shell, the face bulged 10-15 um across a 13 um cell --
+// close to a hemisphere -- and lobing all but stopped: 2-3 lobes against 7
+// in tracked cells, with the stress cue and the published bending stiffness
+// making no difference at all. The reason is not turgor: dropping the
+// pressure elevenfold, 1.1 to 0.1, moved the bulge only from 10.4 to 9.0 um.
+// It is that growth puts length into the outline faster than the cell gains
+// radius, and buckling out of plane is the cheapest way to absorb it. A
+// sheet that can dome does not have to lobe.
+//
+// This restores the missing opposition as a restoring force toward a plane,
+// k per unit displacement along one axis. It is a stand-in for the rest of
+// the box rather than a mechanism in its own right, and the honest reading
+// of k is "how flat the tissue holds this face", so it should be reported
+// alongside the bulge height it actually produces rather than quoted alone.
+class VertexRestraintPlane : public Reaction {
+public:
+  VertexRestraintPlane(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 3)
+      throw std::runtime_error(
+          "VertexRestraint::Plane: uses three parameters "
+          "(k_restraint, axis, target).");
+    if (p[1] != 0.0 && p[1] != 1.0 && p[1] != 2.0)
+      throw std::runtime_error(
+          "VertexRestraint::Plane: axis (parameter 2) must be 0, 1 or 2.");
+    if (!i.empty())
+      throw std::runtime_error("VertexRestraint::Plane: takes no indices.");
+    configure("VertexRestraint::Plane", p, i, 3, {},
+              {"k_restraint", "axis", "target"});
+  }
+
+  void derivs(Tissue &, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    const double k = parameter(0);
+    const size_t axis = static_cast<size_t>(parameter(1));
+    const double target = parameter(2);
+    if (k == 0.0 || axis >= vertexData.cols())
+      return;
+    parallelFor(vertexData.rows(), [&](size_t begin, size_t end) {
+      for (size_t v = begin; v < end; ++v)
+        vertexDerivs[v][axis] -= k * (vertexData[v][axis] - target);
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(VertexRestraintPlane, "VertexRestraint::Plane")
+
+// Bending stiffness for a center-triangulated face.
+//
+// TRBS is a membrane formulation: it resists stretching and shearing in the
+// plane of each triangle and offers nothing at all against folding out of
+// it. A face made of such elements can dome for free. The wall around it
+// cannot -- WallMechanics::Bending charges B for curving the outline -- so
+// the two routes a growing cell has for shedding excess perimeter are
+// priced completely differently, and it takes the free one.
+//
+// Measured on a 322-cell leaf shell: the face domed 5.1 um (median, per
+// cell) across a 13 um cell and lobing stalled at 2-3 lobes against 7 in
+// tracked cells. Neither the published bending stiffness nor the stress cue
+// moved it, because neither touches the out-of-plane route. Nor did the
+// obvious suspects: dropping turgor elevenfold changed the dome by 13%, and
+// a plane restraint strong enough to matter suppressed the whole
+// trajectory rather than just the doming.
+//
+// A real periclinal wall has bending rigidity, so doming is not free there.
+// This charges for it. In a fan triangulation the cell's own doming mode is
+// its centre lifting out of the plane of its ring, so the energy is taken as
+// the centre's signed distance from the ring's best-fit plane, and the
+// restoring force is shared back onto the ring so that no net force is added
+// to the tissue -- a bending term that pushed only on the centre would
+// translate the cell.
+//
+// This is the cell-scale mode, not a full plate: it does not charge for
+// wrinkling WITHIN the ring at shorter wavelengths. That is the mode the
+// fan discretisation represents, and buying the rest would mean dihedral
+// bending on every interior edge.
+class CTFaceBending : public Reaction {
+public:
+  CTFaceBending(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 1)
+      throw std::runtime_error(
+          "CenterTriangulation::FaceBending: uses one parameter (k_face).");
+    if (i.size() != 1 || i[0].size() != 1)
+      throw std::runtime_error(
+          "CenterTriangulation::FaceBending: level 0 = start of the "
+          "center-triangulation cell variables.");
+    configure("CenterTriangulation::FaceBending", p, i, 1, {1}, {"k_face"});
+  }
+
+  // The centre is a position held in the cell row, so it must be declared or
+  // the solvers will treat it as a concentration.
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(0, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "CenterTriangulation::FaceBending requires a 3D tissue.");
+    const size_t com = variableIndex(0, 0);
+    const double k = parameter(0);
+    if (k == 0.0)
+      return;
+
+    parallelFor(T.numCell(), [&](size_t begin, size_t end) {
+      for (size_t c = begin; c < end; ++c) {
+        const CellTopo &cell = T.cell(c);
+        const size_t n = cell.numVertex();
+        if (n < 3)
+          continue;
+        double cx = 0.0, cy = 0.0, cz = 0.0;
+        for (size_t j = 0; j < n; ++j) {
+          cx += vertexData[cell.vertices[j]][0];
+          cy += vertexData[cell.vertices[j]][1];
+          cz += vertexData[cell.vertices[j]][2];
+        }
+        cx /= double(n); cy /= double(n); cz /= double(n);
+
+        // Ring normal by Newell's method, which is stable for a non-planar
+        // polygon where a single cross product is not.
+        double nx = 0.0, ny = 0.0, nz = 0.0;
+        for (size_t j = 0; j < n; ++j) {
+          const size_t a = cell.vertices[j], b = cell.vertices[(j + 1) % n];
+          const double ax = vertexData[a][0], ay = vertexData[a][1],
+                       az = vertexData[a][2];
+          const double bx = vertexData[b][0], by = vertexData[b][1],
+                       bz = vertexData[b][2];
+          nx += (ay - by) * (az + bz);
+          ny += (az - bz) * (ax + bx);
+          nz += (ax - bx) * (ay + by);
+        }
+        const double nn = std::sqrt(nx * nx + ny * ny + nz * nz);
+        if (nn <= 0.0)
+          continue;
+        nx /= nn; ny /= nn; nz /= nn;
+
+        // Signed height of the centre above the ring's plane.
+        const double d = (cellData[c][com] - cx) * nx +
+                         (cellData[c][com + 1] - cy) * ny +
+                         (cellData[c][com + 2] - cz) * nz;
+        const double f = -k * d;
+        cellDerivs[c][com] += f * nx;
+        cellDerivs[c][com + 1] += f * ny;
+        cellDerivs[c][com + 2] += f * nz;
+        // Equal and opposite, spread over the ring: bending must not shift
+        // the cell as a whole.
+        const double back = -f / double(n);
+        for (size_t j = 0; j < n; ++j) {
+          const size_t v = cell.vertices[j];
+          vertexDerivs[v][0] += back * nx;
+          vertexDerivs[v][1] += back * ny;
+          vertexDerivs[v][2] += back * nz;
+        }
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CTFaceBending, "CenterTriangulation::FaceBending")
+
+// Out-of-plane stiffening for an anticlinal wall modelled as a line.
+//
+// In a 3D epidermis model the anticlinal wall is drawn as a chain of
+// segments, and any bending term applied to it is isotropic: curving the
+// chain within the tissue plane and buckling it out of the plane cost the
+// same. The real wall is not a line but a tall thin ribbon -- of order 5 um
+// from one periclinal face to the other and 0.2 um thick -- and the two
+// bends are nothing like each other. Bending it in plane bends about the
+// ribbon's thin axis, second moment ~ t^3; bending it out of plane bends
+// about its tall axis, ~ h^3. The ratio (h/t)^3 is some four orders of
+// magnitude.
+//
+// That ratio is why a pavement cell lobes instead of rippling vertically,
+// and a line-wall model has no access to it. Measured on a 322-cell shell
+// with an isotropic wall: the cell outline left the plane by 3.0 um
+// (median, per cell) and lobing stalled at 2 lobes against 7 in tracked
+// cells. Face bending did not help, because the doming mode is the ring
+// going non-planar rather than the cell's centre lifting; a plane restraint
+// did not either, nor did turgor an order of magnitude lower.
+//
+// This charges separately for the out-of-plane part. The curvature of the
+// chain at each vertex is split into its component along `axis` -- the
+// normal of the tissue sheet -- and the rest, and only the former is
+// penalised here, so it composes with an existing in-plane bending term
+// rather than replacing it. k_out should be set from the geometry: k_in
+// times (cell height / wall thickness)^3, which is where the four orders of
+// magnitude come from, not fitted.
+class WallBendingOutOfPlane : public Reaction {
+public:
+  WallBendingOutOfPlane(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 2)
+      throw std::runtime_error(
+          "WallMechanics::BendingOutOfPlane: uses two parameters "
+          "(k_out, axis).");
+    if (p[1] != 0.0 && p[1] != 1.0 && p[1] != 2.0)
+      throw std::runtime_error(
+          "WallMechanics::BendingOutOfPlane: axis must be 0, 1 or 2.");
+    if (!i.empty())
+      throw std::runtime_error(
+          "WallMechanics::BendingOutOfPlane: takes no indices.");
+    configure("WallMechanics::BendingOutOfPlane", p, i, 2, {},
+              {"k_out", "axis"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    const double k = parameter(0);
+    const size_t axis = static_cast<size_t>(parameter(1));
+    if (k == 0.0 || axis >= vertexData.cols())
+      return;
+    const size_t dim = vertexData.cols();
+
+    // A vertex with exactly two walls is interior to a wall chain and has a
+    // well-defined discrete curvature; a junction where three or more meet
+    // does not, and is left alone.
+    //
+    // Scattering rather than a plain parallel for: each vertex writes to its
+    // two neighbours as well as itself, and neighbouring chain vertices share
+    // those rows.
+    parallelScatter1(T.numVertex(), vertexDerivs,
+                     [&](size_t begin, size_t end, Matrix &out) {
+      for (size_t v = begin; v < end; ++v) {
+        const auto &ws = T.vertex(v).walls;
+        if (ws.size() != 2)
+          continue;
+        size_t a = T.wall(ws[0]).vertex1 == v ? T.wall(ws[0]).vertex2
+                                              : T.wall(ws[0]).vertex1;
+        size_t b = T.wall(ws[1]).vertex1 == v ? T.wall(ws[1]).vertex2
+                                              : T.wall(ws[1]).vertex1;
+        // Discrete curvature: how far this vertex sits off the chord between
+        // its neighbours. Only the component along `axis` is charged for.
+        const double mid = 0.5 * (vertexData[a][axis] + vertexData[b][axis]);
+        const double dev = vertexData[v][axis] - mid;
+        const double f = -k * dev;
+        out[v][axis] += f;
+        // Shared back to the neighbours so the term adds no net force.
+        out[a][axis] -= 0.5 * f;
+        out[b][axis] -= 0.5 * f;
+        (void)dim;
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(WallBendingOutOfPlane,
+                         "WallMechanics::BendingOutOfPlane")
 
 // The same rule with the growth rate raised by an activating Hill function of
 // a cell concentration: k = k_const + k_hill c^n/(K^n + c^n).
