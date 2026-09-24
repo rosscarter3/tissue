@@ -2440,9 +2440,10 @@ public:
 
   void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
               Matrix &, Matrix &vertexDerivs) override {
-    if (vertexData.cols() != 2)
+    const size_t dim = vertexData.cols();
+    if (dim != 2 && dim != 3)
       throw std::runtime_error(
-          "WallMechanics::SelfAvoidance requires a 2D tissue.");
+          "WallMechanics::SelfAvoidance requires a 2D or 3D tissue.");
     const double k = parameter(0);
     const double dMin = parameter(1);
     // Walked in parallel with a per-thread scatter buffer. This loop is the
@@ -2460,21 +2461,19 @@ public:
             const Wall &wb = T.wall(pr.second);
             const size_t a1 = wa.vertex1, a2 = wa.vertex2;
             const size_t b1 = wb.vertex1, b2 = wb.vertex2;
-            double sc, tc, nx, ny;
+            double sc, tc, n[3];
             const double d = segmentDistance(vertexData, a1, a2, b1, b2, sc,
-                                             tc, nx, ny);
+                                             tc, n);
             if (d >= dMin || d <= 0.0)
               continue;
             const double f = k * (dMin - d);
-            const double fx = f * nx, fy = f * ny;
-            out[a1][0] += (1.0 - sc) * fx;
-            out[a1][1] += (1.0 - sc) * fy;
-            out[a2][0] += sc * fx;
-            out[a2][1] += sc * fy;
-            out[b1][0] -= (1.0 - tc) * fx;
-            out[b1][1] -= (1.0 - tc) * fy;
-            out[b2][0] -= tc * fx;
-            out[b2][1] -= tc * fy;
+            for (size_t q = 0; q < dim; ++q) {
+              const double fq = f * n[q];
+              out[a1][q] += (1.0 - sc) * fq;
+              out[a2][q] += sc * fq;
+              out[b1][q] -= (1.0 - tc) * fq;
+              out[b2][q] -= tc * fq;
+            }
           }
         });
   }
@@ -2528,17 +2527,31 @@ private:
   // Closest approach between segments a1-a2 and b1-b2, with the barycentric
   // positions of the closest points and the unit vector from the b-point to
   // the a-point. Standard clamped-parameter construction.
+  // Closest approach between two segments, in 2D or 3D. The algebra is the
+  // same either way -- it is the standard parametric minimisation -- so the
+  // dimension is just how many components enter each dot product, and a 2D
+  // tissue gets exactly the arithmetic it always did.
   static double segmentDistance(const Matrix &x, size_t a1, size_t a2,
                                 size_t b1, size_t b2, double &sc, double &tc,
-                                double &nx, double &ny) {
-    const double ux = x[a2][0] - x[a1][0], uy = x[a2][1] - x[a1][1];
-    const double vx = x[b2][0] - x[b1][0], vy = x[b2][1] - x[b1][1];
-    const double wx = x[a1][0] - x[b1][0], wy = x[a1][1] - x[b1][1];
-    const double a = ux * ux + uy * uy;
-    const double b = ux * vx + uy * vy;
-    const double c = vx * vx + vy * vy;
-    const double d = ux * wx + uy * wy;
-    const double e = vx * wx + vy * wy;
+                                double n[3]) {
+    const size_t dim = x.cols();
+    double u[3] = {0, 0, 0}, v[3] = {0, 0, 0}, w[3] = {0, 0, 0};
+    for (size_t k = 0; k < dim; ++k) {
+      u[k] = x[a2][k] - x[a1][k];
+      v[k] = x[b2][k] - x[b1][k];
+      w[k] = x[a1][k] - x[b1][k];
+    }
+    auto dot = [dim](const double p[3], const double q[3]) {
+      double r = 0.0;
+      for (size_t k = 0; k < dim; ++k)
+        r += p[k] * q[k];
+      return r;
+    };
+    const double a = dot(u, u);
+    const double b = dot(u, v);
+    const double c = dot(v, v);
+    const double d = dot(u, w);
+    const double e = dot(v, w);
     const double den = a * c - b * b;
     if (den > 1e-12) {
       sc = (b * e - c * d) / den;
@@ -2552,24 +2565,23 @@ private:
     tc = tc < 0.0 ? 0.0 : (tc > 1.0 ? 1.0 : tc);
     sc = a > 0.0 ? (b * tc - d) / a : 0.0;
     sc = sc < 0.0 ? 0.0 : (sc > 1.0 ? 1.0 : sc);
-    const double px = x[a1][0] + sc * ux, py = x[a1][1] + sc * uy;
-    const double qx = x[b1][0] + tc * vx, qy = x[b1][1] + tc * vy;
-    double dx = px - qx, dy = py - qy;
-    const double dist = std::sqrt(dx * dx + dy * dy);
-    if (dist > 0.0) {
-      nx = dx / dist;
-      ny = dy / dist;
-    } else {
-      nx = 0.0;
-      ny = 0.0;
+    double diff[3] = {0, 0, 0};
+    double sq = 0.0;
+    for (size_t k = 0; k < dim; ++k) {
+      diff[k] = (x[a1][k] + sc * u[k]) - (x[b1][k] + tc * v[k]);
+      sq += diff[k] * diff[k];
     }
+    const double dist = std::sqrt(sq);
+    for (size_t k = 0; k < 3; ++k)
+      n[k] = (dist > 0.0 && k < dim) ? diff[k] / dist : 0.0;
     return dist;
   }
 
   void rebuild(Tissue &T, Matrix &vertexData) {
     pairs_.clear();
     buildSisterMap(T);
-    if (vertexData.cols() != 2)
+    const size_t dim = vertexData.cols();
+    if (dim != 2 && dim != 3)
       return;
     const size_t n = T.numWall();
     const double margin =
@@ -2581,18 +2593,27 @@ private:
     }();
 
     // Uniform grid sized to the search reach, over segment bounding boxes.
-    double lo[2] = {1e30, 1e30}, hi[2] = {-1e30, -1e30};
+    double lo[3] = {1e30, 1e30, 1e30}, hi[3] = {-1e30, -1e30, -1e30};
     for (size_t v = 0; v < T.numVertex(); ++v)
-      for (size_t d = 0; d < 2; ++d) {
+      for (size_t d = 0; d < dim; ++d) {
         lo[d] = std::min(lo[d], vertexData[v][d]);
         hi[d] = std::max(hi[d], vertexData[v][d]);
       }
+    if (dim < 3) {
+      lo[2] = 0.0;
+      hi[2] = 0.0;
+    }
     const double cell = reach > 0.0 ? reach : 1.0;
     const size_t nx =
         std::max<size_t>(1, static_cast<size_t>((hi[0] - lo[0]) / cell) + 1);
     const size_t ny =
         std::max<size_t>(1, static_cast<size_t>((hi[1] - lo[1]) / cell) + 1);
-    std::vector<std::vector<size_t>> grid(nx * ny);
+    // A third lattice axis, one cell deep for a flat tissue. Without it a 3D
+    // mesh collapses onto a 2D grid and every wall at the same (x, y) shares
+    // a bucket however far apart in z they are.
+    const size_t nz =
+        std::max<size_t>(1, static_cast<size_t>((hi[2] - lo[2]) / cell) + 1);
+    std::vector<std::vector<size_t>> grid(nx * ny * nz);
 
     // Both the insertion box and the query box are inflated by reach, so the
     // list actually holds every pair within about 2*reach -- six times d_min
@@ -2611,14 +2632,17 @@ private:
     // Left off by default until that has been run on a mesh where
     // self-avoidance is actually load-bearing.
     auto cellsOf = [&](size_t w, double grow, size_t &i0, size_t &i1,
-                       size_t &j0, size_t &j1) {
+                       size_t &j0, size_t &j1, size_t &k0, size_t &k1) {
       const Wall &wall = T.wall(w);
       const double x1 = vertexData[wall.vertex1][0];
       const double y1 = vertexData[wall.vertex1][1];
       const double x2 = vertexData[wall.vertex2][0];
       const double y2 = vertexData[wall.vertex2][1];
+      const double z1 = dim > 2 ? vertexData[wall.vertex1][2] : 0.0;
+      const double z2 = dim > 2 ? vertexData[wall.vertex2][2] : 0.0;
       const double xa = std::min(x1, x2) - grow, xb = std::max(x1, x2) + grow;
       const double ya = std::min(y1, y2) - grow, yb = std::max(y1, y2) + grow;
+      const double za = std::min(z1, z2) - grow, zb = std::max(z1, z2) + grow;
       auto clampIdx = [](double v, size_t m) {
         long idx = static_cast<long>(v);
         if (idx < 0)
@@ -2631,26 +2655,30 @@ private:
       i1 = clampIdx((xb - lo[0]) / cell, nx);
       j0 = clampIdx((ya - lo[1]) / cell, ny);
       j1 = clampIdx((yb - lo[1]) / cell, ny);
+      k0 = clampIdx((za - lo[2]) / cell, nz);
+      k1 = clampIdx((zb - lo[2]) / cell, nz);
     };
 
     for (size_t w = 0; w < n; ++w) {
-      size_t i0, i1, j0, j1;
-      cellsOf(w, oneSided ? 0.0 : reach, i0, i1, j0, j1);
+      size_t i0, i1, j0, j1, k0, k1;
+      cellsOf(w, oneSided ? 0.0 : reach, i0, i1, j0, j1, k0, k1);
       for (size_t i = i0; i <= i1; ++i)
         for (size_t j = j0; j <= j1; ++j)
-          grid[i * ny + j].push_back(w);
+          for (size_t kk = k0; kk <= k1; ++kk)
+            grid[(i * ny + j) * nz + kk].push_back(w);
     }
 
     std::vector<char> seen(n, 0);
     std::vector<size_t> touched;
     for (size_t w = 0; w < n; ++w) {
-      size_t i0, i1, j0, j1;
-      cellsOf(w, reach, i0, i1, j0, j1);
+      size_t i0, i1, j0, j1, k0, k1;
+      cellsOf(w, reach, i0, i1, j0, j1, k0, k1);
       const Wall &wa = T.wall(w);
       touched.clear();
       for (size_t i = i0; i <= i1; ++i)
         for (size_t j = j0; j <= j1; ++j)
-          for (size_t o : grid[i * ny + j]) {
+         for (size_t kk = k0; kk <= k1; ++kk)
+          for (size_t o : grid[(i * ny + j) * nz + kk]) {
             if (o <= w || seen[o])
               continue;
             seen[o] = 1;

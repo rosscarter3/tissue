@@ -718,6 +718,98 @@ public:
 TISSUE_REGISTER_REACTION(WallBendingOutOfPlane,
                          "WallMechanics::BendingOutOfPlane")
 
+// Keep each cell's outline planar.
+//
+// This targets a measured quantity rather than a supposed mechanism. On a
+// 322-cell leaf shell the cells shed excess wall length by leaving the
+// plane, and the mode is specifically the cell's RING becoming non-planar --
+// 3.0 um, median, per cell -- not the cell centre lifting and not the sheet
+// warping at tissue scale. Four earlier attempts missed because each
+// penalised a different quantity: lower turgor, a restraint toward a global
+// plane, bending of the face's doming mode, and bending of the wall chain's
+// local curvature all left the ring within 10% of where it started.
+//
+// Why a real outline is planar. It is the line where the two periclinal
+// faces meet the anticlinal wall. In a cell of roughly uniform height that
+// line lies in a plane, and taking it out of one means shearing a wall some
+// 5 um deep -- resisted by the wall's full depth rather than by its 0.2 um
+// thickness, which is the same (h/t)^3 asymmetry that makes a pavement cell
+// lobe instead of rippling, applied to the geometric quantity that actually
+// moves.
+//
+// The force is along the ring's own best-fit normal and proportional to each
+// vertex's distance from that plane. The distances are measured from the
+// ring centroid, so they sum to zero and the term adds no net force to the
+// cell; it is a constraint on shape alone.
+class CellRingPlanarity : public Reaction {
+public:
+  CellRingPlanarity(const ParameterList &p, const IndexLevels &i) {
+    if (p.size() != 1)
+      throw std::runtime_error(
+          "WallMechanics::CellRingPlanarity: uses one parameter (k_planar).");
+    if (!i.empty())
+      throw std::runtime_error(
+          "WallMechanics::CellRingPlanarity: takes no indices.");
+    configure("WallMechanics::CellRingPlanarity", p, i, 1, {}, {"k_planar"});
+  }
+
+  void derivs(Tissue &T, Matrix &, Matrix &, Matrix &vertexData, Matrix &,
+              Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "WallMechanics::CellRingPlanarity requires a 3D tissue.");
+    const double k = parameter(0);
+    if (k == 0.0)
+      return;
+    // Cells share vertices, so two cells write the same rows.
+    parallelScatter1(T.numCell(), vertexDerivs,
+                     [&](size_t begin, size_t end, Matrix &out) {
+      for (size_t c = begin; c < end; ++c) {
+        const CellTopo &cell = T.cell(c);
+        const size_t n = cell.numVertex();
+        if (n < 4)
+          continue;   // a triangle is planar by construction
+        double cx = 0.0, cy = 0.0, cz = 0.0;
+        for (size_t j = 0; j < n; ++j) {
+          cx += vertexData[cell.vertices[j]][0];
+          cy += vertexData[cell.vertices[j]][1];
+          cz += vertexData[cell.vertices[j]][2];
+        }
+        cx /= double(n); cy /= double(n); cz /= double(n);
+        // Newell's normal: stable for a ring that is not already planar,
+        // where a single cross product is not.
+        double nx = 0.0, ny = 0.0, nz = 0.0;
+        for (size_t j = 0; j < n; ++j) {
+          const size_t a = cell.vertices[j], b = cell.vertices[(j + 1) % n];
+          const double ax = vertexData[a][0], ay = vertexData[a][1],
+                       az = vertexData[a][2];
+          const double bx = vertexData[b][0], by = vertexData[b][1],
+                       bz = vertexData[b][2];
+          nx += (ay - by) * (az + bz);
+          ny += (az - bz) * (ax + bx);
+          nz += (ax - bx) * (ay + by);
+        }
+        const double nn = std::sqrt(nx * nx + ny * ny + nz * nz);
+        if (nn <= 0.0)
+          continue;
+        nx /= nn; ny /= nn; nz /= nn;
+        for (size_t j = 0; j < n; ++j) {
+          const size_t v = cell.vertices[j];
+          const double d = (vertexData[v][0] - cx) * nx +
+                           (vertexData[v][1] - cy) * ny +
+                           (vertexData[v][2] - cz) * nz;
+          const double f = -k * d;
+          out[v][0] += f * nx;
+          out[v][1] += f * ny;
+          out[v][2] += f * nz;
+        }
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(CellRingPlanarity,
+                         "WallMechanics::CellRingPlanarity")
+
 // The same rule with the growth rate raised by an activating Hill function of
 // a cell concentration: k = k_const + k_hill c^n/(K^n + c^n).
 class CTWallGrowthStressConcentrationHill : public Reaction {
