@@ -1214,6 +1214,199 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(WallMechanicsBending, "WallMechanics::Bending")
+// A membrane with no bending stiffness has no shortest wrinkle, and that is
+// not a physical statement about plant cell walls, it is an ill-posed model.
+//
+// VertexFromTRBScenterTriangulation resists stretching the cell face and
+// nothing at all resists curving it, so any compression in the sheet buckles
+// at whatever the shortest wavelength the mesh can represent happens to be.
+// Measured on the 3D shell: out-of-plane displacement of the ring vertices
+// changes sign every 1.25 vertices, with an amplitude of 1.8 um. That is the
+// mesh, not the cell -- refine the mesh and the wrinkle follows it down. It
+// also wrecks the relaxation, because modes with almost no restoring force
+// leave the Hessian nearly singular and FIRE crawls: the same shell costs 3
+// seconds to t = 24 and over ten minutes to t = 48.
+//
+// A real periclinal wall has thickness t ~ 0.3 um and a modulus of order
+// 300 MPa, so a flexural rigidity B = E t^3 / 12(1 - nu^2) of order
+// 1 pN um^2, and epidermal outer walls are smooth at the micron scale.
+// Giving the surface that rigidity is the fix, and it sets a real wrinkle
+// wavelength instead of the mesh spacing.
+//
+// This is the Grinspun/Bridson discrete shell: the energy is the squared
+// dihedral angle across every interior edge, weighted by edge length over
+// triangle height so that it converges to the plate bending energy under
+// refinement. A center-triangulated tissue has two kinds of interior edge
+// and both matter:
+//
+//   walls   shared by the fans of two neighbouring cells -- these control
+//           how the sheet curves from one cell to the next
+//   spokes  centre to ring vertex, shared by two triangles of one cell --
+//           these control the umbrella fold that lets a single ring vertex
+//           move out of the surface on its own, which is the mode actually
+//           seen wrinkling
+//
+// The rest angle is flat. A wall that is flat when unloaded and curves under
+// turgor is what a plate does; the dome the sheet settles into is then a
+// balance between pressure and rigidity rather than a free parameter.
+class CTShellBending : public Reaction {
+public:
+  CTShellBending(const ParameterList &p, const IndexLevels &i) {
+    configure("CenterTriangulation::ShellBending", p, i, 1, {1}, {"B_face"});
+  }
+
+  // The centre is a position carried in the cell row; declare it or the
+  // solvers will relax it as if it were a concentration.
+  void positionalCellVariables(std::vector<size_t> &out) const override {
+    const size_t com = variableIndex(0, 0);
+    out.push_back(com);
+    out.push_back(com + 1);
+    out.push_back(com + 2);
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &, Matrix &vertexData,
+              Matrix &cellDerivs, Matrix &, Matrix &vertexDerivs) override {
+    if (vertexData.cols() != 3)
+      throw std::runtime_error(
+          "CenterTriangulation::ShellBending requires a 3D tissue.");
+    const size_t com = variableIndex(0, 0);
+    const double B = parameter(0);
+    if (B == 0.0)
+      return;
+
+    auto pos = [&](size_t v, double *x) {
+      x[0] = vertexData[v][0]; x[1] = vertexData[v][1]; x[2] = vertexData[v][2];
+    };
+    auto cen = [&](size_t c, double *x) {
+      x[0] = cellData[c][com]; x[1] = cellData[c][com+1];
+      x[2] = cellData[c][com+2];
+    };
+
+    // Dihedral across the edge x1-x2, with x3 and x4 the opposite corners of
+    // the two triangles. Returns false when either triangle is degenerate,
+    // which happens on a collapsed fan and must not produce a force.
+    auto hinge = [](const double *x1, const double *x2, const double *x3,
+                    const double *x4, double g1[3], double g2[3], double g3[3],
+                    double g4[3], double &theta) -> bool {
+      double e[3], a[3], b[3], n1[3], n2[3];
+      for (int d = 0; d < 3; ++d) {
+        e[d] = x2[d] - x1[d];
+        a[d] = x3[d] - x1[d];
+        b[d] = x4[d] - x1[d];
+      }
+      auto cross = [](const double *u, const double *v, double *o) {
+        o[0] = u[1]*v[2] - u[2]*v[1];
+        o[1] = u[2]*v[0] - u[0]*v[2];
+        o[2] = u[0]*v[1] - u[1]*v[0];
+      };
+      auto dot = [](const double *u, const double *v) {
+        return u[0]*v[0] + u[1]*v[1] + u[2]*v[2];
+      };
+      cross(e, a, n1);
+      cross(b, e, n2);
+      const double l1 = dot(n1, n1), l2 = dot(n2, n2), le = dot(e, e);
+      if (l1 <= 1e-24 || l2 <= 1e-24 || le <= 1e-24)
+        return false;
+      const double el = std::sqrt(le);
+      // signed angle between the face normals, positive for a fold towards n2
+      double cr[3];
+      cross(n1, n2, cr);
+      theta = std::atan2(dot(cr, e) / el, dot(n1, n2));
+      // gradients of the dihedral angle (Bridson et al.)
+      for (int d = 0; d < 3; ++d) {
+        g3[d] = el * n1[d] / l1;
+        g4[d] = el * n2[d] / l2;
+      }
+      double a2[3], b2[3];
+      for (int d = 0; d < 3; ++d) { a2[d] = x3[d] - x2[d]; b2[d] = x4[d] - x2[d]; }
+      const double w3 = dot(a, e) / le, w4 = dot(b, e) / le;
+      const double u3 = -dot(a2, e) / le, u4 = -dot(b2, e) / le;
+      for (int d = 0; d < 3; ++d) {
+        g1[d] = u3 * g3[d] + u4 * g4[d];
+        g2[d] = w3 * g3[d] + w4 * g4[d];
+      }
+      return true;
+    };
+
+    // Accumulate onto one of the two derivative matrices. Serial: the whole
+    // pass is a few thousand hinges and is far cheaper than a force
+    // evaluation of the membrane or of self-avoidance, so there is nothing
+    // here worth racing over.
+    auto addV = [&](size_t v, const double *g, double s) {
+      for (int d = 0; d < 3; ++d) vertexDerivs[v][d] += s * g[d];
+    };
+    auto addC = [&](size_t c, const double *g, double s) {
+      for (int d = 0; d < 3; ++d) cellDerivs[c][com + d] += s * g[d];
+    };
+
+    double x1[3], x2[3], x3[3], x4[3], g1[3], g2[3], g3[3], g4[3], th;
+
+    // --- wall hinges: the fans of the two cells sharing the wall ----------
+    for (size_t w = 0; w < T.numWall(); ++w) {
+      const size_t c1 = T.wall(w).cell1, c2 = T.wall(w).cell2;
+      if (c1 == kBackground || c2 == kBackground)
+        continue; // a free edge of the sheet has nothing to hinge against
+      pos(T.wall(w).vertex1, x1);
+      pos(T.wall(w).vertex2, x2);
+      cen(c1, x3);
+      cen(c2, x4);
+      if (!hinge(x1, x2, x3, x4, g1, g2, g3, g4, th))
+        continue;
+      const double k = 2.0 * B * stiffness(x1, x2, x3, x4);
+      addV(T.wall(w).vertex1, g1, -k * th);
+      addV(T.wall(w).vertex2, g2, -k * th);
+      addC(c1, g3, -k * th);
+      addC(c2, g4, -k * th);
+    }
+
+    // --- spoke hinges: two triangles of one fan, sharing centre-to-vertex -
+    for (size_t c = 0; c < T.numCell(); ++c) {
+      const CellTopo &cell = T.cell(c);
+      const size_t n = cell.numVertex();
+      if (n < 3)
+        continue;
+      cen(c, x1);
+      for (size_t j = 0; j < n; ++j) {
+        const size_t v = cell.vertices[j];
+        const size_t vp = cell.vertices[(j + n - 1) % n];
+        const size_t vn = cell.vertices[(j + 1) % n];
+        pos(v, x2);
+        pos(vp, x3);
+        pos(vn, x4);
+        if (!hinge(x1, x2, x3, x4, g1, g2, g3, g4, th))
+          continue;
+        const double k = 2.0 * B * stiffness(x1, x2, x3, x4);
+        addC(c, g1, -k * th);
+        addV(v, g2, -k * th);
+        addV(vp, g3, -k * th);
+        addV(vn, g4, -k * th);
+      }
+    }
+  }
+
+private:
+  // |e|^2 / (A1 + A2): the weight that makes the summed squared dihedral
+  // converge to the plate bending energy as the mesh is refined.
+  static double stiffness(const double *x1, const double *x2, const double *x3,
+                          const double *x4) {
+    auto area = [](const double *p, const double *q, const double *r) {
+      double u[3], v[3], c[3];
+      for (int d = 0; d < 3; ++d) { u[d] = q[d]-p[d]; v[d] = r[d]-p[d]; }
+      c[0] = u[1]*v[2]-u[2]*v[1];
+      c[1] = u[2]*v[0]-u[0]*v[2];
+      c[2] = u[0]*v[1]-u[1]*v[0];
+      return 0.5*std::sqrt(c[0]*c[0]+c[1]*c[1]+c[2]*c[2]);
+    };
+    double le = 0.0;
+    for (int d = 0; d < 3; ++d)
+      le += (x2[d]-x1[d])*(x2[d]-x1[d]);
+    const double A = area(x1, x2, x3) + area(x1, x2, x4);
+    return A > 0.0 ? le / A : 0.0;
+  }
+};
+TISSUE_REGISTER_REACTION(CTShellBending, "CenterTriangulation::ShellBending")
+
+
 
 
 // ---------------------------------------------------------------------------

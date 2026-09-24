@@ -33,10 +33,24 @@
 //   <printFlag> <numPrint>
 //   <h_growth> <force_tol> <max_relax_iterations> [<relax_method>]
 //
-// relax_method 0 (default) is FIRE, 1 is Barzilai-Borwein. BB is the better
-// choice when the stiffness ratio is large -- a finely triangulated 3D shell,
-// say -- because FIRE needs O(sqrt(kappa)) iterations and BB approximates the
-// curvature from the last two gradients instead. See relaxBB().
+// relax_method 0 (default) is FIRE, 1 is Barzilai-Borwein. Which one wins is
+// not a matter of taste; it depends on the stiffness ratio, and the two
+// regimes are far apart:
+//
+//   soft problem, a 3D shell of membrane and springs with no bending --
+//     FIRE reaches force balance in 32 evaluations per growth step. BB on the
+//     same model needs tens of thousands and still misses. Use FIRE.
+//
+//   stiff problem, the same shell with the wall's flexural rigidity added --
+//     FIRE cannot converge it at all: 17 of 24 growth steps hit a cap of
+//     20,000 without reaching balance, 340k evaluations, 300 s. BB converges
+//     every step, 189k evaluations, 172 s.
+//
+// The reason is that bending contributes stiffness going as the fourth power
+// of the wave number, so the shortest mesh wavelength sets kappa and FIRE's
+// stable step collapses with it. FIRE needs O(sqrt(kappa)) iterations; BB
+// approximates the curvature from the last two gradients and does not. See
+// relaxBB().
 //
 // Comparing against another solver: QuasiStatic relaxes to force balance
 // *before* its first print, so its frame 0 is the relaxed configuration while
