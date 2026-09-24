@@ -310,6 +310,157 @@ TISSUE_REGISTER_REACTION(CTWallGrowthStress,
                          "CenterTriangulation::WallGrowth::Stress",
                          "WallGrowthStresscenterTriangulation")
 
+// Wall growth for a center-triangulated cell, coupled to the face.
+//
+// Why this is needed. In a center-triangulated cell each triangle is
+// (centre, v_j, v_{j+1}): two internal rest lengths held in the cell row,
+// and one outline rest length held on the wall. The existing growth rules
+// each move only one of those. Every CenterTriangulation::WallGrowth rule
+// grows the internal lengths (cellDerivs) and never touches the wall; every
+// WallGrowth rule grows the wall (wallDerivs) and never touches the cell
+// row. Nothing keeps a triangle's three rest lengths mutually realisable.
+//
+// The consequence is not subtle. Running WallGrowth::StrainWallInhibited on
+// a center-triangulated shell drives the rest configuration toward
+// c >= a + b, which no triangle can adopt, and the solve produces NaN --
+// measured, at the first print for k_growth 0.02 and above, the third for
+// 0.005, and not at all for 0.001, i.e. sooner the faster it grows.
+//
+// It also blocks the thing the model exists to show. Lobing needs the
+// outline to gain length faster than the cell gains radius: excess
+// perimeter is what buckles. Growing only the internal lengths expands a
+// cell radially with its outline held taut, so the one rule that could
+// supply excess perimeter is the one that destroys the mesh.
+//
+// So this grows both. The wall grows by exactly the law
+// WallGrowth::StrainWallInhibited uses, so a 2D model and a shell model can
+// be given the same parameters and mean the same thing. The face then takes
+// up a fraction `face_coupling` of that relative rate: 1 scales the whole
+// triangle uniformly and preserves cell shape, 0 grows the outline alone and
+// is the most excess perimeter the discretisation can carry. Between them it
+// is the share of the anticlinal wall's growth that the periclinal face
+// grows along with.
+//
+// `margin` is the safety net rather than the mechanism. When a triangle's
+// rest state comes within it of degenerate, the internal lengths are grown
+// fast enough to hold the margin whatever face_coupling says. Without that
+// floor a low coupling reaches the same NaN by a slower road.
+class CTWallGrowthStrainWallInhibited : public Reaction {
+public:
+  CTWallGrowthStrainWallInhibited(const ParameterList &p,
+                                  const IndexLevels &i) {
+    if (p.size() != 5)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainWallInhibited: uses five "
+          "parameters (k_growth, strain_threshold, gamma_inhibition, "
+          "face_coupling, margin).");
+    if (p[2] < 0.0)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainWallInhibited: "
+          "gamma_inhibition must be non-negative.");
+    if (p[3] < 0.0 || p[3] > 1.0)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainWallInhibited: "
+          "face_coupling must lie in [0, 1].");
+    if (p[4] <= 0.0 || p[4] >= 1.0)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainWallInhibited: margin must "
+          "lie strictly between 0 and 1.");
+    if (i.size() != 3 || i[0].size() != 1 || i[1].size() != 1 ||
+        i[2].size() != 1)
+      throw std::runtime_error(
+          "CenterTriangulation::WallGrowth::StrainWallInhibited: level 0 = "
+          "wall resting-length index, level 1 = wall reinforcement index, "
+          "level 2 = start of the center-triangulation cell variables.");
+    configure("CenterTriangulation::WallGrowth::StrainWallInhibited", p, i, 5,
+              {1, 1, 1},
+              {"k_growth", "strain_threshold", "gamma_inhibition",
+               "face_coupling", "margin"});
+  }
+
+  void derivs(Tissue &T, Matrix &cellData, Matrix &wallData,
+              Matrix &vertexData, Matrix &cellDerivs, Matrix &wallDerivs,
+              Matrix &) override {
+    const size_t lengthIndex = variableIndex(0, 0);
+    const size_t cmtIndex = variableIndex(1, 0);
+    const size_t lengthStart = variableIndex(2, 0) + 3;  // centre is 3 values
+    const double k = parameter(0);
+    const double threshold = parameter(1);
+    const double gamma = parameter(2);
+    const double coupling = parameter(3);
+    const double margin = parameter(4);
+
+    // Pass 1: the wall rule, once per wall, and keep each wall's relative
+    // rate for the face to follow.
+    std::vector<double> relRate(T.numWall(), 0.0);
+    parallelFor(T.numWall(), [&](size_t begin, size_t end) {
+      for (size_t w = begin; w < end; ++w) {
+        const double L = wallData[w][lengthIndex];
+        if (L <= 0.0)
+          continue;
+        const double d = T.wallLengthFromVertices(w, vertexData);
+        const double eps = (d - L) / L;
+        if (eps <= threshold)
+          continue;
+        const double m = wallData[w][cmtIndex];
+        const double rate = k * (eps - threshold) * L / (1.0 + gamma * m);
+        wallDerivs[w][lengthIndex] += rate;
+        relRate[w] = rate / L;
+      }
+    });
+
+    // Pass 2: the face. Per cell, because the internal lengths live in the
+    // cell row and a wall is shared, so a wall loop would count each
+    // triangle twice.
+    parallelFor(T.numCell(), [&](size_t begin, size_t end) {
+      for (size_t c = begin; c < end; ++c) {
+        const CellTopo &cell = T.cell(c);
+        const size_t n = cell.numVertex();
+        if (n < 3 || cell.numWall() != n)
+          continue;
+        for (size_t j = 0; j < n; ++j) {
+          // Sorting invariant: wall j joins vertices j and (j+1) % n, so
+          // triangle j is (centre, v_j, v_{j+1}) with internal lengths j
+          // and (j+1) % n.
+          const size_t j2 = (j + 1) % n;
+          const size_t w = cell.walls[j];
+          if (w >= relRate.size())
+            continue;
+          const double a = cellData[c][lengthStart + j];
+          const double b = cellData[c][lengthStart + j2];
+          const double cw = wallData[w][lengthIndex];
+          if (a <= 0.0 || b <= 0.0 || cw <= 0.0)
+            continue;
+
+          // The share of the wall's growth the face takes up.
+          double da = coupling * relRate[w] * a;
+          double db = coupling * relRate[w] * b;
+
+          // The floor. The rest triangle is realisable while
+          // cw < (1 - margin) * (a + b); if it is at or inside that bound,
+          // a + b has to grow at least as fast as cw does, or the triangle
+          // walks into a shape it cannot take.
+          const double bound = (1.0 - margin) * (a + b);
+          if (cw >= bound) {
+            const double need = relRate[w] * cw / (1.0 - margin);
+            if (da + db < need) {
+              const double scale = need / (a + b);
+              da = scale * a;
+              db = scale * b;
+            }
+          }
+          cellDerivs[c][lengthStart + j] += da;
+          cellDerivs[c][lengthStart + j2] += db;
+        }
+      }
+    });
+  }
+};
+TISSUE_REGISTER_REACTION(
+    CTWallGrowthStrainWallInhibited,
+    "CenterTriangulation::WallGrowth::StrainWallInhibited",
+    "WallGrowth::CenterTriangulation::StrainWallInhibited")
+
 // The same rule with the growth rate raised by an activating Hill function of
 // a cell concentration: k = k_const + k_hill c^n/(K^n + c^n).
 class CTWallGrowthStressConcentrationHill : public Reaction {
