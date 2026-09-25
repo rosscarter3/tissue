@@ -33,6 +33,33 @@
 //   <printFlag> <numPrint>
 //   <h_growth> <force_tol> <max_relax_iterations> [<relax_method>]
 //
+// Diagonal preconditioning was tried here and does not work, which is worth
+// recording so it is not rebuilt. The motivation was good: these meshes have
+// elements of wildly unequal quality, a center-triangulated cell fans from
+// one centre so its triangles run from a radius ratio of 8 at the median to
+// 6e5 at the worst, and both methods below step every degree of freedom at a
+// rate set by the stiffest mode anywhere in the tissue. Estimating a
+// per-degree-of-freedom stiffness costs nothing -- the matrix-free product
+// H v = (f(x) - f(x + eps v))/eps already exists in calibrateStep, and a
+// dozen probes of it give either Hutchinson's diagonal E[z .* (H z)] or,
+// better behaved, the row norm sqrt(E[(H z)^2]). The row norms span 7973x on
+// a 150-cell shell, so the heterogeneity is certainly there.
+//
+// It still loses, everywhere it was measured. On that shell to t = 24:
+// FIRE 2878 evaluations, BB 984, FIRE with row-norm scaling 5459, BB with it
+// 104189. On the stiff case, a coarse shell carrying face bending to t = 6:
+// BB 107659 evaluations in 101 s, BB with scaling still running at 5x that
+// when it was abandoned.
+//
+// The reason is that the condition number here is not a per-degree-of-freedom
+// scaling problem. The stiff short-wavelength modes and the soft long ones
+// live on the *same* vertices, so no diagonal separates them; scaling by the
+// row norm just distorts the operator without touching the mode hierarchy.
+// What that argument does point to is a method that acts on the hierarchy
+// directly -- a coarse-grid correction over the cell graph, or a local/global
+// split with a pre-factorised constant matrix -- rather than a better
+// diagonal.
+//
 // relax_method 0 (default) is FIRE, 1 is Barzilai-Borwein. Which one wins is
 // not a matter of taste; it depends on the stiffness ratio, and the two
 // regimes are far apart:
