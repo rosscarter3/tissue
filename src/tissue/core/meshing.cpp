@@ -344,9 +344,9 @@ PolygonMesh triangulateAt(const std::vector<Pt> &outline, double spacing);
 // by the quality it gets back.
 PolygonMesh triangulatePolygon(const std::vector<Pt> &outline,
                                double qualityBound, double spacing) {
-  PolygonMesh best;
-  double bestWorst = std::numeric_limits<double>::infinity();
   const double h0 = spacing > 0.0 ? spacing : bestSpacingHint(outline);
+  std::vector<PolygonMesh> tried;
+  std::vector<double> worsts;
   double h = h0;
   for (int attempt = 0; attempt < 8; ++attempt, h *= 0.72) {
     PolygonMesh m = triangulateAt(outline, h);
@@ -355,14 +355,72 @@ PolygonMesh triangulatePolygon(const std::vector<Pt> &outline,
     double worst = 0.0;
     for (double q : triangleQuality(m))
       worst = std::max(worst, q);
-    if (worst < bestWorst) {
-      bestWorst = worst;
-      best = std::move(m);
-    }
-    if (bestWorst <= qualityBound)
-      break;
+    tried.push_back(std::move(m));
+    worsts.push_back(worst);
+    if (worst <= qualityBound)
+      break; // the coarsest spacing that meets the bound; no reason to refine
   }
-  return best;
+  if (tried.empty())
+    return PolygonMesh{};
+
+  // Take the cheapest mesh of acceptable quality, not the best mesh at any
+  // price. Where the bound is reachable the loop above has already stopped at
+  // the coarsest spacing that reaches it. Where it is not -- a cell whose
+  // outline is too coarse around its own narrowest neck -- the difference
+  // between the best attempt and one slightly worse is a handful of
+  // hundredths in radius ratio and can be several times the vertex count,
+  // and every one of those vertices is a degree of freedom the relaxation
+  // then has to carry. Keeping the best regardless took a 40-cell patch to
+  // 4818 interior vertices for a worst element of 11.66, where a 15% wider
+  // tolerance buys nearly all of it for a fraction of the cost.
+  // A ceiling on interior vertices, because every one of them is a degree of
+  // freedom the relaxation carries for the rest of the run, and because rows
+  // are padded to the widest cell, so a single greedy cell sets the width for
+  // the whole tissue. Where the bound is unreachable -- an outline too coarse
+  // around its own neck -- the sweep will otherwise refine to the end of its
+  // range chasing it: one cell of a 40-cell patch reached 2338 interior
+  // vertices, padding 40 rows to 93520 slots to hold 4983 real ones.
+  //
+  // Stopping the sweep early instead was tried and is wrong: quality is not
+  // monotone in the spacing, so a step that fails to improve is not evidence
+  // that later ones will not, and breaking on one cost the 10-point star its
+  // bound entirely.
+  const std::size_t n = outline.size();
+  const std::size_t ceiling = 4 * n;
+
+  double bestWorst = worsts[0];
+  for (double w : worsts)
+    bestWorst = std::min(bestWorst, w);
+  const double allow = std::max(qualityBound, 1.15 * bestWorst);
+  // Order of preference: inside both limits, then inside the vertex ceiling
+  // at whatever quality that allows, and only then over the ceiling. The
+  // ceiling outranks the quality allowance deliberately. A degree of freedom
+  // is paid for on every force evaluation for the rest of the run, and paid
+  // for by every other cell too through the row padding, whereas a worse
+  // element costs conditioning once. Ordering it the other way round left a
+  // single cell holding 2338 interior vertices because no mesh satisfied both.
+  std::size_t pick = 0;
+  bool have = false;
+  for (int pass = 0; pass < 3 && !have; ++pass) {
+    for (std::size_t i = 0; i < tried.size(); ++i) {
+      const std::size_t inner = tried[i].points.size() - tried[i].numBoundary;
+      if (pass < 2 && inner > ceiling)
+        continue;
+      if (pass != 1 && worsts[i] > allow)
+        continue;
+      const bool better =
+          !have || (pass == 1 ? worsts[i] < worsts[pick]
+                              : tried[i].points.size() < tried[pick].points.size());
+      if (better) {
+        pick = i;
+        have = true;
+      }
+    }
+  }
+  if (!have)
+    for (std::size_t i = 0; i < tried.size(); ++i)
+      if (worsts[i] == bestWorst) { pick = i; break; }
+  return std::move(tried[pick]);
 }
 
 namespace {
