@@ -42,3 +42,13 @@ tissue_tutorial_test(tutorial_mesh_growth_ct
   mesh/growthCT.model mesh/twoSquare3D.init mesh/solverCT.rk5)
 tissue_tutorial_test(tutorial_mesh_growth_sv
   mesh/growthSV.model mesh/twoSquareSV.init mesh/solver.rk5)
+
+# Unit test for the polygon mesher that replaces the center-triangulation fan.
+# Asserts the invariants a cell face needs: no inverted triangles, every
+# outline edge present, exact area, boundary vertices untouched, and the
+# quality bound met -- on polygons including one with an empty kernel, which
+# no fan can mesh at all.
+add_executable(meshing_test meshing_test.cpp)
+target_link_libraries(meshing_test PRIVATE tissue2)
+add_test(NAME meshing COMMAND meshing_test)
+
