@@ -72,6 +72,15 @@ static void examine(const char *name, const std::vector<Pt> &poly,
   }
   check(inverted == 0, "has inverted triangles", name);
 
+  // No triangle may name the same vertex twice. Such an element has an edge
+  // of zero length, and a radius ratio computed on it used to come out as 0 --
+  // a better score than equilateral -- so it passed every other check here.
+  std::size_t repeated = 0;
+  for (const auto &t : m.tris)
+    if (t[0] == t[1] || t[1] == t[2] || t[0] == t[2])
+      ++repeated;
+  check(repeated == 0, "has triangles with a repeated vertex", name);
+
   // 2. The mesh conforms to the outline: every boundary edge is an edge of
   //    some triangle. Without this the face would not meet its own walls.
   std::set<std::pair<std::size_t, std::size_t>> edges;

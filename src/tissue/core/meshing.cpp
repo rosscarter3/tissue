@@ -70,22 +70,44 @@ bool inCircumcircle(Pt a, Pt b, const Pt &c, const Pt &d) {
          1e-12;
 }
 
+// Radius ratio: circumradius over twice the inradius. It is 1 for an
+// equilateral triangle and cannot be less, so anything below 1 is a
+// degenerate element and is reported as infinite rather than as a very good
+// triangle.
+//
+// That floor is not pedantry. A triangle with two coincident corners has a
+// cross product of order 1e-18 rather than exactly zero, so an `area <= 0`
+// guard does not catch it; the computation then continues with one edge of
+// length zero, the circumradius comes out as zero, and the triangle scores a
+// quality of 0 -- better than equilateral. Every check built on this measure
+// therefore passed it, including this file's own unit test, an offline
+// validation against a Python reference, and CellMesh::Initiate's report of
+// its worst element. 1064 degenerate triangles across 30 real cells went
+// unnoticed that way.
 double radiusRatio(const Pt &a, const Pt &b, const Pt &c) {
   const double a2 = cross2(a, b, c);
-  if (a2 <= 0.0)
-    return std::numeric_limits<double>::infinity();
-  const double A = 0.5 * a2;
   auto len = [](const Pt &p, const Pt &q) {
     const double dx = q[0] - p[0], dy = q[1] - p[1];
     return std::sqrt(dx * dx + dy * dy);
   };
   const double la = len(b, c), lb = len(c, a), lc = len(a, b);
+  const double inf = std::numeric_limits<double>::infinity();
+  if (la <= 0.0 || lb <= 0.0 || lc <= 0.0)
+    return inf;
+  // Area has to be judged against the element's own size, not against zero.
+  const double scale = std::max(la, std::max(lb, lc));
+  if (a2 <= 1e-12 * scale * scale)
+    return inf;
+  const double A = 0.5 * a2;
   const double s = 0.5 * (la + lb + lc);
   if (s <= 0.0)
-    return std::numeric_limits<double>::infinity();
+    return inf;
   const double R = la * lb * lc / (4.0 * A);
   const double r = A / s;
-  return r > 0.0 ? R / (2.0 * r) : std::numeric_limits<double>::infinity();
+  if (!(r > 0.0))
+    return inf;
+  const double ratio = R / (2.0 * r);
+  return ratio >= 1.0 ? ratio : inf;
 }
 
 // Ear clipping. Always succeeds for a simple polygon, convex or not, and
@@ -567,6 +589,37 @@ PolygonMesh triangulateAt(const std::vector<Pt> &outline, double spacing) {
                  out.tris.end());
 
   delaunayFlips(out.points, out.tris, fixed);
+
+  // Drop degenerate triangles. They should not be produced at all, and the
+  // assertion in tests/meshing_test.cpp now says so, but a mesh that leaves
+  // with one is worse than a mesh that is one triangle smaller: the element
+  // it becomes has a rest state no triangle can adopt, which is the failure
+  // this whole file exists to prevent.
+  {
+    std::vector<Tri> ok;
+    ok.reserve(out.tris.size());
+    for (const Tri &t : out.tris) {
+      if (t[0] == t[1] || t[1] == t[2] || t[0] == t[2])
+        continue;
+      // Only genuine degeneracy: a zero-length edge or an area that is zero
+      // against the element's own size. Filtering on the quality measure
+      // instead also throws away thin but valid slivers, and the holes that
+      // leaves are worse than the slivers were -- it cost this file's own
+      // area check on a 7-lobed test polygon.
+      const Pt &p0 = out.points[t[0]], &p1 = out.points[t[1]],
+               &p2 = out.points[t[2]];
+      const double e0 = std::hypot(p1[0]-p0[0], p1[1]-p0[1]);
+      const double e1 = std::hypot(p2[0]-p1[0], p2[1]-p1[1]);
+      const double e2 = std::hypot(p0[0]-p2[0], p0[1]-p2[1]);
+      const double sc = std::max(e0, std::max(e1, e2));
+      if (e0 <= 0.0 || e1 <= 0.0 || e2 <= 0.0)
+        continue;
+      if (std::fabs(cross2(p0, p1, p2)) <= 1e-12 * sc * sc)
+        continue;
+      ok.push_back(t);
+    }
+    out.tris.swap(ok);
+  }
 
   // Drop any point the insertion refused, so the mesh has no orphans.
   std::vector<bool> used(out.points.size(), false);
