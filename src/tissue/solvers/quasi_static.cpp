@@ -32,6 +32,12 @@
 //   <startTime> <endTime>
 //   <printFlag> <numPrint>
 //   <h_growth> <force_tol> <max_relax_iterations> [<relax_method>]
+//                                                  [<remove_net_force>]
+//
+// remove_net_force 1 subtracts the net force on the tissue from every
+// relaxable degree of freedom before each relaxation step. An open sheet
+// under turgor has no static equilibrium without it -- see
+// projectOutTranslation().
 //
 // Diagonal preconditioning was tried here and does not work, which is worth
 // recording so it is not rebuilt. The motivation was good: these meshes have
@@ -127,6 +133,8 @@ QuasiStatic::QuasiStatic(Tissue *T, std::istream &in) : BaseSolver(T) {
   // FIRE and are unchanged.
   if (!(in >> relaxMethod_))
     relaxMethod_ = 0;
+  if (!(in >> removeRigid_))
+    removeRigid_ = 0;
   t_ = startTime_;
   if (hGrowth_ <= 0.0) {
     std::cerr << "QuasiStatic: growth step must be positive." << std::endl;
@@ -141,6 +149,29 @@ QuasiStatic::QuasiStatic(Tissue *T, std::istream &in) : BaseSolver(T) {
 // Largest |force| over every mechanical degree of freedom. NaN propagates
 // deliberately: std::max would swallow it and make a diverged state look
 // converged.
+// Net force on the whole tissue, per axis, and the count of degrees of
+// freedom it is spread over. A free body under an unbalanced load has no
+// static equilibrium: the relaxation can only translate it, so the residual
+// can never fall below the net force divided among the vertices however long
+// it runs. Reported next to the residual so the two can be compared.
+void QuasiStatic::netForce(double out[3], size_t &ndof) const {
+  out[0] = out[1] = out[2] = 0.0;
+  ndof = 0;
+  auto f = vertexDerivs_.flat();
+  const size_t dim = vertexData_.cols();
+  for (size_t k = 0; k + dim <= f.size(); k += dim) {
+    for (size_t d = 0; d < dim && d < 3; ++d)
+      out[d] += f[k + d];
+    ++ndof;
+  }
+  auto cf = cellDerivs_.flat();
+  for (size_t j = 0; j + 2 < posIndex_.size(); j += 3) {
+    for (size_t d = 0; d < 3; ++d)
+      out[d] += cf[posIndex_[j + d]];
+    ++ndof;
+  }
+}
+
 double QuasiStatic::maxForce() const {
   double m = 0.0;
   auto f = vertexDerivs_.flat();
@@ -254,6 +285,17 @@ size_t QuasiStatic::relax() {
       return evals;
   }
   ++relaxNotConverged_;
+  if (relaxNotConverged_ == 1) {
+    double net[3];
+    size_t ndof = 0;
+    netForce(net, ndof);
+    const double mag =
+        std::sqrt(net[0]*net[0] + net[1]*net[1] + net[2]*net[2]);
+    std::cerr << "  first unconverged step: residual " << maxForce()
+              << ", net force on the tissue " << mag << " over " << ndof
+              << " vertices (" << (ndof ? mag / double(ndof) : 0.0)
+              << " each)" << std::endl;
+  }
   return evals;
 }
 
@@ -374,6 +416,17 @@ size_t QuasiStatic::relaxBB() {
     have = true;
   }
   ++relaxNotConverged_;
+  if (relaxNotConverged_ == 1) {
+    double net[3];
+    size_t ndof = 0;
+    netForce(net, ndof);
+    const double mag =
+        std::sqrt(net[0]*net[0] + net[1]*net[1] + net[2]*net[2]);
+    std::cerr << "  first unconverged step: residual " << maxForce()
+              << ", net force on the tissue " << mag << " over " << ndof
+              << " vertices (" << (ndof ? mag / double(ndof) : 0.0)
+              << " each)" << std::endl;
+  }
   return evals;
 }
 
@@ -387,6 +440,49 @@ void QuasiStatic::forceOnly() {
   else
     T_->derivs(cellData_, wallData_, vertexData_, cellDerivs_, wallDerivs_,
                vertexDerivs_);
+  if (removeRigid_)
+    projectOutTranslation();
+}
+
+// Subtract the net force, spread evenly over every relaxable degree of
+// freedom, so the tissue as a whole is in balance and only its shape is left
+// to solve for.
+//
+// Why a quasi-static solver needs this at all. Turgor is applied along each
+// triangle's own normal, and those normals only cancel over a closed surface.
+// An epidermis modelled as an open sheet has a net outward force, so it has
+// no static equilibrium: the relaxation can lower the residual until it
+// reaches the net force divided among the vertices and then it can only
+// translate the tissue, for as many iterations as it is given. Measured on a
+// 40-cell shell, the residual stalled at 1.71 with a net force of 1640 over
+// 4994 vertices, 0.33 each; the same model without turgor converged.
+//
+// Removing the translation is not a numerical trick, it is the reaction the
+// model leaves out. A real epidermis is anchored to the mesophyll under it,
+// and that is what carries the net outward push. Nothing here supplies it, so
+// the alternative to subtracting it is a tissue that accelerates away.
+//
+// Only translation. Net torque on a curved sheet is not generally zero
+// either, but it is far smaller and removing it needs the inertia tensor;
+// this is the term that stops convergence.
+void QuasiStatic::projectOutTranslation() {
+  double net[3];
+  size_t ndof = 0;
+  netForce(net, ndof);
+  if (ndof == 0)
+    return;
+  const size_t dim = vertexData_.cols();
+  double mean[3] = {0.0, 0.0, 0.0};
+  for (size_t d = 0; d < dim && d < 3; ++d)
+    mean[d] = net[d] / double(ndof);
+  auto f = vertexDerivs_.flat();
+  for (size_t k = 0; k + dim <= f.size(); k += dim)
+    for (size_t d = 0; d < dim && d < 3; ++d)
+      f[k + d] -= mean[d];
+  auto cf = cellDerivs_.flat();
+  for (size_t j = 0; j + 2 < posIndex_.size(); j += 3)
+    for (size_t d = 0; d < 3; ++d)
+      cf[posIndex_[j + d]] -= mean[d];
 }
 
 // Imposed motion over one growth step, applied before relaxation.
