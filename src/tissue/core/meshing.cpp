@@ -210,6 +210,73 @@ void delaunayFlips(const std::vector<Pt> &P, std::vector<Tri> &tris,
   }
 }
 
+// Delaunay triangulation of a point set by incremental insertion.
+//
+// Used in place of ear clipping the outline and then inserting the interior
+// points one at a time into it. That order leaves slivers the insertion
+// cannot reach: on a segmented outline, which has long runs of nearly
+// collinear vertices, ear clipping bridges across such a run and the
+// resulting sliver has all three corners on the boundary, so no interior
+// point is adjacent to it and no flip can remove it -- its quadrilateral is
+// not convex. Measured on a real lobed cell, that left a worst element of
+// 957 where triangulating the whole point set at once gives 2.8.
+std::vector<Tri> bowyerWatson(const std::vector<Pt> &P, std::size_t nReal) {
+  double lox = P[0][0], hix = P[0][0], loy = P[0][1], hiy = P[0][1];
+  for (std::size_t i = 0; i < nReal; ++i) {
+    lox = std::min(lox, P[i][0]); hix = std::max(hix, P[i][0]);
+    loy = std::min(loy, P[i][1]); hiy = std::max(hiy, P[i][1]);
+  }
+  const double cx = 0.5 * (lox + hix), cy = 0.5 * (loy + hiy);
+  const double r = std::hypot(hix - lox, hiy - loy) + 1.0;
+
+  std::vector<Pt> pts(P.begin(), P.begin() + static_cast<long>(nReal));
+  const std::size_t s0 = pts.size();
+  pts.push_back({cx, cy + 3 * r});
+  pts.push_back({cx - 3 * r, cy - 2 * r});
+  pts.push_back({cx + 3 * r, cy - 2 * r});
+
+  std::vector<Tri> tris{{s0, s0 + 1, s0 + 2}};
+  auto key = [](std::size_t a, std::size_t b) {
+    return std::make_pair(std::min(a, b), std::max(a, b));
+  };
+  for (std::size_t i = 0; i < nReal; ++i) {
+    std::vector<std::size_t> bad;
+    for (std::size_t t = 0; t < tris.size(); ++t)
+      if (inCircumcircle(pts[tris[t][0]], pts[tris[t][1]], pts[tris[t][2]],
+                         pts[i]))
+        bad.push_back(t);
+    if (bad.empty())
+      continue;
+    std::map<std::pair<std::size_t, std::size_t>, int> count;
+    for (std::size_t t : bad) {
+      ++count[key(tris[t][0], tris[t][1])];
+      ++count[key(tris[t][1], tris[t][2])];
+      ++count[key(tris[t][2], tris[t][0])];
+    }
+    std::set<std::size_t> badset(bad.begin(), bad.end());
+    std::vector<Tri> kept;
+    kept.reserve(tris.size());
+    for (std::size_t t = 0; t < tris.size(); ++t)
+      if (!badset.count(t))
+        kept.push_back(tris[t]);
+    for (const auto &kv : count) {
+      if (kv.second != 1)
+        continue;
+      const std::size_t u = kv.first.first, v = kv.first.second;
+      if (cross2(pts[u], pts[v], pts[i]) > 0.0)
+        kept.push_back({u, v, i});
+      else if (cross2(pts[v], pts[u], pts[i]) > 0.0)
+        kept.push_back({v, u, i});
+    }
+    tris.swap(kept);
+  }
+  std::vector<Tri> out;
+  for (const Tri &t : tris)
+    if (t[0] < s0 && t[1] < s0 && t[2] < s0)
+      out.push_back(t);
+  return out;
+}
+
 double bestSpacingHint(const std::vector<Pt> &outline) {
   const std::size_t n = outline.size();
   std::vector<double> seg(n);
@@ -328,14 +395,51 @@ PolygonMesh triangulateAt(const std::vector<Pt> &outline, double spacing) {
     }
   }
 
-  // Start from a triangulation that is valid whatever the polygon looks like,
-  // then insert the interior points into it.
-  out.tris = earClip(P);
+  // Triangulate the whole point set at once and keep what lies inside the
+  // polygon. Ear clipping is the fallback, not the starting point: it is
+  // valid for any simple polygon but its choices cannot be undone by later
+  // insertion, and on a segmented outline it bridges nearly collinear runs
+  // into slivers nothing can remove.
+  out.tris = bowyerWatson(out.points, out.points.size());
+  {
+    std::vector<Tri> inside;
+    for (const Tri &t : out.tris) {
+      const Pt c{(out.points[t[0]][0] + out.points[t[1]][0] + out.points[t[2]][0]) / 3.0,
+                 (out.points[t[0]][1] + out.points[t[1]][1] + out.points[t[2]][1]) / 3.0};
+      if (pointInPolygon(c, P) && cross2(out.points[t[0]], out.points[t[1]],
+                                         out.points[t[2]]) > 0.0)
+        inside.push_back(t);
+    }
+    out.tris.swap(inside);
+  }
 
   std::set<std::pair<std::size_t, std::size_t>> fixed;
   for (std::size_t i = 0; i < n; ++i) {
     const std::size_t a = i, b = (i + 1) % n;
     fixed.insert({std::min(a, b), std::max(a, b)});
+  }
+
+  // Every outline edge has to be an edge of the mesh, or the face does not
+  // meet its own walls. The interior clearance makes the outline edges
+  // locally Delaunay so they survive; if one does not, take the ear clipping,
+  // which conforms by construction.
+  {
+    std::set<std::pair<std::size_t, std::size_t>> have;
+    for (const Tri &t : out.tris) {
+      have.insert({std::min(t[0], t[1]), std::max(t[0], t[1])});
+      have.insert({std::min(t[1], t[2]), std::max(t[1], t[2])});
+      have.insert({std::min(t[2], t[0]), std::max(t[2], t[0])});
+    }
+    bool conforms = true;
+    for (const auto &e : fixed)
+      if (!have.count(e)) {
+        conforms = false;
+        break;
+      }
+    if (!conforms) {
+      out.points.resize(n);
+      out.tris = earClip(P);
+    }
   }
 
   // Insert each interior point by a constrained Bowyer-Watson cavity.

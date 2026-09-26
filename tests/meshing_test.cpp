@@ -41,16 +41,17 @@ static double polyArea(const std::vector<Pt> &P) {
 // make a mesh usable at all, and they are what the center-triangulation fan
 // violates on a lobed cell.
 //
-// The quality bound is asserted only where it is currently achieved.
-// `expectBound = false` marks a known gap rather than a passing case: the
-// interior points are placed on a lattice with a clearance from the boundary,
-// and where a neck is narrow relative to the outline's own edge length that
-// rule leaves a sliver. Measured against the Python reference in
-// pavement/stage1/meshing.py on 30 real cells, this reaches a median of 1.00
-// against 1.21 and a worst of 67 against 4.0 -- so the typical element is
-// better and the tail is not. Fixing the tail means placing interior points
-// from the local feature size instead of a global spacing, which is the next
-// piece of work on this file.
+// The quality bound is asserted wherever the outline is fine enough to allow
+// it. `expectBound = false` marks the one case that cannot reach it: an
+// outline so coarse around its own narrowest neck that no interior point fits
+// clear of both walls. That is a property of the outline rather than of this
+// code -- boundary vertices are shared walls and may not be split -- and the
+// same polygon with its outline subdivided does meet the bound, which is what
+// the pair of comb cases below shows.
+//
+// Measured against the Python reference in pavement/stage1/meshing.py on 30
+// real lobed outlines: no inversions either way, median radius ratio 1.00
+// against 1.21, worst 3.80 and 3.93 against 3.92 and 4.00.
 static void examine(const char *name, const std::vector<Pt> &poly,
                     double bound, bool expectBound = true) {
   const PolygonMesh m = tissue::triangulatePolygon(poly, bound);
@@ -155,7 +156,7 @@ int main() {
       fine.push_back({a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t});
     }
   }
-  examine("comb, fine outline", fine, 5.0, /*expectBound=*/false);
+  examine("comb, fine outline", fine, 5.0);
 
   // A jigsaw outline: a circle with seven lobes, which is what a real
   // pavement cell looks like by the time the model is interesting.
