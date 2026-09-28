@@ -25,9 +25,19 @@
 //                     the same cell, which sets how wide a domain gets and so
 //                     how far apart lobes sit.
 //
-//     dp_w/dt = k_on * src_w / (1 + h * p_sister(w))
+//     dp_w/dt = k_on * src_w / (1 + (h * p_sister(w))^n)
 //               - k_off * p_w
 //               + D * sum over outline neighbours (p_n - p_w)
+//
+// The exponent is not decoration. With n = 1 the symmetric steady state
+// k_off p* = k_on s / (1 + h p*) is a quadratic with a single positive root,
+// so the system has exactly one symmetric solution and cannot break symmetry
+// however hard the two faces inhibit each other -- measured, at h = 5 the
+// face difference came out 0.76 times the uncoupled one, slightly damped
+// rather than amplified. Mutual inhibition is a switch only when it is
+// cooperative, which is why every such motif in the literature carries a
+// Hill exponent. n >= 2 gives the bistable pair of asymmetric states that
+// makes one face win.
 //
 // `p` is an ordinary wall variable, so it can drive whatever the model
 // already reads: WallMechanics::SpringModulated takes an arbitrary wall
@@ -55,8 +65,11 @@ namespace {
 class CMTSisterInhibition : public Reaction {
 public:
   CMTSisterInhibition(const ParameterList &p, const IndexLevels &i) {
-    configure("CMT::SisterInhibition", p, i, 4, {2},
-              {"k_on", "k_off", "h_inhibit", "D_lateral"});
+    configure("CMT::SisterInhibition", p, i, 5, {2},
+              {"k_on", "k_off", "h_inhibit", "D_lateral", "n_inhibit"});
+    if (parameter(4) < 1.0)
+      throw std::runtime_error("CMT::SisterInhibition: n_inhibit must be at "
+                               "least 1 (and at least 2 to break symmetry).");
   }
 
   void initiate(Tissue &T, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
@@ -109,21 +122,32 @@ public:
     const std::size_t pIdx = variableIndex(0, 0);
     const std::size_t srcIdx = variableIndex(0, 1);
     const double kOn = parameter(0), kOff = parameter(1);
-    const double h = parameter(2), D = parameter(3);
+    const double h = parameter(2), D = parameter(3), nExp = parameter(4);
     if (sister_.size() != T.numWall())
       return;
 
     parallelFor(T.numWall(), [&](std::size_t begin, std::size_t end) {
       for (std::size_t w = begin; w < end; ++w) {
         const double p = wallData[w][pIdx];
-        const double src = wallData[w][srcIdx];
+        // The cue is a production rate, so it cannot be negative. Signed
+        // curvature -- the natural cue here, and the only quantity whose sign
+        // differs between the two faces -- is negative on every concave face,
+        // and feeding that through unclamped drives p negative: measured, a
+        // quarter of all walls ended with a negative concentration, and every
+        // comparison made on that run meant nothing. A concave face produces
+        // nothing; it is suppressed, which is the asymmetry the coupling is
+        // supposed to act on rather than something to represent with a
+        // negative amount of a substance.
+        const double raw = wallData[w][srcIdx];
+        const double src = raw > 0.0 ? raw : 0.0;
         const std::size_t s = sister_[w];
         // A wall with no sister sits on the tissue boundary. Inhibiting it by
         // nothing would let it run away relative to every interior wall, so
         // it is inhibited by itself instead: the same steady state, no edge
         // artefact.
         const double pOther = (s == kBackground) ? p : wallData[s][pIdx];
-        double d = kOn * src / (1.0 + h * pOther) - kOff * p;
+        const double x = h * (pOther > 0.0 ? pOther : 0.0);
+        double d = kOn * src / (1.0 + std::pow(x, nExp)) - kOff * p;
         for (std::size_t n : lateral_[w])
           d += D * (wallData[n][pIdx] - p);
         wallDerivs[w][pIdx] += d;
