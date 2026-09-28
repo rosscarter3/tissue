@@ -1214,6 +1214,99 @@ public:
   }
 };
 TISSUE_REGISTER_REACTION(WallMechanicsBending, "WallMechanics::Bending")
+
+// Bending whose modulus scales with the size of the cells the wall belongs
+// to, which is the one testable half of what the lobe data demands.
+//
+// Real cells place lobes by mode number rather than by wavelength: at fixed
+// shape, the slope of log lobe count against log cell size is 0.22 on one
+// leaf and 0.30 on another, where anything that sets an absolute length --
+// a diffusion prepattern, or buckling of a ring with fixed moduli -- requires
+// 1. For a ring, the critical mode is n = R sqrt(|T| / 2B), so a mode number
+// that does not move with size needs B proportional to R squared, which is
+// A. Since B = E t^3 / 12 that is a claim about wall thickness going as the
+// two-thirds power of cell radius: a measurable prediction rather than a
+// free parameter, and the reason this is worth running rather than arguing
+// about.
+//
+// B = B_ref * (A / A_ref)^exponent, with A the mean area of the cells either
+// side of the wall, so the two cells sharing a wall agree about it. exponent
+// 0 reproduces WallMechanics::Bending exactly and is the control.
+class WallMechanicsBendingCellScaled : public Reaction {
+public:
+  WallMechanicsBendingCellScaled(const ParameterList &p, const IndexLevels &i) {
+    configure("WallMechanics::BendingCellScaled", p, i, 3, {1},
+              {"B_ref", "A_ref", "exponent"});
+  }
+  void derivs(Tissue &T, Matrix &, Matrix &wallData, Matrix &vertexData,
+              Matrix &, Matrix &, Matrix &vertexDerivs) override {
+    const size_t flagIndex = variableIndex(0, 0);
+    const double bRef = parameter(0);
+    const double aRef = parameter(1) > 0.0 ? parameter(1) : 1.0;
+    const double expo = parameter(2);
+    const size_t dim = vertexData.cols();
+
+    // Cell areas once per evaluation; a wall takes the mean of its two.
+    std::vector<double> area(T.numCell(), 0.0);
+    parallelFor(T.numCell(), [&](size_t begin, size_t end) {
+      for (size_t c = begin; c < end; ++c)
+        area[c] = std::fabs(T.cellVolume(c, vertexData));
+    });
+
+    parallelScatter1(
+        T.numVertex(), vertexDerivs, [&](size_t begin, size_t end,
+                                         Matrix &out) {
+          for (size_t v = begin; v < end; ++v) {
+            size_t chain[2];
+            size_t found = 0;
+            for (size_t w : T.vertex(v).walls) {
+              if (wallData[w][flagIndex] != 0.0) {
+                if (found < 2)
+                  chain[found] = w;
+                ++found;
+              }
+            }
+            if (found != 2)
+              continue;
+            const size_t a = T.wall(chain[0]).otherVertex(v);
+            const size_t b = T.wall(chain[1]).otherVertex(v);
+
+            // the local modulus, from the cells this vertex sits between
+            double sum = 0.0;
+            size_t n = 0;
+            for (size_t c : T.vertex(v).cells)
+              if (area[c] > 0.0) {
+                sum += area[c];
+                ++n;
+              }
+            const double aLoc = n ? sum / double(n) : aRef;
+            const double bBend = bRef * std::pow(aLoc / aRef, expo);
+
+            double da = 0.0, db = 0.0;
+            for (size_t d = 0; d < dim; ++d) {
+              da += (vertexData[a][d] - vertexData[v][d]) *
+                    (vertexData[a][d] - vertexData[v][d]);
+              db += (vertexData[b][d] - vertexData[v][d]) *
+                    (vertexData[b][d] - vertexData[v][d]);
+            }
+            const double h = 0.5 * (std::sqrt(da) + std::sqrt(db));
+            if (h <= 0.0)
+              continue;
+            const double k = 4.0 * bBend / (h * h * h);
+            for (size_t d = 0; d < dim; ++d) {
+              const double f =
+                  k * (0.5 * (vertexData[a][d] + vertexData[b][d]) -
+                       vertexData[v][d]);
+              out[v][d] += f;
+              out[a][d] -= 0.5 * f;
+              out[b][d] -= 0.5 * f;
+            }
+          }
+        });
+  }
+};
+TISSUE_REGISTER_REACTION(WallMechanicsBendingCellScaled,
+                         "WallMechanics::BendingCellScaled")
 // A membrane with no bending stiffness has no shortest wrinkle, and that is
 // not a physical statement about plant cell walls, it is an ill-posed model.
 //
