@@ -29,35 +29,26 @@
 //               - k_off * p_w
 //               + D * sum over outline neighbours (p_n - p_w)
 //
-//     S(kappa) = 1 / (1 + exp(kappa / kappa_half))
+//     S(kappa) = H(|kappa|) * w(kappa)
+//     H(|kappa|) = (|kappa|/kappa_half)^n / (1 + (|kappa|/kappa_half)^n)
+//     w(kappa)   = 1 + b * tanh(-kappa / kappa_half)
 //
-// which is exactly CMT::SignedCurvatureRecruitment's cue, so with h = 0 and
-// D = 0 this reaction *is* that one and the arms of the comparison differ in
-// one thing. It is bounded in (0, 1), so p is bounded by k_on/k_off as the
-// reinforcement variable m is and the same beta_stiff spans the same
-// stiffness range; and it is positive everywhere, so nothing has to be
-// clamped.
+// H is exactly CMT::CurvatureRecruitment's cue, so b = 0 reduces this to the
+// published unsigned rule, and w tips it towards the concave face by the
+// measured factor: cortical microtubule density is 1.191 of the cell mean on
+// concave cortex against 0.670 on convex, a ratio of 1.78, which is b = 0.28.
 //
-// Not clamping is the point. Concave recruits -- measured, cortical
-// microtubule density is 1.191 of the cell mean on concave cortex against
-// 0.670 on convex -- but that is a factor of 1.8, not a switch. An earlier
-// version took max(-kappa, 0), which makes every convex wall produce exactly
-// nothing, and that hard zero does the coupling's job before the coupling
-// runs: on the starting mesh it already left 90.2% of wall pairs with one
-// face holding three times the other, and sweeping h from 0 to 1000 moved
-// the relative face difference only 1.856 to 1.959. A cue that overstates
-// the asymmetry it is supposed to be the seed of cannot test whether mutual
-// inhibition amplifies it.
-//
-// The exponent is not decoration. With n = 1 the symmetric steady state
-// k_off p* = k_on s / (1 + h p*) is a quadratic with a single positive root,
-// so the system has exactly one symmetric solution and cannot break symmetry
-// however hard the two faces inhibit each other -- measured, at h = 5 the
-// face difference came out 0.76 times the uncoupled one, slightly damped
-// rather than amplified. Mutual inhibition is a switch only when it is
-// cooperative, which is why every such motif in the literature carries a
-// Hill exponent. n >= 2 gives the bistable pair of asymmetric states that
-// makes one face win.
+// The essential property is that S is zero on a straight wall. An earlier
+// version used a plain sigmoid, 1/(1 + exp(kappa/kappa_half)), which is
+// half-maximal there, and that is fatal rather than untidy. The growth law
+// is rate / (1 + gamma m), so a cue with a baseline does not merely slow
+// growth everywhere -- it flattens the difference between a neck and a lobe,
+// which is the whole of what makes a lobe. Measured on this project's own
+// runs at gamma = 9: the unsigned cue gives m from 0.07 to 0.83 across walls
+// and a lobe-to-neck growth contrast of 5.2, and reaches circularity 0.26;
+// the sigmoid gives m from 0.68 to 0.80, a contrast of 1.15, and stalls at
+// 0.68. Every signed-cue run in this project has been sitting in that second
+// case, which is why they barely lobed.
 //
 // `p` is an ordinary wall variable, so it can drive whatever the model
 // already reads: WallMechanics::SpringModulated takes an arbitrary wall
@@ -85,15 +76,22 @@ namespace {
 class CMTSisterInhibition : public Reaction {
 public:
   CMTSisterInhibition(const ParameterList &p, const IndexLevels &i) {
-    configure("CMT::SisterInhibition", p, i, 6, {2},
-              {"k_on", "k_off", "kappa_half", "h_inhibit", "D_lateral",
-               "n_inhibit"});
-    if (parameter(5) < 1.0)
+    configure("CMT::SisterInhibition", p, i, 8, {2},
+              {"k_on", "k_off", "kappa_half", "n_hill", "b_concave",
+               "h_inhibit", "D_lateral", "n_inhibit"});
+    if (parameter(7) < 1.0)
       throw std::runtime_error("CMT::SisterInhibition: n_inhibit must be at "
                                "least 1 (and at least 2 to break symmetry).");
     if (parameter(2) <= 0.0)
       throw std::runtime_error("CMT::SisterInhibition: kappa_half must be "
                                "positive; it sets the cue scale.");
+    if (parameter(3) < 1.0)
+      throw std::runtime_error("CMT::SisterInhibition: n_hill must be at "
+                               "least 1.");
+    if (parameter(4) < 0.0 || parameter(4) >= 1.0)
+      throw std::runtime_error("CMT::SisterInhibition: b_concave must be in "
+                               "[0, 1); 0.28 is the measured 1.78-fold "
+                               "concave-to-convex ratio, 0 the unsigned cue.");
   }
 
   void initiate(Tissue &T, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
@@ -146,22 +144,24 @@ public:
     const std::size_t pIdx = variableIndex(0, 0);
     const std::size_t srcIdx = variableIndex(0, 1);
     const double kOn = parameter(0), kOff = parameter(1);
-    const double kHalf = parameter(2);
-    const double h = parameter(3), D = parameter(4), nExp = parameter(5);
+    const double kHalf = parameter(2), nHill = parameter(3);
+    const double bCon = parameter(4);
+    const double h = parameter(5), D = parameter(6), nExp = parameter(7);
     if (sister_.size() != T.numWall())
       return;
 
     parallelFor(T.numWall(), [&](std::size_t begin, std::size_t end) {
       for (std::size_t w = begin; w < end; ++w) {
         const double p = wallData[w][pIdx];
-        // Signed curvature, positive where the wall bulges out of its
-        // own cell, through the same sigmoid the cell-autonomous version
-        // uses: 1 at a deep neck, 1/2 on a straight wall, towards 0 on a
-        // lobe. The two faces of one wall read opposite signs, which is the
-        // asymmetry the coupling acts on, and it is graded rather than
-        // switched so that the coupling is what decides a marginal wall.
+        // The published unsigned cue, tipped towards the concave face.
+        // Zero on a straight wall, so the neck-to-lobe growth contrast
+        // survives; higher on the indented side by the measured factor, so
+        // the two faces of one wall differ, which is the asymmetry the
+        // coupling acts on and the one an unsigned cue cannot express.
+        const double kappa = wallData[w][srcIdx];
+        const double y = std::pow(std::abs(kappa) / kHalf, nHill);
         const double src =
-            1.0 / (1.0 + std::exp(wallData[w][srcIdx] / kHalf));
+            y / (1.0 + y) * (1.0 + bCon * std::tanh(-kappa / kHalf));
         const std::size_t s = sister_[w];
         // A wall with no sister sits on the tissue boundary. Inhibiting it by
         // nothing would let it run away relative to every interior wall, so
