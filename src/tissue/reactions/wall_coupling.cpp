@@ -25,9 +25,21 @@
 //                     the same cell, which sets how wide a domain gets and so
 //                     how far apart lobes sit.
 //
-//     dp_w/dt = k_on * src_w / (1 + (h * p_sister(w))^n)
+//     dp_w/dt = k_on * S(src_w) / (1 + (h * p_sister(w))^n)
 //               - k_off * p_w
 //               + D * sum over outline neighbours (p_n - p_w)
+//
+//     S(s) = (s/s_half)^n_src / (1 + (s/s_half)^n_src)
+//
+// The cue saturates because every other recruitment rule in this model
+// saturates, and the comparison is only worth making if the two sides differ
+// in one thing. With h = 0 this is CMT::SignedCurvatureRecruitment with a
+// Hill cue plus a diffusion term, so p is bounded by k_on/k_off exactly as m
+// is, and the same beta_stiff means the same stiffness range. A linear cue
+// instead gives an unbounded p, and since p drives wall stiffness the
+// sharpest neck in the tissue would stiffen without limit -- the comparison
+// would be between a saturating mechanism and a runaway one, not between
+// coupled and uncoupled.
 //
 // The exponent is not decoration. With n = 1 the symmetric steady state
 // k_off p* = k_on s / (1 + h p*) is a quadratic with a single positive root,
@@ -65,11 +77,18 @@ namespace {
 class CMTSisterInhibition : public Reaction {
 public:
   CMTSisterInhibition(const ParameterList &p, const IndexLevels &i) {
-    configure("CMT::SisterInhibition", p, i, 5, {2},
-              {"k_on", "k_off", "h_inhibit", "D_lateral", "n_inhibit"});
-    if (parameter(4) < 1.0)
+    configure("CMT::SisterInhibition", p, i, 7, {2},
+              {"k_on", "k_off", "s_half", "n_src", "h_inhibit", "D_lateral",
+               "n_inhibit"});
+    if (parameter(6) < 1.0)
       throw std::runtime_error("CMT::SisterInhibition: n_inhibit must be at "
                                "least 1 (and at least 2 to break symmetry).");
+    if (parameter(2) <= 0.0)
+      throw std::runtime_error("CMT::SisterInhibition: s_half must be "
+                               "positive; it sets the cue scale.");
+    if (parameter(3) < 1.0)
+      throw std::runtime_error("CMT::SisterInhibition: n_src must be at "
+                               "least 1.");
   }
 
   void initiate(Tissue &T, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
@@ -122,7 +141,8 @@ public:
     const std::size_t pIdx = variableIndex(0, 0);
     const std::size_t srcIdx = variableIndex(0, 1);
     const double kOn = parameter(0), kOff = parameter(1);
-    const double h = parameter(2), D = parameter(3), nExp = parameter(4);
+    const double sHalf = parameter(2), nSrc = parameter(3);
+    const double h = parameter(4), D = parameter(5), nExp = parameter(6);
     if (sister_.size() != T.numWall())
       return;
 
@@ -139,7 +159,8 @@ public:
         // supposed to act on rather than something to represent with a
         // negative amount of a substance.
         const double raw = wallData[w][srcIdx];
-        const double src = raw > 0.0 ? raw : 0.0;
+        const double y = raw > 0.0 ? std::pow(raw / sHalf, nSrc) : 0.0;
+        const double src = y / (1.0 + y);
         const std::size_t s = sister_[w];
         // A wall with no sister sits on the tissue boundary. Inhibiting it by
         // nothing would let it run away relative to every interior wall, so
