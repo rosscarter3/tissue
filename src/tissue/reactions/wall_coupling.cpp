@@ -29,17 +29,25 @@
 //               - k_off * p_w
 //               + D * sum over outline neighbours (p_n - p_w)
 //
-//     S(s) = (s/s_half)^n_src / (1 + (s/s_half)^n_src)
+//     S(kappa) = 1 / (1 + exp(kappa / kappa_half))
 //
-// The cue saturates because every other recruitment rule in this model
-// saturates, and the comparison is only worth making if the two sides differ
-// in one thing. With h = 0 this is CMT::SignedCurvatureRecruitment with a
-// Hill cue plus a diffusion term, so p is bounded by k_on/k_off exactly as m
-// is, and the same beta_stiff means the same stiffness range. A linear cue
-// instead gives an unbounded p, and since p drives wall stiffness the
-// sharpest neck in the tissue would stiffen without limit -- the comparison
-// would be between a saturating mechanism and a runaway one, not between
-// coupled and uncoupled.
+// which is exactly CMT::SignedCurvatureRecruitment's cue, so with h = 0 and
+// D = 0 this reaction *is* that one and the arms of the comparison differ in
+// one thing. It is bounded in (0, 1), so p is bounded by k_on/k_off as the
+// reinforcement variable m is and the same beta_stiff spans the same
+// stiffness range; and it is positive everywhere, so nothing has to be
+// clamped.
+//
+// Not clamping is the point. Concave recruits -- measured, cortical
+// microtubule density is 1.191 of the cell mean on concave cortex against
+// 0.670 on convex -- but that is a factor of 1.8, not a switch. An earlier
+// version took max(-kappa, 0), which makes every convex wall produce exactly
+// nothing, and that hard zero does the coupling's job before the coupling
+// runs: on the starting mesh it already left 90.2% of wall pairs with one
+// face holding three times the other, and sweeping h from 0 to 1000 moved
+// the relative face difference only 1.856 to 1.959. A cue that overstates
+// the asymmetry it is supposed to be the seed of cannot test whether mutual
+// inhibition amplifies it.
 //
 // The exponent is not decoration. With n = 1 the symmetric steady state
 // k_off p* = k_on s / (1 + h p*) is a quadratic with a single positive root,
@@ -77,18 +85,15 @@ namespace {
 class CMTSisterInhibition : public Reaction {
 public:
   CMTSisterInhibition(const ParameterList &p, const IndexLevels &i) {
-    configure("CMT::SisterInhibition", p, i, 7, {2},
-              {"k_on", "k_off", "s_half", "n_src", "h_inhibit", "D_lateral",
+    configure("CMT::SisterInhibition", p, i, 6, {2},
+              {"k_on", "k_off", "kappa_half", "h_inhibit", "D_lateral",
                "n_inhibit"});
-    if (parameter(6) < 1.0)
+    if (parameter(5) < 1.0)
       throw std::runtime_error("CMT::SisterInhibition: n_inhibit must be at "
                                "least 1 (and at least 2 to break symmetry).");
     if (parameter(2) <= 0.0)
-      throw std::runtime_error("CMT::SisterInhibition: s_half must be "
+      throw std::runtime_error("CMT::SisterInhibition: kappa_half must be "
                                "positive; it sets the cue scale.");
-    if (parameter(3) < 1.0)
-      throw std::runtime_error("CMT::SisterInhibition: n_src must be at "
-                               "least 1.");
   }
 
   void initiate(Tissue &T, Matrix &, Matrix &, Matrix &, Matrix &, Matrix &,
@@ -141,26 +146,22 @@ public:
     const std::size_t pIdx = variableIndex(0, 0);
     const std::size_t srcIdx = variableIndex(0, 1);
     const double kOn = parameter(0), kOff = parameter(1);
-    const double sHalf = parameter(2), nSrc = parameter(3);
-    const double h = parameter(4), D = parameter(5), nExp = parameter(6);
+    const double kHalf = parameter(2);
+    const double h = parameter(3), D = parameter(4), nExp = parameter(5);
     if (sister_.size() != T.numWall())
       return;
 
     parallelFor(T.numWall(), [&](std::size_t begin, std::size_t end) {
       for (std::size_t w = begin; w < end; ++w) {
         const double p = wallData[w][pIdx];
-        // The cue is a production rate, so it cannot be negative. Signed
-        // curvature -- the natural cue here, and the only quantity whose sign
-        // differs between the two faces -- is negative on every concave face,
-        // and feeding that through unclamped drives p negative: measured, a
-        // quarter of all walls ended with a negative concentration, and every
-        // comparison made on that run meant nothing. A concave face produces
-        // nothing; it is suppressed, which is the asymmetry the coupling is
-        // supposed to act on rather than something to represent with a
-        // negative amount of a substance.
-        const double raw = wallData[w][srcIdx];
-        const double y = raw > 0.0 ? std::pow(raw / sHalf, nSrc) : 0.0;
-        const double src = y / (1.0 + y);
+        // Signed curvature, positive where the wall bulges out of its
+        // own cell, through the same sigmoid the cell-autonomous version
+        // uses: 1 at a deep neck, 1/2 on a straight wall, towards 0 on a
+        // lobe. The two faces of one wall read opposite signs, which is the
+        // asymmetry the coupling acts on, and it is graded rather than
+        // switched so that the coupling is what decides a marginal wall.
+        const double src =
+            1.0 / (1.0 + std::exp(wallData[w][srcIdx] / kHalf));
         const std::size_t s = sister_[w];
         // A wall with no sister sits on the tissue boundary. Inhibiting it by
         // nothing would let it run away relative to every interior wall, so
